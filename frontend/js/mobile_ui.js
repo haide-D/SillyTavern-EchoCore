@@ -16,6 +16,11 @@ import * as LlmTestApp from './mobile_apps/llm_test_app.js';
 import * as PhoneCallApp from './mobile_apps/phone_call_app.js';
 import * as EavesdropApp from './mobile_apps/eavesdrop_app.js';
 
+// 主题系统
+import { themeManager } from './theme_manager.js';
+import { defaultIdle } from './themes/default/default_idle.js';
+import { runeIdle } from './themes/harry_potter/rune_idle.js';
+
 if (!window.TTS_Mobile) {
     window.TTS_Mobile = {};
 }
@@ -120,18 +125,10 @@ export const TTS_Mobile = window.TTS_Mobile;
 
     // ==================== 渲染手机壳 ====================
     function renderShell() {
+        // 手机壳（来电/应用界面容器）
         const html = `
-        <div id="tts-mobile-trigger">
-            <div class="trigger-bubble-inner">
-                <div class="trigger-waves">
-                    <span class="trigger-bar"></span>
-                    <span class="trigger-bar"></span>
-                    <span class="trigger-bar"></span>
-                </div>
-            </div>
-        </div>
         <div id="tts-mobile-root" class="minimized">
-            <div id="tts-mobile-power-btn" title="关闭手机"></div>
+            <div id="tts-mobile-power-btn" title="关闭"></div>
             <div class="side-btn volume-up"></div>
             <div class="side-btn volume-down"></div>
             <div class="mobile-notch"></div>
@@ -146,46 +143,17 @@ export const TTS_Mobile = window.TTS_Mobile;
         $('body').append(html);
         renderHomeScreen();
 
-        // 🔍 调试 + 修复：检查悬浮球位置，并在手机端强制居中
-        setTimeout(() => {
-            const $trigger = $('#tts-mobile-trigger');
-            const el = $trigger[0];
-            if (el) {
-                const computed = window.getComputedStyle(el);
-                const rect = el.getBoundingClientRect();
-                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        // ✨ 注册主题并初始化
+        themeManager.register('default', defaultIdle, { label: '经典悬浮球' });
+        themeManager.register('harry_potter', runeIdle, {
+            label: '哈利波特·魔法符文',
+            cssUrl: `${window.TTS_State?.CACHE?.API_URL || 'http://127.0.0.1:3000'}/static/css/themes/harry_potter/hp_rune.css?t=${Date.now()}`
+        });
+        themeManager.init({ onClick: () => togglePhone() });
+        console.log('🎨 [Mobile] 主题系统已初始化, 当前:', themeManager.getCurrentThemeName());
 
-                console.log('🔍 [Debug] 悬浮球调试信息:');
-                console.log('  - 屏幕尺寸:', window.innerWidth, 'x', window.innerHeight);
-                console.log('  - 媒体查询 max-width:768px 匹配:', isMobile);
-                console.log('  - 计算样式 top:', computed.top);
-                console.log('  - 计算样式 right:', computed.right);
-                console.log('  - 计算样式 transform:', computed.transform);
-                console.log('  - 内联样式:', el.style.cssText || '(无)');
-                console.log('  - getBoundingClientRect:', JSON.stringify(rect));
-                console.log('  - 预期垂直中心位置:', window.innerHeight / 2);
-                console.log('  - 实际垂直中心位置:', rect.top + rect.height / 2);
-
-                // 🔧 修复：如果是手机端且位置不对，直接用JS设置
-                if (isMobile) {
-                    const expectedTop = (window.innerHeight - 40) / 2; // 40是悬浮球高度
-                    const actualCenter = rect.top + rect.height / 2;
-                    const expectedCenter = window.innerHeight / 2;
-
-                    if (Math.abs(actualCenter - expectedCenter) > 50) {
-                        console.log('🔧 [Fix] 检测到位置异常，强制修复！');
-                        console.log('  - 设置 top:', expectedTop + 'px');
-                        // 用原生 setProperty 才能覆盖 CSS 的 !important
-                        el.style.setProperty('top', expectedTop + 'px', 'important');
-                        el.style.setProperty('transform', 'none', 'important');
-                        el.style.setProperty('animation', 'none', 'important');
-                        console.log('  - 修复后内联样式:', el.style.cssText);
-                    }
-                }
-            } else {
-                console.log('🔍 [Debug] 悬浮球元素未找到!');
-            }
-        }, 500);
+        // 暴露给设置页使用
+        scope.themeManager = themeManager;
     }
 
     // ==================== 渲染主屏幕 ====================
@@ -239,109 +207,9 @@ export const TTS_Mobile = window.TTS_Mobile;
     };
 
     // ==================== 事件绑定 ====================
+    // 注意：符文的拖拽交互已由 rune_idle.js 内部处理
     function bindEvents() {
         const $phone = $('#tts-mobile-root');
-        const $trigger = $('#tts-mobile-trigger');
-
-        let isDragging = false;
-        let hasMoved = false;
-
-        let startX, startY;
-        let shiftX, shiftY;
-        let winW, winH;
-
-        const DRAG_THRESHOLD = 10;
-
-        // 拖拽开始
-        $trigger.on('mousedown touchstart', function (e) {
-            if (e.type === 'touchstart' && e.touches.length > 1) return;
-            if (e.cancelable) e.preventDefault();
-
-            const point = e.type === 'touchstart' ? e.touches[0] : e;
-            const rect = $trigger[0].getBoundingClientRect();
-
-            startX = point.clientX;
-            startY = point.clientY;
-            shiftX = startX - rect.left;
-            shiftY = startY - rect.top;
-
-            winW = $(window).width();
-            winH = $(window).height();
-
-            isDragging = true;
-            hasMoved = false;
-
-            document.addEventListener('mousemove', onMove, { passive: false });
-            document.addEventListener('touchmove', onMove, { passive: false });
-            document.addEventListener('mouseup', onUp);
-            document.addEventListener('touchend', onUp);
-        });
-
-        function onMove(e) {
-            if (!isDragging) return;
-            if (e.cancelable) e.preventDefault();
-
-            const point = e.type === 'touchmove' ? e.touches[0] : e;
-            const currentX = point.clientX;
-            const currentY = point.clientY;
-            const el = $trigger[0];
-
-            if (!hasMoved) {
-                const moveDis = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
-                if (moveDis < DRAG_THRESHOLD) return;
-                hasMoved = true;
-                // 用 setProperty 覆盖 !important
-                el.style.setProperty('position', 'fixed', 'important');
-                el.style.setProperty('right', 'auto', 'important');
-                el.style.setProperty('bottom', 'auto', 'important');
-                el.style.setProperty('transform', 'none', 'important');
-                el.style.setProperty('animation', 'none', 'important');
-            }
-
-            let newLeft = currentX - shiftX;
-            let newTop = currentY - shiftY;
-
-            newLeft = Math.max(0, Math.min(winW - 60, newLeft));
-            newTop = Math.max(0, Math.min(winH - 60, newTop));
-
-            // 用 setProperty 覆盖 !important
-            el.style.setProperty('left', newLeft + 'px', 'important');
-            el.style.setProperty('top', newTop + 'px', 'important');
-        }
-
-        function onUp(e) {
-            isDragging = false;
-
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchend', onUp);
-
-            if (!hasMoved) {
-                togglePhone();
-            } else {
-                snapToEdge();
-            }
-        }
-
-        function snapToEdge() {
-            const el = $trigger[0];
-            const rect = el.getBoundingClientRect();
-            const midX = winW / 2;
-            const targetLeft = (rect.left + 30 < midX) ? 10 : (winW - 50);
-
-            // 用 setProperty 覆盖 !important，并用 CSS transition 做动画
-            el.style.setProperty('transition', 'left 0.2s ease', 'important');
-            el.style.setProperty('left', targetLeft + 'px', 'important');
-
-            // 动画结束后移除 transition、animation 和 transform 限制
-            setTimeout(() => {
-                el.style.removeProperty('transition');
-                // 🔧 修复：移除拖动时强制设置的样式，恢复来电震动动画
-                el.style.removeProperty('animation');
-                el.style.removeProperty('transform');
-            }, 200);
-        }
 
         // 电源键关闭
         $('#tts-mobile-power-btn').click(function (e) {
@@ -352,7 +220,7 @@ export const TTS_Mobile = window.TTS_Mobile;
         // 点击外部关闭
         $(document).on('click', function (e) {
             if (STATE.isOpen) {
-                if ($(e.target).closest('#tts-mobile-root, #tts-mobile-trigger').length === 0) {
+                if ($(e.target).closest('#tts-mobile-root, #hp-rune-idle').length === 0) {
                     closePhone();
                 }
             }
@@ -379,8 +247,8 @@ export const TTS_Mobile = window.TTS_Mobile;
     function togglePhone() {
         // 优先检查来电
         if (window.TTS_IncomingCall) {
-            console.log('[Mobile] 检测到来电,打开小手机并显示来电界面');
-            $('#tts-mobile-trigger').removeClass('incoming-call');
+            console.log('[Mobile] 检测到来电,打开界面并显示来电');
+            themeManager.setIncomingCall(false);
             $('#tts-manager-btn').removeClass('incoming-call');
 
             if (!STATE.isOpen) {
@@ -392,8 +260,8 @@ export const TTS_Mobile = window.TTS_Mobile;
 
         // 检查对话追踪通知
         if (window.TTS_EavesdropData) {
-            console.log('[Mobile] 检测到对话追踪,打开小手机并显示监听界面');
-            $('#tts-mobile-trigger').removeClass('eavesdrop-available');
+            console.log('[Mobile] 检测到对话追踪,打开界面并显示监听');
+            themeManager.setEavesdropAvailable(false);
             $('#tts-manager-btn').removeClass('eavesdrop-available');
 
             if (!STATE.isOpen) {
@@ -409,19 +277,19 @@ export const TTS_Mobile = window.TTS_Mobile;
 
     function openPhone() {
         $('#tts-mobile-root').removeClass('minimized');
-        $('#tts-mobile-trigger').fadeOut();
+        themeManager.hide();  // 隐藏待机元素
         STATE.isOpen = true;
         renderHomeScreen();
     }
 
     function closePhone() {
-        // 🎯 关闭手机时清理来电记录 App 资源(停止音频播放)
+        // 🎯 关闭时清理来电记录 App 资源(停止音频播放)
         if (IncomingCallApp.cleanup) {
             IncomingCallApp.cleanup();
         }
 
         $('#tts-mobile-root').addClass('minimized');
-        $('#tts-mobile-trigger').fadeIn();
+        themeManager.show();  // 重新显示待机元素
         STATE.isOpen = false;
     }
 

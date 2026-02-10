@@ -10,6 +10,7 @@
  */
 
 import { PhoneCallAPIClient } from './phone_call_api_client.js';
+import { themeManager } from './theme_manager.js';
 
 export class NotificationHandler {
     /**
@@ -146,36 +147,23 @@ export class NotificationHandler {
      */
     static triggerFloatingBallAnimation(animationClass, tooltipText) {
         const $managerBtn = $('#tts-manager-btn');  // 桌面版
-        const $mobileTrigger = $('#tts-mobile-trigger');  // 移动版
 
-        console.log('[NotificationHandler] 🔍 查找悬浮球元素:');
-        console.log('  - 桌面版 (#tts-manager-btn):', $managerBtn.length);
-        console.log('  - 移动版 (#tts-mobile-trigger):', $mobileTrigger.length);
-
-        let triggered = false;
+        console.log('[NotificationHandler] 🔍 触发通知动画:', animationClass);
 
         // 桌面版悬浮球
         if ($managerBtn.length) {
             $managerBtn.addClass(animationClass);
             $managerBtn.attr('title', tooltipText);
-            console.log('[NotificationHandler] ✅ 桌面版悬浮球动画已触发, 当前class:', $managerBtn.attr('class'));
-            triggered = true;
+            console.log('[NotificationHandler] ✅ 桌面版悬浮球动画已触发');
         }
 
-        // 移动版悬浮球
-        if ($mobileTrigger.length) {
-            // 移除拖动时可能残留的内联样式,确保动画正常
-            $mobileTrigger[0].style.removeProperty('animation');
-            $mobileTrigger[0].style.removeProperty('transform');
-            $mobileTrigger.addClass(animationClass);
-            $mobileTrigger.attr('title', tooltipText);
-            console.log('[NotificationHandler] ✅ 移动版悬浮球动画已触发, 当前class:', $mobileTrigger.attr('class'));
-            triggered = true;
-        }
-
-        if (!triggered) {
-            console.warn('[NotificationHandler] ⚠️ 悬浮球元素不存在,无法触发动画');
-            console.warn('[NotificationHandler] 💡 提示:请确保 TTS_UI 已初始化并创建了悬浮球');
+        // ✨ 魔法符文通知
+        if (animationClass === 'incoming-call') {
+            themeManager.setIncomingCall(true);
+            console.log('[NotificationHandler] ✨ 符文已进入来电状态');
+        } else if (animationClass === 'eavesdrop-available') {
+            themeManager.setEavesdropAvailable(true);
+            console.log('[NotificationHandler] ✨ 符文已进入低语感应状态');
         }
     }
 

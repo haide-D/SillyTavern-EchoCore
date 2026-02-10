@@ -6,6 +6,7 @@
 import { ChatInjector } from '../chat_injector.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getCharacterAvatar } from './shared/utils.js';
+import { themeManager } from '../theme_manager.js';
 
 /**
  * 渲染来电 App
@@ -472,7 +473,7 @@ async function downloadAudio(call) {
 function clearCallState() {
     delete window.TTS_IncomingCall;
     $('#tts-manager-btn').removeClass('incoming-call').attr('title', '🔊 TTS配置');
-    $('#tts-mobile-trigger').removeClass('incoming-call');
+    themeManager.setIncomingCall(false);
 }
 
 /**

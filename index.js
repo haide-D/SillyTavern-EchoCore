@@ -121,7 +121,7 @@ function initPlugin() {
             style.id = 'tts-mobile-force-style';
 
             const extraCss = `
-                #tts-mobile-trigger { z-index: 2147483647 !important; }
+                #hp-rune-idle { z-index: 2147483647 !important; }
                 #tts-mobile-root { z-index: 2147483647 !important; }
             `;
 
@@ -160,6 +160,8 @@ function initPlugin() {
         .catch(err => {
             console.error("❌ [TTS] 手机 App 样式 CSS 加载失败:", err);
         });
+
+    // 注: 主题 CSS (如 hp_rune.css) 由 ThemeManager 按需加载,不再硬编码
 
     // 4. 定义核心回调函数 (传给 UI 模块使用)
     async function refreshData() {
