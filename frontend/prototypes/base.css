@@ -1,0 +1,307 @@
+/* ========================================
+   Prototype Base — Shared Styles
+   
+   每个原型只需 @import 此文件，
+   然后用 CSS 变量覆盖色彩即可。
+   ======================================== */
+
+/* ========================================
+   CSS Variables (默认银色主题，可被覆盖)
+   ======================================== */
+:root {
+    /* 主色调 */
+    --proto-primary-rgb: 192, 192, 255;
+    --proto-accent-rgb: 123, 47, 190;
+    --proto-text-color: #C0C0C0;
+
+    /* 背景 */
+    --proto-bg-spot-rgb: 30, 30, 60;
+    --proto-bg-base: #0a0a1a;
+    --proto-bg-mid: #0f0f2a;
+    --proto-bg-dark: #1a1a2e;
+    --proto-bg-end: #0d0d20;
+    --proto-bg-floor: #0e0e24;
+
+    /* 低语 UI */
+    --proto-whisper-border: rgba(var(--proto-accent-rgb), 0.4);
+    --proto-whisper-bg: rgba(var(--proto-accent-rgb), 0.08);
+    --proto-whisper-text-color: rgba(var(--proto-primary-rgb), 0.85);
+    --proto-whisper-text-shadow: rgba(var(--proto-accent-rgb), 0.4);
+}
+
+/* ========================================
+   0. Reset & Base
+   ======================================== */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Lora', serif;
+    color: var(--proto-text-color);
+}
+
+/* ========================================
+   1. Background
+   ======================================== */
+body {
+    background:
+        radial-gradient(ellipse at 70% 50%, rgba(var(--proto-bg-spot-rgb), 0.4) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 100%, var(--proto-bg-floor) 0%, transparent 70%),
+        linear-gradient(170deg, var(--proto-bg-base) 0%, var(--proto-bg-mid) 40%, var(--proto-bg-dark) 70%, var(--proto-bg-end) 100%);
+    position: relative;
+}
+
+/* Ambient glow */
+body::before {
+    content: '';
+    position: absolute;
+    right: 10%;
+    top: 45%;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle,
+            rgba(var(--proto-primary-rgb), 0.06) 0%,
+            rgba(var(--proto-primary-rgb), 0.02) 40%,
+            transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: proto-ambient-pulse 6s ease-in-out infinite;
+}
+
+@keyframes proto-ambient-pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.15);
+    }
+}
+
+/* ========================================
+   2. Canvas Layer
+   ======================================== */
+#particleCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ========================================
+   3. Main Element Container (通用定位)
+   ======================================== */
+.proto-element {
+    position: absolute;
+    z-index: 10;
+    cursor: pointer;
+    transition: filter 0.3s ease;
+}
+
+/* ========================================
+   4. Whisper Ripple Rings
+   ======================================== */
+.whisper-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    border: 1px solid rgba(var(--proto-accent-rgb), 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.whisper-ripple.active {
+    animation: proto-ripple-expand 2s ease-out infinite;
+}
+
+.whisper-ripple.active:nth-child(2) {
+    animation-delay: 0.6s;
+}
+
+.whisper-ripple.active:nth-child(3) {
+    animation-delay: 1.2s;
+}
+
+@keyframes proto-ripple-expand {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(5);
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   5. Whisper UI
+   ======================================== */
+.whisper-ui {
+    position: absolute;
+    left: 50%;
+    bottom: 25%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+}
+
+.whisper-ui.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.whisper-text {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--proto-whisper-text-color);
+    text-shadow: 0 0 15px var(--proto-whisper-text-shadow);
+    margin-bottom: 24px;
+    font-style: italic;
+    letter-spacing: 2px;
+    animation: proto-text-float 3s ease-in-out infinite;
+}
+
+@keyframes proto-text-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+.whisper-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+.whisper-btn {
+    padding: 10px 28px;
+    border: 1px solid var(--proto-whisper-border);
+    border-radius: 24px;
+    background: var(--proto-whisper-bg);
+    color: rgba(var(--proto-primary-rgb), 0.9);
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    letter-spacing: 1px;
+}
+
+.whisper-btn:hover {
+    background: rgba(var(--proto-accent-rgb), 0.2);
+    border-color: rgba(var(--proto-accent-rgb), 0.6);
+    box-shadow: 0 0 20px rgba(var(--proto-accent-rgb), 0.3);
+    transform: scale(1.05);
+}
+
+.whisper-btn.primary {
+    background: rgba(var(--proto-accent-rgb), 0.15);
+    border-color: rgba(var(--proto-accent-rgb), 0.5);
+    box-shadow: 0 0 12px rgba(var(--proto-accent-rgb), 0.2);
+}
+
+.whisper-btn.dismiss {
+    color: rgba(var(--proto-primary-rgb), 0.5);
+    border-color: rgba(var(--proto-primary-rgb), 0.2);
+}
+
+/* ========================================
+   6. Debug Controls
+   ======================================== */
+.debug-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(10, 10, 26, 0.92);
+    border-top: 1px solid rgba(var(--proto-primary-rgb), 0.12);
+    backdrop-filter: blur(10px);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.debug-btn {
+    padding: 8px 18px;
+    border: 1px solid rgba(var(--proto-primary-rgb), 0.25);
+    border-radius: 6px;
+    background: rgba(var(--proto-primary-rgb), 0.04);
+    color: rgba(var(--proto-primary-rgb), 0.6);
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.debug-btn:hover {
+    background: rgba(var(--proto-primary-rgb), 0.1);
+    border-color: rgba(var(--proto-primary-rgb), 0.4);
+    color: rgba(var(--proto-primary-rgb), 0.9);
+}
+
+.debug-btn.active {
+    background: rgba(var(--proto-primary-rgb), 0.15);
+    border-color: rgba(var(--proto-primary-rgb), 0.5);
+    color: rgba(var(--proto-primary-rgb), 1);
+    box-shadow: 0 0 10px rgba(var(--proto-primary-rgb), 0.15);
+}
+
+.debug-info {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    font-size: 11px;
+    color: rgba(var(--proto-primary-rgb), 0.25);
+    font-family: monospace;
+}
+
+/* ========================================
+   7. Title Watermark
+   ======================================== */
+.title-watermark {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(var(--proto-primary-rgb), 0.1);
+    pointer-events: none;
+    z-index: 0;
+}

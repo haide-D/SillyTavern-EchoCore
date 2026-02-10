@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ Patronus UI — Golden Snitch Prototype</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ========================================
+   0. Reset & Base
+   ======================================== */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Lora', serif;
+            color: #d4a853;
+        }
+
+        /* ========================================
+   1. Background — Deep midnight atmosphere
+   ======================================== */
+        body {
+            background: radial-gradient(ellipse at 75% 55%, rgba(40, 35, 20, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 100%, #12122a 0%, transparent 70%),
+                linear-gradient(170deg, #0a0a1a 0%, #111133 40%, #1a1a2e 70%, #0d0d20 100%);
+            position: relative;
+        }
+
+        /* Ambient golden glow from snitch area */
+        body::before {
+            content: '';
+            position: absolute;
+            right: 10%;
+            top: 45%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(212, 168, 83, 0.08) 0%, rgba(212, 168, 83, 0.03) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: ambientPulse 6s ease-in-out infinite;
+        }
+
+        @keyframes ambientPulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        /* ========================================
+   2. Canvas — Particle layer
+   ======================================== */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ========================================
+   3. Golden Snitch Assembly
+   ======================================== */
+        .snitch-container {
+            position: absolute;
+            z-index: 10;
+            /* Position set by JS */
+            will-change: transform;
+            cursor: pointer;
+            filter: drop-shadow(0 0 20px rgba(212, 168, 83, 0.3));
+            transition: filter 0.3s ease;
+        }
+
+        .snitch-assembly {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Snitch Body (Golden metallic sphere) --- */
+        .snitch-body {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+
+            /* Multi-layer gradient for metallic look */
+            background:
+                /* Specular highlight - top left */
+                radial-gradient(circle at 32% 28%, rgba(255, 235, 180, 0.95) 0%, rgba(255, 235, 180, 0.4) 15%, transparent 40%),
+                /* Secondary highlight - bottom right rim */
+                radial-gradient(circle at 70% 75%, rgba(255, 215, 0, 0.2) 0%, transparent 30%),
+                /* Core golden body */
+                radial-gradient(circle at 48% 45%, #e8c252 0%, #d4a853 30%, #b08930 60%, #8b6914 90%);
+
+            /* Metallic edge light */
+            border: 1px solid rgba(255, 215, 0, 0.4);
+
+            /* Glow layers */
+            box-shadow:
+                0 0 8px rgba(212, 168, 83, 0.5),
+                0 0 20px rgba(212, 168, 83, 0.25),
+                0 0 40px rgba(212, 168, 83, 0.1),
+                inset 0 -4px 8px rgba(80, 50, 10, 0.4),
+                inset 0 2px 4px rgba(255, 235, 180, 0.2);
+        }
+
+        /* Etched engravings overlay */
+        .snitch-body::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            /* Simulated clockwork/mechanical engravings */
+            background:
+                repeating-conic-gradient(from 0deg at 50% 50%,
+                    transparent 0deg, transparent 14deg,
+                    rgba(255, 215, 0, 0.08) 14deg, rgba(255, 215, 0, 0.08) 16deg),
+                radial-gradient(circle at 50% 50%, transparent 40%, rgba(139, 105, 20, 0.15) 41%, transparent 42%),
+                radial-gradient(circle at 50% 50%, transparent 55%, rgba(139, 105, 20, 0.1) 56%, transparent 57%),
+                radial-gradient(circle at 50% 50%, transparent 70%, rgba(139, 105, 20, 0.08) 71%, transparent 72%);
+            opacity: 0.6;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        /* Breathing glow animation on the body */
+        .snitch-body::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 30%, transparent 70%);
+            animation: snitchBreathing 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes snitchBreathing {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.15);
+            }
+        }
+
+        /* --- Equator band --- */
+        .snitch-equator {
+            position: absolute;
+            top: 50%;
+            left: 2px;
+            right: 2px;
+            height: 3px;
+            transform: translateY(-50%);
+            background: linear-gradient(90deg,
+                    rgba(139, 105, 20, 0.3),
+                    rgba(255, 215, 0, 0.5) 30%,
+                    rgba(255, 235, 180, 0.7) 50%,
+                    rgba(255, 215, 0, 0.5) 70%,
+                    rgba(139, 105, 20, 0.3));
+            border-radius: 2px;
+            z-index: 3;
+            box-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
+        }
+
+        /* --- Wings --- */
+        .wing-container {
+            position: absolute;
+            top: 50%;
+            z-index: 1;
+            transform-style: preserve-3d;
+            perspective: 200px;
+        }
+
+        .wing-container.left {
+            right: 100%;
+            margin-right: -6px;
+            transform-origin: right center;
+        }
+
+        .wing-container.right {
+            left: 100%;
+            margin-left: -6px;
+            transform-origin: left center;
+        }
+
+        .wing-container svg {
+            display: block;
+            width: 65px;
+            height: 40px;
+            overflow: visible;
+            filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.2));
+        }
+
+        /* Wing fold/unfold via CSS class toggled by JS */
+        .wing-container.left {
+            transform: translateY(-50%) rotateY(70deg);
+            transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .wing-container.right {
+            transform: translateY(-50%) rotateY(-70deg) scaleX(-1);
+            transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Unfolded state */
+        .wing-container.left.open {
+            transform: translateY(-50%) rotateY(20deg);
+        }
+
+        .wing-container.right.open {
+            transform: translateY(-50%) rotateY(-20deg) scaleX(-1);
+        }
+
+        /* Fully extended (micro-event) */
+        .wing-container.left.full-open {
+            transform: translateY(-50%) rotateY(-5deg);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .wing-container.right.full-open {
+            transform: translateY(-50%) rotateY(5deg) scaleX(-1);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* ========================================
+   4. Micro-event visual effects
+   ======================================== */
+
+        /* Pulse flash */
+        .snitch-container.pulse-flash .snitch-body {
+            box-shadow:
+                0 0 15px rgba(255, 215, 0, 0.8),
+                0 0 40px rgba(255, 215, 0, 0.5),
+                0 0 80px rgba(255, 215, 0, 0.2),
+                inset 0 -4px 8px rgba(80, 50, 10, 0.4),
+                inset 0 2px 4px rgba(255, 235, 180, 0.4);
+            transition: box-shadow 0.2s ease-out;
+        }
+
+        /* Engravings glow */
+        .snitch-container.engravings-glow .snitch-body::before {
+            opacity: 1;
+            background:
+                repeating-conic-gradient(from 0deg at 50% 50%,
+                    transparent 0deg, transparent 14deg,
+                    rgba(255, 215, 0, 0.25) 14deg, rgba(255, 215, 0, 0.25) 16deg),
+                radial-gradient(circle at 50% 50%, transparent 40%, rgba(255, 215, 0, 0.2) 41%, transparent 42%),
+                radial-gradient(circle at 50% 50%, transparent 55%, rgba(255, 215, 0, 0.15) 56%, transparent 57%),
+                radial-gradient(circle at 50% 50%, transparent 70%, rgba(255, 215, 0, 0.1) 71%, transparent 72%);
+        }
+
+        /* Fast spin */
+        .snitch-container.fast-spin .snitch-body {
+            animation: spinY 0.5s ease-in-out;
+        }
+
+        @keyframes spinY {
+            0% {
+                transform: rotateY(0deg);
+            }
+
+            100% {
+                transform: rotateY(360deg);
+            }
+        }
+
+        /* ========================================
+   5. Whisper state (低语震颤)
+   ======================================== */
+        .snitch-container.whisper-sensing {
+            animation: snitchTremor 0.08s ease-in-out infinite alternate;
+        }
+
+        @keyframes snitchTremor {
+            0% {
+                translate: -1.5px -1px;
+            }
+
+            25% {
+                translate: 1px 1.5px;
+            }
+
+            50% {
+                translate: -0.5px -1.5px;
+            }
+
+            75% {
+                translate: 1.5px 0.5px;
+            }
+
+            100% {
+                translate: -1px 1px;
+            }
+        }
+
+        .snitch-container.whisper-sensing .wing-container.left {
+            animation: wingBuzzLeft 0.15s ease-in-out infinite alternate;
+        }
+
+        .snitch-container.whisper-sensing .wing-container.right {
+            animation: wingBuzzRight 0.15s ease-in-out infinite alternate;
+        }
+
+        @keyframes wingBuzzLeft {
+            0% {
+                transform: translateY(-50%) rotateY(10deg);
+            }
+
+            100% {
+                transform: translateY(-50%) rotateY(40deg);
+            }
+        }
+
+        @keyframes wingBuzzRight {
+            0% {
+                transform: translateY(-50%) rotateY(-10deg) scaleX(-1);
+            }
+
+            100% {
+                transform: translateY(-50%) rotateY(-40deg) scaleX(-1);
+            }
+        }
+
+        /* Whisper ripple rings */
+        .whisper-ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            border: 1px solid rgba(212, 168, 83, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .whisper-ripple.active {
+            animation: rippleExpand 2s ease-out infinite;
+        }
+
+        .whisper-ripple.active:nth-child(2) {
+            animation-delay: 0.6s;
+        }
+
+        .whisper-ripple.active:nth-child(3) {
+            animation-delay: 1.2s;
+        }
+
+        @keyframes rippleExpand {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* ========================================
+   6. Whisper UI
+   ======================================== */
+        .whisper-ui {
+            position: absolute;
+            left: 50%;
+            bottom: 25%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+
+        .whisper-ui.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .whisper-text {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: rgba(212, 168, 83, 0.85);
+            text-shadow: 0 0 15px rgba(212, 168, 83, 0.4);
+            margin-bottom: 24px;
+            font-style: italic;
+            letter-spacing: 2px;
+            animation: textFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes textFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .whisper-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .whisper-btn {
+            padding: 10px 28px;
+            border: 1px solid rgba(212, 168, 83, 0.4);
+            border-radius: 24px;
+            background: rgba(212, 168, 83, 0.08);
+            color: #d4a853;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+            letter-spacing: 1px;
+        }
+
+        .whisper-btn:hover {
+            background: rgba(212, 168, 83, 0.2);
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 0 0 20px rgba(212, 168, 83, 0.3);
+            transform: scale(1.05);
+        }
+
+        .whisper-btn.primary {
+            background: rgba(212, 168, 83, 0.15);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 12px rgba(212, 168, 83, 0.2);
+        }
+
+        .whisper-btn.dismiss {
+            color: rgba(212, 168, 83, 0.5);
+            border-color: rgba(212, 168, 83, 0.2);
+        }
+
+        /* ========================================
+   7. Debug Controls
+   ======================================== */
+        .debug-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(10, 10, 26, 0.9);
+            border-top: 1px solid rgba(212, 168, 83, 0.15);
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .debug-btn {
+            padding: 8px 18px;
+            border: 1px solid rgba(212, 168, 83, 0.3);
+            border-radius: 6px;
+            background: rgba(212, 168, 83, 0.06);
+            color: rgba(212, 168, 83, 0.7);
+            font-family: 'Lora', serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .debug-btn:hover {
+            background: rgba(212, 168, 83, 0.15);
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #d4a853;
+        }
+
+        .debug-btn.active {
+            background: rgba(212, 168, 83, 0.2);
+            border-color: rgba(255, 215, 0, 0.6);
+            color: #ffe4a0;
+            box-shadow: 0 0 10px rgba(212, 168, 83, 0.2);
+        }
+
+        .debug-info {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 100;
+            font-size: 11px;
+            color: rgba(212, 168, 83, 0.3);
+            font-family: monospace;
+        }
+
+        /* ========================================
+   8. Title watermark
+   ======================================== */
+        .title-watermark {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: rgba(212, 168, 83, 0.12);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Title -->
+    <div class="title-watermark">Patronus UI</div>
+
+    <!-- Particle Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Golden Snitch -->
+    <div class="snitch-container" id="snitchContainer">
+        <div class="snitch-assembly" id="snitchAssembly">
+
+            <!-- Left Wing -->
+            <div class="wing-container left" id="wingLeft">
+                <svg viewBox="0 0 65 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Wing membrane -->
+                    <path d="M65,20 Q50,6 30,4 Q15,3 5,8 Q2,12 3,18 Q10,16 25,15 Q45,13 65,20Z"
+                        fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.2)" stroke-width="0.5" />
+                    <!-- Lower lobe -->
+                    <path d="M65,20 Q50,28 35,30 Q20,32 8,28 Q3,24 3,18 Q10,22 25,23 Q45,24 65,20Z"
+                        fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.15)" stroke-width="0.5" />
+                    <!-- Veins -->
+                    <path d="M65,20 Q40,10 10,10" stroke="rgba(255,215,0,0.18)" fill="none" stroke-width="0.4" />
+                    <path d="M65,20 Q42,14 15,14" stroke="rgba(255,215,0,0.14)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q45,17 20,17" stroke="rgba(255,215,0,0.10)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q42,25 12,26" stroke="rgba(255,215,0,0.14)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q45,23 18,23" stroke="rgba(255,215,0,0.10)" fill="none" stroke-width="0.3" />
+                    <!-- Wing tip sparkle -->
+                    <circle cx="5" cy="13" r="1.2" fill="rgba(255,235,180,0.3)">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+            </div>
+
+            <!-- Snitch Body -->
+            <div class="snitch-body">
+                <div class="snitch-equator"></div>
+            </div>
+
+            <!-- Right Wing -->
+            <div class="wing-container right" id="wingRight">
+                <svg viewBox="0 0 65 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M65,20 Q50,6 30,4 Q15,3 5,8 Q2,12 3,18 Q10,16 25,15 Q45,13 65,20Z"
+                        fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.2)" stroke-width="0.5" />
+                    <path d="M65,20 Q50,28 35,30 Q20,32 8,28 Q3,24 3,18 Q10,22 25,23 Q45,24 65,20Z"
+                        fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.15)" stroke-width="0.5" />
+                    <path d="M65,20 Q40,10 10,10" stroke="rgba(255,215,0,0.18)" fill="none" stroke-width="0.4" />
+                    <path d="M65,20 Q42,14 15,14" stroke="rgba(255,215,0,0.14)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q45,17 20,17" stroke="rgba(255,215,0,0.10)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q42,25 12,26" stroke="rgba(255,215,0,0.14)" fill="none" stroke-width="0.3" />
+                    <path d="M65,20 Q45,23 18,23" stroke="rgba(255,215,0,0.10)" fill="none" stroke-width="0.3" />
+                    <circle cx="5" cy="13" r="1.2" fill="rgba(255,235,180,0.3)">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+            </div>
+
+            <!-- Whisper ripple rings (hidden by default) -->
+            <div class="whisper-ripple" id="ripple1"></div>
+            <div class="whisper-ripple" id="ripple2"></div>
+            <div class="whisper-ripple" id="ripple3"></div>
+        </div>
+    </div>
+
+    <!-- Whisper UI -->
+    <div class="whisper-ui" id="whisperUI">
+        <div class="whisper-text">「远方传来一阵低语……」</div>
+        <div class="whisper-buttons">
+            <button class="whisper-btn primary" onclick="enterListening()">聆听 👂</button>
+            <button class="whisper-btn dismiss" onclick="dismissWhisper()">忽略 💤</button>
+        </div>
+    </div>
+
+    <!-- Debug info -->
+    <div class="debug-info" id="debugInfo">FPS: --</div>
+
+    <!-- Debug bar -->
+    <div class="debug-bar">
+        <button class="debug-btn active" id="btnIdle" onclick="switchState('idle')">🏆 待机</button>
+        <button class="debug-btn" id="btnWhisper" onclick="switchState('whisper')">🔮 低语触发</button>
+        <button class="debug-btn" id="btnCall" onclick="switchState('call')">🦌 来电 (WIP)</button>
+        <button class="debug-btn" id="btnReset" onclick="switchState('reset')">↻ 重置</button>
+    </div>
+
+    <script>
+        // ============================================
+        // Configuration
+        // ============================================
+        const CONFIG = {
+            // Snitch position (relative to viewport)
+            snitchBaseX: 0.78,  // 78% from left
+            snitchBaseY: 0.55,  // 55% from top
+
+            // Floating motion
+            floatAmplitudeX: 8,
+            floatAmplitudeY: 6,
+            floatFreqX: 0.0009,
+            floatFreqY: 0.0012,
+            floatSecondaryX: 0.0023,
+            floatSecondaryY: 0.0019,
+            floatSecondaryAmpX: 3,
+            floatSecondaryAmpY: 2,
+            floatRotateFreq: 0.0007,
+            floatRotateAmp: 2,
+
+            // Wing animation
+            wingCycleMin: 3000,  // ms, min time between fold cycles
+            wingCycleMax: 6000,  // ms, max time
+            wingOpenDuration: 1200,  // ms, how long wings stay open
+
+            // Particles
+            trailMaxParticles: 18,
+            trailEmitChance: 0.3,  // per frame
+            trailLifespan: 2500,   // ms
+            ambientParticles: 4,   // dust motes floating
+
+            // Micro events
+            microEventMinInterval: 18000,  // ms
+            microEventMaxInterval: 35000,  // ms
+        };
+
+        // ============================================
+        // State
+        // ============================================
+        let currentState = 'idle';
+        let snitchX = 0, snitchY = 0;
+        let animationId = null;
+        let lastTime = 0;
+        let frameCount = 0;
+        let fpsTime = 0;
+
+        // Wing state
+        let wingOpen = false;
+        let nextWingToggle = 0;
+
+        // Micro events
+        let nextMicroEvent = 0;
+        let microEventActive = false;
+
+        // Particles
+        const trailParticles = [];
+        const ambientDust = [];
+
+        // Canvas
+        let canvas, ctx;
+        let canvasW, canvasH;
+
+        // ============================================
+        // DOM References
+        // ============================================
+        const snitchContainer = document.getElementById('snitchContainer');
+        const snitchAssembly = document.getElementById('snitchAssembly');
+        const wingLeft = document.getElementById('wingLeft');
+        const wingRight = document.getElementById('wingRight');
+        const whisperUI = document.getElementById('whisperUI');
+        const debugInfo = document.getElementById('debugInfo');
+        const ripples = [
+            document.getElementById('ripple1'),
+            document.getElementById('ripple2'),
+            document.getElementById('ripple3'),
+        ];
+
+        // ============================================
+        // Initialization
+        // ============================================
+        function init() {
+            canvas = document.getElementById('particleCanvas');
+            ctx = canvas.getContext('2d');
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initialize snitch position
+            snitchX = canvasW * CONFIG.snitchBaseX;
+            snitchY = canvasH * CONFIG.snitchBaseY;
+
+            // Schedule first wing toggle
+            nextWingToggle = performance.now() + randomRange(CONFIG.wingCycleMin, CONFIG.wingCycleMax);
+
+            // Schedule first micro event
+            nextMicroEvent = performance.now() + randomRange(CONFIG.microEventMinInterval, CONFIG.microEventMaxInterval);
+
+            // Initialize ambient dust
+            for (let i = 0; i < CONFIG.ambientParticles; i++) {
+                ambientDust.push(createAmbientDust());
+            }
+
+            // Start animation loop
+            lastTime = performance.now();
+            fpsTime = lastTime;
+            animate(lastTime);
+        }
+
+        function resizeCanvas() {
+            canvasW = window.innerWidth;
+            canvasH = window.innerHeight;
+            canvas.width = canvasW * window.devicePixelRatio;
+            canvas.height = canvasH * window.devicePixelRatio;
+            canvas.style.width = canvasW + 'px';
+            canvas.style.height = canvasH + 'px';
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+        }
+
+        // ============================================
+        // Animation Loop
+        // ============================================
+        function animate(timestamp) {
+            animationId = requestAnimationFrame(animate);
+
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // FPS counter
+            frameCount++;
+            if (timestamp - fpsTime >= 1000) {
+                debugInfo.textContent = `FPS: ${frameCount} | Particles: ${trailParticles.length} | State: ${currentState}`;
+                frameCount = 0;
+                fpsTime = timestamp;
+            }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvasW, canvasH);
+
+            // Update snitch position (always floating, even in whisper)
+            if (currentState === 'idle' || currentState === 'whisper') {
+                updateSnitchFloat(timestamp);
+            }
+
+            // Wing animation
+            if (currentState === 'idle') {
+                updateWings(timestamp);
+                updateMicroEvents(timestamp);
+            }
+
+            // Particles
+            updateTrailParticles(timestamp, dt);
+            updateAmbientDust(timestamp, dt);
+
+            // Draw all particles
+            drawParticles();
+
+            // Position DOM element
+            snitchContainer.style.left = (snitchX - 24) + 'px';
+            snitchContainer.style.top = (snitchY - 24) + 'px';
+        }
+
+        // ============================================
+        // Snitch Floating Motion
+        // ============================================
+        function updateSnitchFloat(time) {
+            const baseX = canvasW * CONFIG.snitchBaseX;
+            const baseY = canvasH * CONFIG.snitchBaseY;
+
+            const dx = Math.sin(time * CONFIG.floatFreqX) * CONFIG.floatAmplitudeX
+                + Math.sin(time * CONFIG.floatSecondaryX) * CONFIG.floatSecondaryAmpX;
+            const dy = Math.sin(time * CONFIG.floatFreqY) * CONFIG.floatAmplitudeY
+                + Math.cos(time * CONFIG.floatSecondaryY) * CONFIG.floatSecondaryAmpY;
+            const rot = Math.sin(time * CONFIG.floatRotateFreq) * CONFIG.floatRotateAmp;
+
+            snitchX = baseX + dx;
+            snitchY = baseY + dy;
+
+            snitchAssembly.style.transform = `rotateZ(${rot}deg)`;
+        }
+
+        // ============================================
+        // Wing Animation
+        // ============================================
+        function updateWings(timestamp) {
+            if (timestamp >= nextWingToggle && !microEventActive) {
+                if (!wingOpen) {
+                    // Open wings
+                    wingLeft.classList.add('open');
+                    wingRight.classList.add('open');
+                    wingOpen = true;
+                    nextWingToggle = timestamp + CONFIG.wingOpenDuration + randomRange(200, 600);
+                } else {
+                    // Close wings
+                    wingLeft.classList.remove('open');
+                    wingRight.classList.remove('open');
+                    wingOpen = false;
+                    nextWingToggle = timestamp + randomRange(CONFIG.wingCycleMin, CONFIG.wingCycleMax);
+                }
+            }
+        }
+
+        // ============================================
+        // Micro Events
+        // ============================================
+        const MICRO_EVENTS = [
+            { name: 'wing-stretch', weight: 30, fn: microWingStretch },
+            { name: 'dart', weight: 25, fn: microDart },
+            { name: 'spin', weight: 20, fn: microSpin },
+            { name: 'pulse', weight: 15, fn: microPulse },
+            { name: 'engravings', weight: 10, fn: microEngravings },
+        ];
+
+        function updateMicroEvents(timestamp) {
+            if (timestamp >= nextMicroEvent && !microEventActive) {
+                const event = weightedRandom(MICRO_EVENTS);
+                microEventActive = true;
+                event.fn(() => {
+                    microEventActive = false;
+                    nextMicroEvent = timestamp + randomRange(CONFIG.microEventMinInterval, CONFIG.microEventMaxInterval);
+                });
+            }
+        }
+
+        function microWingStretch(done) {
+            wingLeft.classList.remove('open');
+            wingRight.classList.remove('open');
+            // Short pause then full extend
+            setTimeout(() => {
+                wingLeft.classList.add('full-open');
+                wingRight.classList.add('full-open');
+                wingOpen = true;
+                setTimeout(() => {
+                    wingLeft.classList.remove('full-open');
+                    wingRight.classList.remove('full-open');
+                    wingOpen = false;
+                    done();
+                }, 1200);
+            }, 100);
+        }
+
+        function microDart(done) {
+            // Quick dash in a random direction
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 25 + Math.random() * 15;
+            const dx = Math.cos(angle) * dist;
+            const dy = Math.sin(angle) * dist;
+
+            const origBaseX = CONFIG.snitchBaseX;
+            const origBaseY = CONFIG.snitchBaseY;
+
+            // Dash!
+            CONFIG.snitchBaseX += dx / canvasW;
+            CONFIG.snitchBaseY += dy / canvasH;
+
+            // Burst particles during dash
+            for (let i = 0; i < 6; i++) {
+                emitTrailParticle(true);
+            }
+
+            // Drift back slowly
+            setTimeout(() => {
+                CONFIG.snitchBaseX = origBaseX;
+                CONFIG.snitchBaseY = origBaseY;
+                done();
+            }, 800);
+        }
+
+        function microSpin(done) {
+            snitchContainer.classList.add('fast-spin');
+            // Burst some particles
+            for (let i = 0; i < 4; i++) {
+                emitTrailParticle(true);
+            }
+            setTimeout(() => {
+                snitchContainer.classList.remove('fast-spin');
+                done();
+            }, 600);
+        }
+
+        function microPulse(done) {
+            snitchContainer.classList.add('pulse-flash');
+            setTimeout(() => {
+                snitchContainer.classList.remove('pulse-flash');
+                done();
+            }, 500);
+        }
+
+        function microEngravings(done) {
+            snitchContainer.classList.add('engravings-glow');
+            setTimeout(() => {
+                snitchContainer.classList.remove('engravings-glow');
+                done();
+            }, 1500);
+        }
+
+        // ============================================
+        // Trail Particle System
+        // ============================================
+        function emitTrailParticle(burst = false) {
+            if (trailParticles.length >= CONFIG.trailMaxParticles && !burst) return;
+
+            trailParticles.push({
+                x: snitchX + randomRange(-3, 3),
+                y: snitchY + randomRange(-3, 3),
+                vx: randomRange(-0.3, 0.3) + (burst ? randomRange(-1.5, 1.5) : 0),
+                vy: randomRange(0.1, 0.4) + (burst ? randomRange(-1, 1) : 0),
+                size: randomRange(1, 3),
+                life: CONFIG.trailLifespan,
+                maxLife: CONFIG.trailLifespan,
+                hue: randomRange(38, 48),  // warm gold
+            });
+        }
+
+        function updateTrailParticles(time, dt) {
+            // Emit new particles
+            if ((currentState === 'idle' || currentState === 'whisper') && Math.random() < CONFIG.trailEmitChance) {
+                emitTrailParticle();
+            }
+
+            // In whisper mode, emit more
+            if (currentState === 'whisper' && Math.random() < 0.6) {
+                emitTrailParticle();
+            }
+
+            // Update existing
+            for (let i = trailParticles.length - 1; i >= 0; i--) {
+                const p = trailParticles[i];
+                p.life -= dt;
+                if (p.life <= 0) {
+                    trailParticles.splice(i, 1);
+                    continue;
+                }
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.005; // tiny gravity
+                p.vx *= 0.99;  // friction
+            }
+        }
+
+        // ============================================
+        // Ambient Dust Particles
+        // ============================================
+        function createAmbientDust() {
+            return {
+                x: randomRange(canvasW * 0.3, canvasW * 0.95),
+                y: randomRange(canvasH * 0.1, canvasH * 0.9),
+                vx: randomRange(-0.08, 0.08),
+                vy: randomRange(-0.05, 0.05),
+                size: randomRange(1, 2.5),
+                phase: Math.random() * Math.PI * 2,
+                speed: randomRange(0.0005, 0.001),
+                baseAlpha: randomRange(0.05, 0.15),
+            };
+        }
+
+        function updateAmbientDust(time, dt) {
+            ambientDust.forEach(d => {
+                d.x += Math.sin(time * d.speed + d.phase) * 0.15;
+                d.y += Math.cos(time * d.speed * 0.7 + d.phase) * 0.1;
+
+                // Wrap around
+                if (d.x < 0) d.x = canvasW;
+                if (d.x > canvasW) d.x = 0;
+                if (d.y < 0) d.y = canvasH;
+                if (d.y > canvasH) d.y = 0;
+            });
+        }
+
+        // ============================================
+        // Rendering
+        // ============================================
+        function drawParticles() {
+            // Draw ambient dust
+            ambientDust.forEach(d => {
+                const alpha = d.baseAlpha * (0.5 + 0.5 * Math.sin(performance.now() * d.speed * 3));
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(212, 180, 100, ${alpha})`;
+                ctx.fill();
+
+                // Subtle glow
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(212, 168, 83, ${alpha * 0.2})`;
+                ctx.fill();
+            });
+
+            // Draw trail particles
+            trailParticles.forEach(p => {
+                const lifeRatio = p.life / p.maxLife;
+                const alpha = lifeRatio * 0.6;
+                const size = p.size * (0.3 + lifeRatio * 0.7);
+
+                // Core
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${p.hue}, 70%, 65%, ${alpha})`;
+                ctx.fill();
+
+                // Glow
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${p.hue}, 70%, 65%, ${alpha * 0.2})`;
+                ctx.fill();
+            });
+        }
+
+        // ============================================
+        // State Management
+        // ============================================
+        function switchState(state) {
+            // Clear previous state
+            snitchContainer.classList.remove('whisper-sensing', 'pulse-flash', 'engravings-glow', 'fast-spin');
+            wingLeft.classList.remove('open', 'full-open');
+            wingRight.classList.remove('open', 'full-open');
+            wingOpen = false;
+            whisperUI.classList.remove('visible');
+            ripples.forEach(r => r.classList.remove('active'));
+
+            // Update button states
+            document.querySelectorAll('.debug-btn').forEach(b => b.classList.remove('active'));
+
+            if (state === 'reset') {
+                state = 'idle';
+            }
+
+            currentState = state;
+
+            switch (state) {
+                case 'idle':
+                    document.getElementById('btnIdle').classList.add('active');
+                    // Reset micro event timer
+                    nextMicroEvent = performance.now() + randomRange(5000, 10000);
+                    nextWingToggle = performance.now() + randomRange(1000, 3000);
+                    break;
+
+                case 'whisper':
+                    document.getElementById('btnWhisper').classList.add('active');
+                    triggerWhisper();
+                    break;
+
+                case 'call':
+                    document.getElementById('btnCall').classList.add('active');
+                    // TODO: Phase 2
+                    break;
+            }
+        }
+
+        function triggerWhisper() {
+            // Phase 1: Start tremor + rapid wing buzz
+            snitchContainer.classList.add('whisper-sensing');
+
+            // Show ripples
+            ripples.forEach(r => r.classList.add('active'));
+
+            // Phase 2: After 1.5s, show whisper UI
+            setTimeout(() => {
+                whisperUI.classList.add('visible');
+            }, 1500);
+        }
+
+        function dismissWhisper() {
+            switchState('idle');
+        }
+
+        function enterListening() {
+            // TODO: Phase 2 - listening mode
+            whisperUI.classList.remove('visible');
+            // For now, just go back to idle after a moment
+            setTimeout(() => switchState('idle'), 2000);
+        }
+
+        // ============================================
+        // Utilities
+        // ============================================
+        function randomRange(min, max) {
+            return min + Math.random() * (max - min);
+        }
+
+        function weightedRandom(items) {
+            const total = items.reduce((sum, i) => sum + i.weight, 0);
+            let r = Math.random() * total;
+            for (const item of items) {
+                r -= item.weight;
+                if (r <= 0) return item;
+            }
+            return items[items.length - 1];
+        }
+
+        // ============================================
+        // Start!
+        // ============================================
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
+
+</html>

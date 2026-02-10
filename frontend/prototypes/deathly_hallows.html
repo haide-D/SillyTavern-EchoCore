@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Patronus UI — Deathly Hallows Prototype</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="base.css">
+
+    <style>
+        /* ========================================
+           配色覆盖 → 金银双色调
+           ======================================== */
+        :root {
+            --proto-primary-rgb: 220, 195, 130;
+            --proto-accent-rgb: 123, 47, 190;
+            --proto-text-color: #D4B86A;
+
+            --proto-bg-spot-rgb: 45, 35, 18;
+            --proto-bg-base: #08081a;
+            --proto-bg-mid: #0c0c24;
+            --proto-bg-dark: #151530;
+            --proto-bg-end: #0a0a1c;
+
+            /* 圣器专属 */
+            --dh-gold: #D4A853;
+            --dh-gold-bright: #FFE4A0;
+            --dh-gold-rgb: 212, 168, 83;
+            --dh-silver: #C8C8E8;
+            --dh-silver-rgb: 200, 200, 232;
+        }
+
+        /* ========================================
+           圣器法阵容器
+           ======================================== */
+        .dh-container {
+            width: 72px;
+            height: 72px;
+            perspective: 800px;
+            filter: drop-shadow(0 0 18px rgba(var(--dh-gold-rgb), 0.2));
+            transition: filter 0.3s ease;
+        }
+
+        .dh-container:hover {
+            filter: drop-shadow(0 0 30px rgba(var(--dh-gold-rgb), 0.4));
+        }
+
+        /* 内层 — 3D漂浮 + 呼吸 */
+        .dh-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation:
+                dh-breathe 4.5s ease-in-out infinite,
+                dh-float-3d 7s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+
+        @keyframes dh-breathe {
+
+            0%,
+            100% {
+                transform: scale(0.96);
+                filter: brightness(0.88);
+            }
+
+            50% {
+                transform: scale(1.04);
+                filter: brightness(1.12);
+            }
+        }
+
+        @keyframes dh-float-3d {
+
+            0%,
+            100% {
+                transform: scale(0.96) rotateY(-4deg) rotateX(2deg);
+            }
+
+            25% {
+                transform: scale(1.0) rotateY(3deg) rotateX(-2deg);
+            }
+
+            50% {
+                transform: scale(1.04) rotateY(5deg) rotateX(2deg);
+            }
+
+            75% {
+                transform: scale(1.0) rotateY(-2deg) rotateX(-3deg);
+            }
+        }
+
+        /* ========================================
+           死亡圣器 SVG
+           ======================================== */
+        .dh-svg {
+            width: 56px;
+            height: 56px;
+            overflow: visible;
+        }
+
+        /* --- 外圈：符文轨道环 --- */
+        .dh-orbit-outer {
+            fill: none;
+            stroke: rgba(var(--dh-gold-rgb), 0.35);
+            stroke-width: 0.6;
+            stroke-dasharray: 8 12 3 12;
+            animation: orbit-spin 25s linear infinite;
+            transform-origin: 28px 28px;
+        }
+
+        .dh-orbit-mid {
+            fill: none;
+            stroke: rgba(var(--dh-silver-rgb), 0.2);
+            stroke-width: 0.4;
+            stroke-dasharray: 4 8 2 8;
+            animation: orbit-spin-reverse 18s linear infinite;
+            transform-origin: 28px 28px;
+        }
+
+        @keyframes orbit-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes orbit-spin-reverse {
+            to {
+                transform: rotate(-360deg);
+            }
+        }
+
+        /* --- 符文标记环（SVG 路径几何符号） --- */
+        .dh-rune-ring {
+            transform-origin: 28px 28px;
+            animation: orbit-spin 30s linear infinite;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .dh-rune-ring .rune-glyph {
+            fill: none;
+            stroke: rgba(var(--dh-gold-rgb), 0.6);
+            stroke-width: 0.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.4));
+        }
+
+        .dh-rune-ring .rune-dot {
+            fill: rgba(var(--dh-gold-rgb), 0.5);
+        }
+
+        /* Hover 时展现符文环 */
+        .dh-container:hover .dh-rune-ring {
+            opacity: 1;
+        }
+
+        /* --- 三角形（隐形斗篷） --- */
+        .dh-triangle {
+            fill: none;
+            stroke: var(--dh-gold);
+            stroke-width: 1.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.85;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 0;
+            animation: triangle-flow 5s linear infinite;
+            filter: drop-shadow(0 0 3px rgba(var(--dh-gold-rgb), 0.5));
+        }
+
+        @keyframes triangle-flow {
+            0% {
+                stroke-dashoffset: 0;
+            }
+
+            100% {
+                stroke-dashoffset: -200;
+            }
+        }
+
+        /* --- 圆（复活石） --- */
+        .dh-circle {
+            fill: none;
+            stroke: var(--dh-silver);
+            stroke-width: 1;
+            opacity: 0.7;
+            stroke-dasharray: 90 30;
+            stroke-dashoffset: 0;
+            animation: circle-flow 4s linear infinite;
+            filter: drop-shadow(0 0 2px rgba(var(--dh-silver-rgb), 0.4));
+        }
+
+        @keyframes circle-flow {
+            to {
+                stroke-dashoffset: -120;
+            }
+        }
+
+        /* --- 竖线（老魔杖） --- */
+        .dh-line {
+            stroke: var(--dh-gold-bright);
+            stroke-width: 1;
+            stroke-linecap: round;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 4px rgba(var(--dh-gold-rgb), 0.6));
+            animation: line-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes line-pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                stroke-width: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+                stroke-width: 1.3;
+            }
+        }
+
+        /* --- 核心光点 --- */
+        .dh-core {
+            fill: var(--dh-gold-bright);
+            opacity: 0.9;
+            animation: core-glow 2.5s ease-in-out infinite;
+        }
+
+        @keyframes core-glow {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                r: 1.5;
+            }
+
+            50% {
+                opacity: 1;
+                r: 2.5;
+            }
+        }
+
+        /* --- 交叉点小光点 --- */
+        .dh-node {
+            fill: var(--dh-gold);
+            opacity: 0.6;
+        }
+
+        /* ========================================
+           辉光层
+           ======================================== */
+        .dh-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow:
+                0 0 15px 4px rgba(var(--dh-gold-rgb), 0.2),
+                0 0 35px 8px rgba(var(--dh-gold-rgb), 0.1),
+                0 0 55px 12px rgba(var(--dh-gold-rgb), 0.05);
+            animation: dh-glow-pulse 4.5s ease-in-out infinite;
+        }
+
+        @keyframes dh-glow-pulse {
+
+            0%,
+            100% {
+                box-shadow:
+                    0 0 12px 3px rgba(var(--dh-gold-rgb), 0.15),
+                    0 0 28px 6px rgba(var(--dh-gold-rgb), 0.08);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 20px 6px rgba(var(--dh-gold-rgb), 0.35),
+                    0 0 45px 12px rgba(var(--dh-gold-rgb), 0.18),
+                    0 0 65px 18px rgba(var(--dh-gold-rgb), 0.08);
+            }
+        }
+
+        .dh-container:hover .dh-glow {
+            box-shadow:
+                0 0 25px 8px rgba(var(--dh-gold-rgb), 0.4),
+                0 0 50px 15px rgba(var(--dh-gold-rgb), 0.2),
+                0 0 75px 20px rgba(var(--dh-gold-rgb), 0.1);
+        }
+
+        /* 投影光斑 */
+        .dh-shadow {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 6px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(var(--dh-gold-rgb), 0.15), transparent 70%);
+            pointer-events: none;
+            animation: dh-shadow-breathe 4.5s ease-in-out infinite;
+        }
+
+        @keyframes dh-shadow-breathe {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                width: 25px;
+            }
+
+            50% {
+                opacity: 1;
+                width: 32px;
+            }
+        }
+
+        /* ========================================
+           中景光圈（偶现）
+           ======================================== */
+        .dh-aura {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            pointer-events: none;
+            border: 1px solid transparent;
+            background: radial-gradient(circle, transparent 40%,
+                    rgba(var(--dh-gold-rgb), 0.04) 60%, transparent 75%);
+            opacity: 0;
+            animation: dh-aura-flash 10s ease-in-out infinite;
+        }
+
+        @keyframes dh-aura-flash {
+
+            0%,
+            78%,
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+
+            83%,
+            93% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* ========================================
+           微事件
+           ======================================== */
+
+        /* 整体脉冲 */
+        .dh-inner.surge .dh-svg {
+            filter: drop-shadow(0 0 12px rgba(var(--dh-gold-rgb), 0.8)) drop-shadow(0 0 25px rgba(var(--dh-gold-rgb), 0.4));
+            transition: filter 0.2s ease;
+        }
+
+        /* 图案闪变 — 三角形金光一闪 */
+        .dh-inner.flash .dh-triangle {
+            stroke: var(--dh-gold-bright);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 8px rgba(255, 228, 160, 0.9));
+            transition: all 0.15s ease;
+        }
+
+        .dh-inner.flash .dh-circle {
+            stroke: var(--dh-gold-bright);
+            opacity: 1;
+            filter: drop-shadow(0 0 6px rgba(255, 228, 160, 0.7));
+            transition: all 0.15s ease;
+        }
+
+        /* 旋转微震 */
+        .dh-inner.micro-spin {
+            animation: dh-breathe 4.5s ease-in-out infinite,
+                dh-float-3d 7s ease-in-out infinite,
+                dh-micro-rotate 0.6s ease-in-out;
+        }
+
+        @keyframes dh-micro-rotate {
+
+            0%,
+            100% {
+                rotate: 0deg;
+            }
+
+            50% {
+                rotate: 12deg;
+            }
+        }
+
+        /* ========================================
+           低语态
+           ======================================== */
+        .dh-container.whisper-sensing .dh-triangle {
+            stroke: #9B5DE5;
+            filter: drop-shadow(0 0 4px rgba(123, 47, 190, 0.6));
+            animation: triangle-flow 3s linear infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-circle {
+            stroke: #7B2FBE;
+            filter: drop-shadow(0 0 3px rgba(74, 0, 224, 0.5));
+            animation: circle-flow 2.5s linear infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-line {
+            stroke: #B388FF;
+            animation: line-pulse 1.5s ease-in-out infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-glow {
+            box-shadow:
+                0 0 15px 4px rgba(var(--proto-accent-rgb), 0.3),
+                0 0 35px 8px rgba(74, 0, 224, 0.15);
+            animation: dh-glow-whisper 1.8s ease-in-out infinite;
+        }
+
+        @keyframes dh-glow-whisper {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px 3px rgba(var(--proto-accent-rgb), 0.2),
+                    0 0 25px 6px rgba(74, 0, 224, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 0 22px 6px rgba(var(--proto-accent-rgb), 0.45),
+                    0 0 45px 12px rgba(74, 0, 224, 0.25);
+            }
+        }
+
+        .dh-container.whisper-sensing .dh-orbit-outer {
+            stroke: rgba(var(--proto-accent-rgb), 0.4);
+            animation: orbit-spin 12s linear infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-orbit-mid {
+            stroke: rgba(74, 0, 224, 0.3);
+            animation: orbit-spin-reverse 9s linear infinite;
+        }
+
+        /* 低语态展现符文环（紫色） */
+        .dh-container.whisper-sensing .dh-rune-ring {
+            opacity: 1;
+            animation: orbit-spin 15s linear infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-rune-ring .rune-glyph {
+            stroke: rgba(155, 93, 229, 0.7);
+            filter: drop-shadow(0 0 3px rgba(123, 47, 190, 0.5));
+        }
+
+        .dh-container.whisper-sensing .dh-rune-ring .rune-dot {
+            fill: rgba(155, 93, 229, 0.6);
+        }
+
+        /* ========================================
+           来电态
+           ======================================== */
+        .dh-container.incoming-call .dh-inner {
+            animation: dh-breathe 1.2s ease-in-out infinite,
+                dh-incoming-shake 0.12s linear infinite alternate;
+        }
+
+        @keyframes dh-incoming-shake {
+            0% {
+                translate: -1px -0.5px;
+            }
+
+            100% {
+                translate: 1px 0.5px;
+            }
+        }
+
+        .dh-container.incoming-call .dh-triangle {
+            stroke: #fff;
+            stroke-width: 1.8;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 20px rgba(var(--dh-gold-rgb), 0.5));
+            animation: triangle-flow 2s linear infinite;
+        }
+
+        .dh-container.incoming-call .dh-circle {
+            stroke: var(--dh-gold-bright);
+            opacity: 1;
+            stroke-width: 1.5;
+            filter: drop-shadow(0 0 6px rgba(var(--dh-gold-rgb), 0.8));
+            animation: circle-flow 1.5s linear infinite;
+        }
+
+        .dh-container.incoming-call .dh-line {
+            stroke: #fff;
+            stroke-width: 1.5;
+            opacity: 1;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+            animation: line-pulse 0.8s ease-in-out infinite;
+        }
+
+        .dh-container.incoming-call .dh-glow {
+            animation: dh-glow-call 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes dh-glow-call {
+            0% {
+                box-shadow: 0 0 15px 5px rgba(var(--dh-gold-rgb), 0.4),
+                    0 0 35px 10px rgba(var(--dh-gold-rgb), 0.2);
+            }
+
+            100% {
+                box-shadow: 0 0 30px 10px rgba(232, 232, 255, 0.7),
+                    0 0 60px 20px rgba(232, 232, 255, 0.3),
+                    0 0 90px 30px rgba(var(--dh-gold-rgb), 0.15);
+            }
+        }
+
+        .dh-container.incoming-call .dh-orbit-outer {
+            stroke: rgba(255, 228, 160, 0.5);
+            animation: orbit-spin 8s linear infinite;
+        }
+
+        .dh-container.incoming-call .dh-orbit-mid {
+            stroke: rgba(var(--dh-silver-rgb), 0.4);
+            animation: orbit-spin-reverse 5s linear infinite;
+        }
+
+        /* 来电态展现符文环（明亮金白） */
+        .dh-container.incoming-call .dh-rune-ring {
+            opacity: 1;
+            animation: orbit-spin 10s linear infinite;
+        }
+
+        .dh-container.incoming-call .dh-rune-ring .rune-glyph {
+            stroke: rgba(255, 235, 180, 0.8);
+            filter: drop-shadow(0 0 4px rgba(255, 228, 160, 0.7));
+        }
+
+        .dh-container.incoming-call .dh-rune-ring .rune-dot {
+            fill: rgba(255, 235, 180, 0.7);
+        }
+
+        .dh-container.incoming-call .dh-core {
+            fill: #fff;
+            animation: core-glow 0.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="title-watermark">Patronus UI — Deathly Hallows</div>
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ====== 死亡圣器法阵 ====== -->
+    <div class="proto-element dh-container" id="dhContainer">
+        <div class="dh-inner" id="dhInner">
+            <div class="dh-glow"></div>
+            <div class="dh-aura"></div>
+
+            <svg class="dh-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                <!-- 外圈符文轨道 -->
+                <circle class="dh-orbit-outer" cx="28" cy="28" r="26" />
+                <circle class="dh-orbit-mid" cx="28" cy="28" r="23" />
+
+                <!-- 符文标记环 — SVG几何符号（默认隐藏，交互时展现） -->
+                <g class="dh-rune-ring">
+                    <!-- 外圈轨道 -->
+                    <circle cx="28" cy="28" r="27" fill="none" stroke="rgba(var(--dh-gold-rgb), 0.12)"
+                        stroke-width="0.3" />
+
+                    <!-- 8个位置的几何符文标记 -->
+                    <!-- 上：竖线 + 角 -->
+                    <path class="rune-glyph" d="M28,1 L28,5 M26,2.5 L28,1 L30,2.5" />
+                    <!-- 右上：菱形 -->
+                    <path class="rune-glyph" d="M46,8 L48,10 L46,12 L44,10 Z" />
+                    <!-- 右：交叉 -->
+                    <path class="rune-glyph" d="M53,27 L55,29 M55,27 L53,29" />
+                    <circle class="rune-dot" cx="54" cy="28" r="0.6" />
+                    <!-- 右下：三角 -->
+                    <path class="rune-glyph" d="M46,46 L48,43 L50,46" />
+                    <!-- 下：双竖线 -->
+                    <path class="rune-glyph" d="M27,51 L27,55 M29,51 L29,55" />
+                    <circle class="rune-dot" cx="28" cy="53" r="0.6" />
+                    <!-- 左下：角钩 -->
+                    <path class="rune-glyph" d="M10,46 L8,43 L10,43 M8,46 L8,43" />
+                    <!-- 左：Z形 -->
+                    <path class="rune-glyph" d="M1,27 L4,27 L1,29 L4,29" />
+                    <circle class="rune-dot" cx="2.5" cy="28" r="0.6" />
+                    <!-- 左上：倒V -->
+                    <path class="rune-glyph" d="M8,12 L10,9 L12,12" />
+                    <circle class="rune-dot" cx="10" cy="10" r="0.6" />
+                </g>
+
+                <!-- ===== 死亡圣器标志 ===== -->
+
+                <!-- 三角形（隐形斗篷） -->
+                <path class="dh-triangle" d="M28,10 L42,44 L14,44 Z" />
+
+                <!-- 圆（复活石）— 内切于三角形 -->
+                <circle class="dh-circle" cx="28" cy="32" r="10.5" />
+
+                <!-- 竖线（老魔杖） -->
+                <line class="dh-line" x1="28" y1="10" x2="28" y2="44" />
+
+                <!-- 核心光点 — 三条线交汇处 -->
+                <circle class="dh-core" cx="28" cy="28" r="2" />
+
+                <!-- 三角形顶点光点 -->
+                <circle class="dh-node" cx="28" cy="10" r="1.2">
+                    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinite" />
+                </circle>
+                <circle class="dh-node" cx="42" cy="44" r="1">
+                    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3.5s" repeatCount="indefinite" />
+                </circle>
+                <circle class="dh-node" cx="14" cy="44" r="1">
+                    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
+                </circle>
+
+                <!-- 圆与三角形交点的微光 -->
+                <circle class="dh-node" cx="21.5" cy="40" r="0.8" opacity="0.4">
+                    <animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.5s" repeatCount="indefinite" />
+                </circle>
+                <circle class="dh-node" cx="34.5" cy="40" r="0.8" opacity="0.4">
+                    <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3.2s" repeatCount="indefinite" />
+                </circle>
+
+            </svg>
+
+            <div class="dh-shadow"></div>
+            <div class="whisper-ripple" id="ripple1"></div>
+            <div class="whisper-ripple" id="ripple2"></div>
+            <div class="whisper-ripple" id="ripple3"></div>
+        </div>
+    </div>
+
+    <!-- 低语 UI -->
+    <div class="whisper-ui" id="whisperUI">
+        <div class="whisper-text">「死亡圣器感应到远方的低语……」</div>
+        <div class="whisper-buttons">
+            <button class="whisper-btn primary" onclick="enterListening()">Legilimens 👁️</button>
+            <button class="whisper-btn dismiss" onclick="dismissWhisper()">Silencio 🤫</button>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo">FPS: --</div>
+
+    <div class="debug-bar">
+        <button class="debug-btn active" id="btnIdle" onclick="switchState('idle')">⚡ 待机</button>
+        <button class="debug-btn" id="btnWhisper" onclick="switchState('whisper')">🔮 低语触发</button>
+        <button class="debug-btn" id="btnCall" onclick="switchState('call')">🦌 来电</button>
+        <button class="debug-btn" id="btnReset" onclick="switchState('reset')">↻ 重置</button>
+    </div>
+
+    <script src="base.js"></script>
+
+    <script>
+        const dhInner = document.getElementById('dhInner');
+        const dhContainer = document.getElementById('dhContainer');
+
+        const proto = new PrototypeBase({
+            elementId: 'dhContainer',
+            elementSize: 72,
+
+            colors: {
+                dustRGB: '200, 180, 120',
+                dustGlowRGB: '212, 168, 83',
+                trailHue: [38, 52],
+                trailSat: 55,
+                trailLight: 70,
+                whisperHue: [265, 285],
+                whisperSat: 60,
+                whisperLight: 55,
+                goldHue: [40, 50],
+                goldSat: 70,
+                goldLight: 68,
+            },
+
+            float: {
+                baseX: 0.78,
+                baseY: 0.50,
+            },
+
+            particles: {
+                trailMaxParticles: 22,
+                trailEmitChance: 0.22,
+                trailLifespan: 3200,
+                ambientParticles: 6,
+            },
+
+            microEvents: [
+                {
+                    name: 'micro-spin', weight: 30,
+                    fn(done, p) {
+                        dhInner.classList.add('micro-spin');
+                        p.burstParticles(5, 'gold');
+                        setTimeout(() => { dhInner.classList.remove('micro-spin'); done(); }, 700);
+                    }
+                },
+                {
+                    name: 'surge', weight: 30,
+                    fn(done, p) {
+                        dhInner.classList.add('surge');
+                        p.burstParticles(6, 'gold');
+                        setTimeout(() => { dhInner.classList.remove('surge'); done(); }, 800);
+                    }
+                },
+                {
+                    name: 'flash', weight: 25,
+                    fn(done, p) {
+                        dhInner.classList.add('flash');
+                        p.burstParticles(4, 'gold');
+                        setTimeout(() => { dhInner.classList.remove('flash'); done(); }, 900);
+                    }
+                },
+                {
+                    name: 'aura-burst', weight: 15,
+                    fn(done, p) {
+                        p.burstParticles(10);
+                        setTimeout(done, 600);
+                    }
+                },
+            ],
+
+            onEnterState(state) {
+                if (state === 'whisper') dhContainer.classList.add('whisper-sensing');
+                if (state === 'call') dhContainer.classList.add('incoming-call');
+            },
+            onLeaveState(state) {
+                dhContainer.classList.remove('whisper-sensing', 'incoming-call');
+                dhInner.classList.remove('micro-spin', 'surge', 'flash');
+            },
+        });
+
+        proto.start();
+    </script>
+
+</body>
+
+</html>
