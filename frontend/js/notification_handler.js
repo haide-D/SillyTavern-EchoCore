@@ -10,7 +10,6 @@
  */
 
 import { PhoneCallAPIClient } from './phone_call_api_client.js';
-import { themeManager } from './theme_manager.js';
 
 export class NotificationHandler {
     /**
@@ -56,8 +55,13 @@ export class NotificationHandler {
 
         console.log('[NotificationHandler] ✅ 来电数据已存储到 window.TTS_IncomingCall:', window.TTS_IncomingCall);
 
-        // 触发悬浮球震动
-        this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...`);
+        // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）
+        if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
+            window.TTS_ThemeEngine.notify('incoming_call', window.TTS_IncomingCall);
+        } else {
+            // 降级: 直接触发悬浮球动画
+            this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...`);
+        }
 
         // 显示通知
         this.showNotification(`📞 ${actualCaller} 来电!`, 'info');
@@ -94,11 +98,16 @@ export class NotificationHandler {
 
         console.log('[NotificationHandler] ✅ 对话追踪数据已存储到 window.TTS_EavesdropData');
 
-        // 触发悬浮球闪烁 (使用不同的样式)
-        this.triggerFloatingBallAnimation(
-            'eavesdrop-available',
-            notification_text || `${speakers.join(' 和 ')} 正在私聊...`
-        );
+        // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）
+        if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
+            window.TTS_ThemeEngine.notify('eavesdrop_ready', window.TTS_EavesdropData);
+        } else {
+            // 降级: 直接触发悬浮球动画
+            this.triggerFloatingBallAnimation(
+                'eavesdrop-available',
+                notification_text || `${speakers.join(' 和 ')} 正在私聊...`
+            );
+        }
 
         // 显示通知
         this.showNotification(notification_text || `🎧 检测到 ${speakers.join(' 和 ')} 正在私聊`, 'info');
@@ -147,23 +156,36 @@ export class NotificationHandler {
      */
     static triggerFloatingBallAnimation(animationClass, tooltipText) {
         const $managerBtn = $('#tts-manager-btn');  // 桌面版
+        const $mobileTrigger = $('#tts-mobile-trigger');  // 移动版
 
-        console.log('[NotificationHandler] 🔍 触发通知动画:', animationClass);
+        console.log('[NotificationHandler] 🔍 查找悬浮球元素:');
+        console.log('  - 桌面版 (#tts-manager-btn):', $managerBtn.length);
+        console.log('  - 移动版 (#tts-mobile-trigger):', $mobileTrigger.length);
+
+        let triggered = false;
 
         // 桌面版悬浮球
         if ($managerBtn.length) {
             $managerBtn.addClass(animationClass);
             $managerBtn.attr('title', tooltipText);
-            console.log('[NotificationHandler] ✅ 桌面版悬浮球动画已触发');
+            console.log('[NotificationHandler] ✅ 桌面版悬浮球动画已触发, 当前class:', $managerBtn.attr('class'));
+            triggered = true;
         }
 
-        // ✨ 魔法符文通知
-        if (animationClass === 'incoming-call') {
-            themeManager.setIncomingCall(true);
-            console.log('[NotificationHandler] ✨ 符文已进入来电状态');
-        } else if (animationClass === 'eavesdrop-available') {
-            themeManager.setEavesdropAvailable(true);
-            console.log('[NotificationHandler] ✨ 符文已进入低语感应状态');
+        // 移动版悬浮球
+        if ($mobileTrigger.length) {
+            // 移除拖动时可能残留的内联样式,确保动画正常
+            $mobileTrigger[0].style.removeProperty('animation');
+            $mobileTrigger[0].style.removeProperty('transform');
+            $mobileTrigger.addClass(animationClass);
+            $mobileTrigger.attr('title', tooltipText);
+            console.log('[NotificationHandler] ✅ 移动版悬浮球动画已触发, 当前class:', $mobileTrigger.attr('class'));
+            triggered = true;
+        }
+
+        if (!triggered) {
+            console.warn('[NotificationHandler] ⚠️ 悬浮球元素不存在,无法触发动画');
+            console.warn('[NotificationHandler] 💡 提示:请确保 TTS_UI 已初始化并创建了悬浮球');
         }
     }
 

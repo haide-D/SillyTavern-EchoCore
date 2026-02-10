@@ -20,6 +20,7 @@ import { TTS_UI } from './frontend/js/ui_main.js';
 import './frontend/js/ui_dashboard.js';  // 导入 ui_dashboard.js 以加载事件绑定函数
 import { LLM_Client } from './frontend/js/llm_client.js';
 import { TTS_Mobile } from './frontend/js/mobile_ui.js';
+import { ThemeEngine } from './frontend/js/theme_engine.js';
 import { WebSocketManager } from './frontend/js/websocket_manager.js';
 import { ChatEventListener } from './frontend/js/chat_event_listener.js';
 
@@ -61,6 +62,7 @@ window.TTS_Scheduler = TTS_Scheduler;
 window.TTS_Events = TTS_Events;
 window.TTS_Templates = TTS_Templates;
 window.LLM_Client = LLM_Client;  // 暴露 LLM_Client 供 mobile_ui.js 使用
+window.TTS_ThemeEngine = ThemeEngine;  // 暴露 ThemeEngine 供通知处理器等使用
 // 不要覆盖整个 window.TTS_UI,只添加 Templates
 // ui_main.js 的 IIFE 已经初始化了 window.TTS_UI.CTX
 if (!window.TTS_UI.Templates) {
@@ -121,7 +123,7 @@ function initPlugin() {
             style.id = 'tts-mobile-force-style';
 
             const extraCss = `
-                #hp-rune-idle { z-index: 2147483647 !important; }
+                #tts-mobile-trigger { z-index: 2147483647 !important; }
                 #tts-mobile-root { z-index: 2147483647 !important; }
             `;
 
@@ -160,8 +162,6 @@ function initPlugin() {
         .catch(err => {
             console.error("❌ [TTS] 手机 App 样式 CSS 加载失败:", err);
         });
-
-    // 注: 主题 CSS (如 hp_rune.css) 由 ThemeManager 按需加载,不再硬编码
 
     // 4. 定义核心回调函数 (传给 UI 模块使用)
     async function refreshData() {
@@ -402,9 +402,11 @@ function showEmergencyConfig(currentApi) {
 console.log("🚀 [TTS] 正在初始化插件...");
 initPlugin();
 
-// 初始化手机端 UI
+// 初始化主题引擎（异步）
 if (TTS_Mobile && TTS_Mobile.init) {
-    TTS_Mobile.init();
+    TTS_Mobile.init().catch(err => {
+        console.error('❌ [TTS] 主题引擎初始化失败:', err);
+    });
 }
 
 // 初始化聊天事件监听器 (延迟 2 秒,确保 SillyTavern 完全加载)

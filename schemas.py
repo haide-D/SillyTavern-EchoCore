@@ -22,3 +22,6 @@ class SettingsRequest(BaseModel):
 
 class StyleRequest(BaseModel):
     style: str
+
+class ThemeRequest(BaseModel):
+    theme_id: str

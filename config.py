@@ -165,6 +165,18 @@ def init_settings():
     else:
         if deep_merge(analysis_engine_defaults, settings["analysis_engine"]):
             dirty = True
+
+    # ui_theme 默认配置 - 沉浸式主题引擎
+    ui_theme_defaults = {
+        "current": "default",
+        "preferences": {}
+    }
+    if "ui_theme" not in settings or not isinstance(settings["ui_theme"], dict):
+        settings["ui_theme"] = ui_theme_defaults
+        dirty = True
+    else:
+        if deep_merge(ui_theme_defaults, settings["ui_theme"]):
+            dirty = True
     
     # 迁移旧配置（兼容性处理）
     if "analysis_llm" in settings:

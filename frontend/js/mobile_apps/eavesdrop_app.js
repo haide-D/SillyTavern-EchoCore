@@ -6,7 +6,6 @@
 import { ChatInjector } from '../chat_injector.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime } from './shared/utils.js';
-import { themeManager } from '../theme_manager.js';
 
 /**
  * 渲染对话追踪 App
@@ -444,7 +443,7 @@ function showListeningUI(container, eavesdropData) {
 function clearEavesdropState() {
     delete window.TTS_EavesdropData;
     $('#tts-manager-btn').removeClass('eavesdrop-available');
-    themeManager.setEavesdropAvailable(false);
+    $('#tts-mobile-trigger').removeClass('eavesdrop-available');
 }
 
 /**
