@@ -267,7 +267,7 @@ class PrototypeBase {
     /** 发射轨道粒子 — 沿几何边缘/圆弧滑行 */
     _emitOrbitParticle(colorHint = 'default') {
         if (!this.emitters) return;
-        if (this.orbitParticles.length >= 15) return;
+        if (this.orbitParticles.length >= 8) return;
 
         const isWhisper = this.currentState === 'whisper' || colorHint === 'whisper';
         const isGold = colorHint === 'gold';
@@ -339,7 +339,7 @@ class PrototypeBase {
 
     /** 发射螺旋粒子 — 低语态专用 */
     _emitSpiralParticle() {
-        if (this.spiralParticles.length >= 8) return;
+        if (this.spiralParticles.length >= 5) return;
 
         const lifespan = this._randomRange(2500, 4000);
         this.spiralParticles.push({
@@ -360,7 +360,7 @@ class PrototypeBase {
 
     /** 发射辐射线 — 来电态专用 */
     _emitRadiantLine() {
-        if (this.radiantLines.length >= 6) return;
+        if (this.radiantLines.length >= 4) return;
 
         const angle = Math.random() * Math.PI * 2;
         const lifespan = this._randomRange(400, 800);
@@ -509,16 +509,16 @@ class PrototypeBase {
     _emitParticlesForState(timestamp) {
         const hasEmitters = !!this.emitters;
 
-        // 拖尾粒子（所有状态）
-        if (Math.random() < this.config.trailEmitChance * 0.6) {
+        // 拖尾粒子（所有状态 — 低频率）
+        if (Math.random() < this.config.trailEmitChance * 0.4) {
             this.emitTrailParticle();
         }
 
         // 轨道粒子（有发射器时）
         if (hasEmitters) {
-            const orbitChance = this.currentState === 'call' ? 0.08
-                : this.currentState === 'whisper' ? 0.05
-                    : 0.025;
+            const orbitChance = this.currentState === 'call' ? 0.04
+                : this.currentState === 'whisper' ? 0.03
+                    : 0.015;
             if (Math.random() < orbitChance) {
                 this._emitOrbitParticle(
                     this.currentState === 'whisper' ? 'whisper'
@@ -529,24 +529,24 @@ class PrototypeBase {
 
         // 螺旋粒子（低语态专用）
         if (this.currentState === 'whisper' && hasEmitters) {
-            if (Math.random() < 0.04) {
+            if (Math.random() < 0.025) {
                 this._emitSpiralParticle();
             }
         }
 
         // 辐射线（来电态专用）
         if (this.currentState === 'call' && hasEmitters) {
-            if (Math.random() < 0.06) {
+            if (Math.random() < 0.04) {
                 this._emitRadiantLine();
             }
         }
 
         // 低语态额外拖尾
-        if (this.currentState === 'whisper' && Math.random() < 0.3) {
+        if (this.currentState === 'whisper' && Math.random() < 0.15) {
             this.emitTrailParticle(false, 'whisper');
         }
         // 来电态额外拖尾
-        if (this.currentState === 'call' && Math.random() < 0.4) {
+        if (this.currentState === 'call' && Math.random() < 0.2) {
             this.emitTrailParticle(false, 'gold');
         }
     }
