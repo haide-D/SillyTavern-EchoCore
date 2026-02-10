@@ -137,14 +137,30 @@
             }
         }
 
-        /* --- 符文标记（外圈上的小符号） --- */
-        .dh-rune-mark {
-            fill: rgba(var(--dh-gold-rgb), 0.8);
-            font-size: 8px;
-            font-family: 'Cinzel', serif;
-            animation: orbit-spin 25s linear infinite;
+        /* --- 符文标记环（SVG 路径几何符号） --- */
+        .dh-rune-ring {
             transform-origin: 28px 28px;
+            animation: orbit-spin 30s linear infinite;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .dh-rune-ring .rune-glyph {
+            fill: none;
+            stroke: rgba(var(--dh-gold-rgb), 0.6);
+            stroke-width: 0.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
             filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.4));
+        }
+
+        .dh-rune-ring .rune-dot {
+            fill: rgba(var(--dh-gold-rgb), 0.5);
+        }
+
+        /* Hover 时展现符文环 */
+        .dh-container:hover .dh-rune-ring {
+            opacity: 1;
         }
 
         /* --- 三角形（隐形斗篷） --- */
@@ -441,6 +457,21 @@
             animation: orbit-spin-reverse 9s linear infinite;
         }
 
+        /* 低语态展现符文环（紫色） */
+        .dh-container.whisper-sensing .dh-rune-ring {
+            opacity: 1;
+            animation: orbit-spin 15s linear infinite;
+        }
+
+        .dh-container.whisper-sensing .dh-rune-ring .rune-glyph {
+            stroke: rgba(155, 93, 229, 0.7);
+            filter: drop-shadow(0 0 3px rgba(123, 47, 190, 0.5));
+        }
+
+        .dh-container.whisper-sensing .dh-rune-ring .rune-dot {
+            fill: rgba(155, 93, 229, 0.6);
+        }
+
         /* ========================================
            来电态
            ======================================== */
@@ -509,6 +540,21 @@
             animation: orbit-spin-reverse 5s linear infinite;
         }
 
+        /* 来电态展现符文环（明亮金白） */
+        .dh-container.incoming-call .dh-rune-ring {
+            opacity: 1;
+            animation: orbit-spin 10s linear infinite;
+        }
+
+        .dh-container.incoming-call .dh-rune-ring .rune-glyph {
+            stroke: rgba(255, 235, 180, 0.8);
+            filter: drop-shadow(0 0 4px rgba(255, 228, 160, 0.7));
+        }
+
+        .dh-container.incoming-call .dh-rune-ring .rune-dot {
+            fill: rgba(255, 235, 180, 0.7);
+        }
+
         .dh-container.incoming-call .dh-core {
             fill: #fff;
             animation: core-glow 0.5s ease-in-out infinite;
@@ -533,16 +579,33 @@
                 <circle class="dh-orbit-outer" cx="28" cy="28" r="26" />
                 <circle class="dh-orbit-mid" cx="28" cy="28" r="23" />
 
-                <!-- 外圈上的符文标记 -->
-                <g class="dh-rune-mark">
-                    <text x="28" y="3.5" text-anchor="middle">ᚱ</text>
-                    <text x="52" y="30" text-anchor="middle">ᛉ</text>
-                    <text x="28" y="55" text-anchor="middle">ᚦ</text>
-                    <text x="4" y="30" text-anchor="middle">ᛋ</text>
-                    <text x="44" y="9" text-anchor="middle">ᚹ</text>
-                    <text x="44" y="49" text-anchor="middle">ᛗ</text>
-                    <text x="12" y="49" text-anchor="middle">ᚨ</text>
-                    <text x="12" y="9" text-anchor="middle">ᛏ</text>
+                <!-- 符文标记环 — SVG几何符号（默认隐藏，交互时展现） -->
+                <g class="dh-rune-ring">
+                    <!-- 外圈轨道 -->
+                    <circle cx="28" cy="28" r="27" fill="none" stroke="rgba(var(--dh-gold-rgb), 0.12)"
+                        stroke-width="0.3" />
+
+                    <!-- 8个位置的几何符文标记 -->
+                    <!-- 上：竖线 + 角 -->
+                    <path class="rune-glyph" d="M28,1 L28,5 M26,2.5 L28,1 L30,2.5" />
+                    <!-- 右上：菱形 -->
+                    <path class="rune-glyph" d="M46,8 L48,10 L46,12 L44,10 Z" />
+                    <!-- 右：交叉 -->
+                    <path class="rune-glyph" d="M53,27 L55,29 M55,27 L53,29" />
+                    <circle class="rune-dot" cx="54" cy="28" r="0.6" />
+                    <!-- 右下：三角 -->
+                    <path class="rune-glyph" d="M46,46 L48,43 L50,46" />
+                    <!-- 下：双竖线 -->
+                    <path class="rune-glyph" d="M27,51 L27,55 M29,51 L29,55" />
+                    <circle class="rune-dot" cx="28" cy="53" r="0.6" />
+                    <!-- 左下：角钩 -->
+                    <path class="rune-glyph" d="M10,46 L8,43 L10,43 M8,46 L8,43" />
+                    <!-- 左：Z形 -->
+                    <path class="rune-glyph" d="M1,27 L4,27 L1,29 L4,29" />
+                    <circle class="rune-dot" cx="2.5" cy="28" r="0.6" />
+                    <!-- 左上：倒V -->
+                    <path class="rune-glyph" d="M8,12 L10,9 L12,12" />
+                    <circle class="rune-dot" cx="10" cy="10" r="0.6" />
                 </g>
 
                 <!-- ===== 死亡圣器标志 ===== -->
