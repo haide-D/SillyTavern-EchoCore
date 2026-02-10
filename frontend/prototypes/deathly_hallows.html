@@ -699,9 +699,33 @@
 
             particles: {
                 trailMaxParticles: 22,
-                trailEmitChance: 0.22,
+                trailEmitChance: 0.18,
                 trailLifespan: 3200,
-                ambientParticles: 6,
+                ambientParticles: 8,
+            },
+
+            // ★ 几何发射器 — 死亡圣器轮廓
+            emitters: {
+                svgViewBox: 56,
+                // 三角形三条边（隐形斗篷轨道）
+                edges: [
+                    { from: [28, 10], to: [42, 44] },   // 左斜边
+                    { from: [42, 44], to: [14, 44] },   // 底边
+                    { from: [14, 44], to: [28, 10] },   // 右斜边
+                ],
+                // 复活石圆弧
+                arcs: [
+                    { cx: 28, cy: 32, r: 10.5 },
+                ],
+                // 关键交汇点（三顶点 + 两个圆/三角交点 + 核心光点）
+                vertices: [
+                    [28, 10],     // 三角形顶点
+                    [42, 44],     // 右下角
+                    [14, 44],     // 左下角
+                    [21.5, 40],   // 圆与左边交点
+                    [34.5, 40],   // 圆与右边交点
+                    [28, 28],     // 核心中心
+                ],
             },
 
             microEvents: [
@@ -709,7 +733,9 @@
                     name: 'micro-spin', weight: 30,
                     fn(done, p) {
                         dhInner.classList.add('micro-spin');
-                        p.burstParticles(5, 'gold');
+                        p.burstParticles(4, 'gold');
+                        // 同时触发轨道粒子
+                        for (let i = 0; i < 3; i++) p._emitOrbitParticle('gold');
                         setTimeout(() => { dhInner.classList.remove('micro-spin'); done(); }, 700);
                     }
                 },
@@ -717,7 +743,8 @@
                     name: 'surge', weight: 30,
                     fn(done, p) {
                         dhInner.classList.add('surge');
-                        p.burstParticles(6, 'gold');
+                        p.burstParticles(5, 'gold');
+                        for (let i = 0; i < 4; i++) p._emitOrbitParticle('gold');
                         setTimeout(() => { dhInner.classList.remove('surge'); done(); }, 800);
                     }
                 },
@@ -725,14 +752,16 @@
                     name: 'flash', weight: 25,
                     fn(done, p) {
                         dhInner.classList.add('flash');
-                        p.burstParticles(4, 'gold');
+                        p.burstParticles(3, 'gold');
+                        for (let i = 0; i < 2; i++) p._emitOrbitParticle('gold');
                         setTimeout(() => { dhInner.classList.remove('flash'); done(); }, 900);
                     }
                 },
                 {
                     name: 'aura-burst', weight: 15,
                     fn(done, p) {
-                        p.burstParticles(10);
+                        p.burstParticles(8, 'gold');
+                        for (let i = 0; i < 5; i++) p._emitOrbitParticle('gold');
                         setTimeout(done, 600);
                     }
                 },
