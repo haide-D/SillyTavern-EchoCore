@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 Patronus UI — Magic Rune Prototype</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap"
+        rel="stylesheet">
+
+    <!-- 共享基础样式 -->
+    <link rel="stylesheet" href="base.css">
+
+    <style>
+        /* ========================================
+           符文特有样式（仅差异部分）
+           ======================================== */
+
+        /* 符文容器 */
+        .rune-container {
+            width: 56px;
+            height: 56px;
+            perspective: 800px;
+            filter: drop-shadow(0 0 15px rgba(var(--proto-primary-rgb), 0.2));
+        }
+
+        .rune-container:hover {
+            filter: drop-shadow(0 0 25px rgba(var(--proto-primary-rgb), 0.4));
+        }
+
+        /* 符文内层 — 3D 漂浮 + 呼吸 */
+        .rune-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation:
+                rune-breathe 4s ease-in-out infinite,
+                rune-float-3d 6s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+
+        @keyframes rune-breathe {
+
+            0%,
+            100% {
+                transform: scale(0.97);
+                filter: brightness(0.85);
+            }
+
+            50% {
+                transform: scale(1.03);
+                filter: brightness(1.15);
+            }
+        }
+
+        @keyframes rune-float-3d {
+
+            0%,
+            100% {
+                transform: scale(0.97) rotateY(-5deg) rotateX(2deg) translateZ(0);
+            }
+
+            25% {
+                transform: scale(1.0) rotateY(3deg) rotateX(-3deg) translateZ(4px);
+            }
+
+            50% {
+                transform: scale(1.03) rotateY(5deg) rotateX(1deg) translateZ(8px);
+            }
+
+            75% {
+                transform: scale(1.0) rotateY(-3deg) rotateX(-2deg) translateZ(4px);
+            }
+        }
+
+        /* SVG 符文线条 */
+        .rune-svg {
+            width: 48px;
+            height: 48px;
+            filter: drop-shadow(0 0 8px rgba(var(--proto-primary-rgb), 0.6)) drop-shadow(0 0 20px rgba(var(--proto-primary-rgb), 0.3));
+        }
+
+        .rune-container:hover .rune-svg {
+            filter: drop-shadow(0 0 12px rgba(var(--proto-primary-rgb), 0.8)) drop-shadow(0 0 25px rgba(var(--proto-primary-rgb), 0.4));
+        }
+
+        .rune-svg .rune-line {
+            fill: none;
+            stroke: #E8E8FF;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.8;
+            stroke-dasharray: 120 60;
+            stroke-dashoffset: 0;
+            animation: rune-energy-flow 4s linear infinite;
+        }
+
+        .rune-svg .rune-line-inner {
+            fill: none;
+            stroke: #C0C0C0;
+            stroke-width: 0.8;
+            stroke-linecap: round;
+            opacity: 0.5;
+            stroke-dasharray: 40 80;
+            stroke-dashoffset: 0;
+            animation: rune-energy-flow-reverse 3s linear infinite;
+        }
+
+        .rune-svg .rune-core {
+            fill: #E8E8FF;
+            opacity: 0.9;
+            animation: rune-core-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes rune-energy-flow {
+            to {
+                stroke-dashoffset: -180;
+            }
+        }
+
+        @keyframes rune-energy-flow-reverse {
+            to {
+                stroke-dashoffset: 120;
+            }
+        }
+
+        @keyframes rune-core-pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                r: 2;
+            }
+
+            50% {
+                opacity: 1;
+                r: 3;
+            }
+        }
+
+        /* 银色辉光 */
+        .rune-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            pointer-events: none;
+            box-shadow:
+                0 0 15px 3px rgba(var(--proto-primary-rgb), 0.3),
+                0 0 30px 6px rgba(var(--proto-primary-rgb), 0.15),
+                0 0 50px 10px rgba(var(--proto-primary-rgb), 0.08);
+            animation: glow-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px 2px rgba(var(--proto-primary-rgb), 0.25),
+                    0 0 25px 5px rgba(var(--proto-primary-rgb), 0.12),
+                    0 0 40px 8px rgba(var(--proto-primary-rgb), 0.06);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 5px rgba(var(--proto-primary-rgb), 0.45),
+                    0 0 40px 10px rgba(var(--proto-primary-rgb), 0.25),
+                    0 0 60px 15px rgba(var(--proto-primary-rgb), 0.12);
+            }
+        }
+
+        .rune-container:hover .rune-glow {
+            box-shadow: 0 0 25px 6px rgba(var(--proto-primary-rgb), 0.5),
+                0 0 50px 12px rgba(var(--proto-primary-rgb), 0.25),
+                0 0 70px 18px rgba(var(--proto-primary-rgb), 0.12);
+        }
+
+        /* 中景光圈 */
+        .rune-aura {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 40%,
+                    rgba(var(--proto-primary-rgb), 0.06) 60%, transparent 75%);
+            opacity: 0;
+            animation: aura-flash 8s ease-in-out infinite;
+        }
+
+        @keyframes aura-flash {
+
+            0%,
+            80%,
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+
+            85%,
+            95% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* 投影光斑 */
+        .rune-shadow {
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(var(--proto-primary-rgb), 0.2), transparent 70%);
+            pointer-events: none;
+            animation: shadow-breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes shadow-breathe {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                width: 28px;
+            }
+
+            50% {
+                opacity: 1;
+                width: 34px;
+            }
+        }
+
+        /* --- 微事件 --- */
+        .rune-inner.micro-spin {
+            animation: rune-breathe 4s ease-in-out infinite,
+                rune-float-3d 6s ease-in-out infinite,
+                micro-spin-once 0.6s ease-in-out;
+        }
+
+        @keyframes micro-spin-once {
+
+            0%,
+            100% {
+                rotate: 0deg;
+            }
+
+            50% {
+                rotate: 15deg;
+            }
+        }
+
+        .rune-inner.pattern-flash .rune-svg {
+            animation: pattern-flash-anim 0.8s ease-in-out;
+        }
+
+        @keyframes pattern-flash-anim {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 8px rgba(var(--proto-primary-rgb), 0.6)) drop-shadow(0 0 20px rgba(var(--proto-primary-rgb), 0.3));
+            }
+
+            30%,
+            60% {
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.4)) brightness(1.5);
+            }
+        }
+
+        /* --- 来电激活态 --- */
+        .rune-container.incoming-call .rune-inner {
+            animation: rune-breathe 1s ease-in-out infinite,
+                rune-incoming-pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes rune-incoming-pulse {
+            from {
+                filter: brightness(1.0);
+                transform: scale(1.0);
+            }
+
+            to {
+                filter: brightness(1.8);
+                transform: scale(1.15);
+            }
+        }
+
+        .rune-container.incoming-call .rune-glow {
+            animation: glow-incoming 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-incoming {
+            from {
+                box-shadow: 0 0 15px 5px rgba(var(--proto-primary-rgb), 0.5),
+                    0 0 30px 10px rgba(var(--proto-primary-rgb), 0.3);
+            }
+
+            to {
+                box-shadow: 0 0 30px 10px rgba(232, 232, 255, 0.8),
+                    0 0 60px 20px rgba(232, 232, 255, 0.4),
+                    0 0 90px 30px rgba(232, 232, 255, 0.2);
+            }
+        }
+
+        /* --- 低语感应态 --- */
+        .rune-container.whisper-sensing .rune-svg .rune-line {
+            stroke: #7B2FBE;
+            animation: rune-energy-flow 2s linear infinite;
+        }
+
+        .rune-container.whisper-sensing .rune-svg .rune-line-inner {
+            stroke: #4A00E0;
+            opacity: 0.7;
+            animation: rune-energy-flow-reverse 1.5s linear infinite;
+        }
+
+        .rune-container.whisper-sensing .rune-glow {
+            box-shadow: 0 0 15px 3px rgba(var(--proto-accent-rgb), 0.4),
+                0 0 30px 6px rgba(74, 0, 224, 0.2);
+            animation: glow-whisper 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glow-whisper {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px 3px rgba(var(--proto-accent-rgb), 0.3),
+                    0 0 25px 5px rgba(74, 0, 224, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 6px rgba(var(--proto-accent-rgb), 0.5),
+                    0 0 40px 10px rgba(74, 0, 224, 0.3);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="title-watermark">Patronus UI — Rune</div>
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ====== 符文主体（唯一需要自定义的 HTML） ====== -->
+    <div class="proto-element rune-container" id="runeContainer">
+        <div class="rune-inner" id="runeInner">
+            <div class="rune-glow"></div>
+            <div class="rune-aura"></div>
+
+            <svg class="rune-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle class="rune-line" cx="24" cy="24" r="20" />
+                <circle class="rune-line-inner" cx="24" cy="24" r="14" />
+                <path class="rune-line" d="M24 4 L24 44" />
+                <path class="rune-line" d="M4 24 L44 24" />
+                <path class="rune-line-inner" d="M10 10 L38 38" />
+                <path class="rune-line-inner" d="M38 10 L10 38" />
+                <path class="rune-line" d="M24 8 L40 36 L8 36 Z" />
+                <path class="rune-line-inner" d="M24 40 L8 12 L40 12 Z" />
+                <path class="rune-line-inner" d="M12 24 Q18 18 24 24 Q30 30 36 24" />
+                <path class="rune-line-inner" d="M24 12 Q30 18 24 24 Q18 30 24 36" />
+                <circle class="rune-core" cx="24" cy="24" r="2.5" />
+                <circle class="rune-core" cx="24" cy="4" r="1.5" />
+                <circle class="rune-core" cx="24" cy="44" r="1.5" />
+                <circle class="rune-core" cx="4" cy="24" r="1.5" />
+                <circle class="rune-core" cx="44" cy="24" r="1.5" />
+                <circle class="rune-core" cx="24" cy="8" r="1" />
+                <circle class="rune-core" cx="40" cy="36" r="1" />
+                <circle class="rune-core" cx="8" cy="36" r="1" />
+            </svg>
+
+            <div class="rune-shadow"></div>
+            <div class="whisper-ripple" id="ripple1"></div>
+            <div class="whisper-ripple" id="ripple2"></div>
+            <div class="whisper-ripple" id="ripple3"></div>
+        </div>
+    </div>
+
+    <!-- 低语 UI（结构通用，文案自定义） -->
+    <div class="whisper-ui" id="whisperUI">
+        <div class="whisper-text">「符文感应到一股低语魔力……」</div>
+        <div class="whisper-buttons">
+            <button class="whisper-btn primary" onclick="enterListening()">聆听 👂</button>
+            <button class="whisper-btn dismiss" onclick="dismissWhisper()">忽略 💤</button>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo">FPS: --</div>
+
+    <!-- 调试栏 -->
+    <div class="debug-bar">
+        <button class="debug-btn active" id="btnIdle" onclick="switchState('idle')">🔮 待机</button>
+        <button class="debug-btn" id="btnWhisper" onclick="switchState('whisper')">🌀 低语触发</button>
+        <button class="debug-btn" id="btnCall" onclick="switchState('call')">⚡ 来电</button>
+        <button class="debug-btn" id="btnReset" onclick="switchState('reset')">↻ 重置</button>
+    </div>
+
+    <!-- 共享引擎 -->
+    <script src="base.js"></script>
+
+    <script>
+        // ============================================
+        // 符文原型配置（仅差异点！）
+        // ============================================
+        const runeInner = document.getElementById('runeInner');
+        const runeContainer = document.getElementById('runeContainer');
+
+        const proto = new PrototypeBase({
+            elementId: 'runeContainer',
+            elementSize: 56,
+
+            // 微事件（符文特有）
+            microEvents: [
+                {
+                    name: 'micro-spin', weight: 40,
+                    fn(done, p) {
+                        runeInner.classList.add('micro-spin');
+                        p.burstParticles(5);
+                        setTimeout(() => { runeInner.classList.remove('micro-spin'); done(); }, 700);
+                    }
+                },
+                {
+                    name: 'pattern-flash', weight: 35,
+                    fn(done, p) {
+                        runeInner.classList.add('pattern-flash');
+                        p.burstParticles(4, 'gold');
+                        setTimeout(() => { runeInner.classList.remove('pattern-flash'); done(); }, 900);
+                    }
+                },
+                {
+                    name: 'aura-burst', weight: 25,
+                    fn(done, p) {
+                        p.burstParticles(8);
+                        setTimeout(done, 600);
+                    }
+                },
+            ],
+
+            // 状态回调（符文特有 class 切换）
+            onEnterState(state) {
+                if (state === 'whisper') runeContainer.classList.add('whisper-sensing');
+                if (state === 'call') runeContainer.classList.add('incoming-call');
+            },
+            onLeaveState(state) {
+                runeContainer.classList.remove('whisper-sensing', 'incoming-call');
+                runeInner.classList.remove('micro-spin', 'pattern-flash');
+            },
+        });
+
+        proto.start();
+    </script>
+
+</body>
+
+</html>
