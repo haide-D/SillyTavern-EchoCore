@@ -1,487 +1,222 @@
 /**
- * IncomingCallAnimation — 来电守护神全屏动画
+ * RuneAwakeningAnimation — 符文觉醒来电动画
  *
- * 依赖: base.js (PrototypeBase)
- * 
- * 阶段状态机:
- *   idle → omen → gathering → patronus → transition → active_call → dispersing → idle
+ * 阶段:
+ *   idle → omen(冲击波+暗幕) → centering(飞向中心) 
+ *   → separated(三圣器分离) → accepted(通话中) → dispersing(结束) → idle
  */
 
-// ========================================
-// 1. 牡鹿轮廓坐标（归一化 0~1）
-//    运行时映射到屏幕中心区域
-// ========================================
-const STAG_POINTS = (() => {
-    // 抽象牡鹿轮廓 — 约50个采样点
-    // 坐标系: x=0~1 (左→右), y=0~1 (上→下)
-    // 中心约 (0.5, 0.5)
-
-    const raw = [
-        // --- 鹿角（左） ---
-        [0.38, 0.12], [0.34, 0.08], [0.30, 0.05],  // 左外枝
-        [0.36, 0.15], [0.32, 0.13],                  // 左内枝
-        [0.40, 0.18],                                 // 角根左
-
-        // --- 鹿角（右） ---
-        [0.62, 0.12], [0.66, 0.08], [0.70, 0.05],  // 右外枝
-        [0.64, 0.15], [0.68, 0.13],                  // 右内枝
-        [0.60, 0.18],                                 // 角根右
-
-        // --- 头部 ---
-        [0.50, 0.20],  // 头顶
-        [0.46, 0.24], [0.54, 0.24],  // 耳
-        [0.50, 0.28],  // 鼻
-
-        // --- 颈部 ---
-        [0.47, 0.30], [0.53, 0.30],
-        [0.44, 0.35], [0.52, 0.34],
-
-        // --- 身体弧线（背部） ---
-        [0.42, 0.38], [0.44, 0.40], [0.48, 0.42],
-        [0.52, 0.43], [0.56, 0.44], [0.60, 0.45],
-        [0.63, 0.46],
-
-        // --- 身体弧线（腹部） ---
-        [0.45, 0.52], [0.48, 0.54], [0.52, 0.55],
-        [0.56, 0.54], [0.60, 0.52],
-
-        // --- 前腿（左前） ---
-        [0.42, 0.48], [0.40, 0.56], [0.39, 0.64],
-        [0.40, 0.70],
-
-        // --- 前腿（右前） ---
-        [0.47, 0.48], [0.46, 0.56], [0.45, 0.64],
-        [0.46, 0.70],
-
-        // --- 后腿（左后） ---
-        [0.58, 0.50], [0.57, 0.58], [0.56, 0.65],
-        [0.57, 0.72],
-
-        // --- 后腿（右后） ---
-        [0.63, 0.48], [0.64, 0.56], [0.65, 0.64],
-        [0.64, 0.72],
-
-        // --- 尾巴 ---
-        [0.66, 0.44], [0.70, 0.42], [0.72, 0.40],
-    ];
-
-    return raw;
-})();
-
-// ========================================
-// 2. 全屏粒子系统
-// ========================================
-class PatronusParticleSystem {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        this.particles = [];
-        this.phase = 'idle'; // idle | gathering | formed | dispersing
-        this.centerX = 0;
-        this.centerY = 0;
-        this.stagTargets = [];  // 屏幕坐标的牡鹿目标点
-        this.pensieveRadius = 110;
-        this._resize();
-        window.addEventListener('resize', () => this._resize());
-    }
-
-    _resize() {
-        const dpr = window.devicePixelRatio;
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        this.canvas.width = this.width * dpr;
-        this.canvas.height = this.height * dpr;
-        this.canvas.style.width = this.width + 'px';
-        this.canvas.style.height = this.height + 'px';
-        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        this.centerX = this.width / 2;
-        this.centerY = this.height / 2;
-        this._computeStagTargets();
-    }
-
-    _computeStagTargets() {
-        // 将归一化坐标映射到屏幕中心区域
-        const size = Math.min(this.width, this.height) * 0.55;
-        const ox = this.centerX - size / 2;
-        const oy = this.centerY - size / 2 - this.height * 0.05;  // 偏上一点
-        this.stagTargets = STAG_POINTS.map(([nx, ny]) => ({
-            x: ox + nx * size,
-            y: oy + ny * size,
-        }));
-    }
-
-    // --- 生成粒子 ---
-    spawnGatheringParticles(count = 250) {
-        this.particles = [];
-        for (let i = 0; i < count; i++) {
-            // 随机生成位置（从屏幕边缘）
-            const edge = Math.floor(Math.random() * 4);
-            let x, y;
-            switch (edge) {
-                case 0: x = Math.random() * this.width; y = -20; break;
-                case 1: x = this.width + 20; y = Math.random() * this.height; break;
-                case 2: x = Math.random() * this.width; y = this.height + 20; break;
-                case 3: x = -20; y = Math.random() * this.height; break;
-            }
-
-            // 分配目标点（多个粒子可共享同一个目标点）
-            const targetIdx = i % this.stagTargets.length;
-            const target = this.stagTargets[targetIdx];
-
-            this.particles.push({
-                x, y,
-                targetX: target.x,
-                targetY: target.y,
-                vx: 0, vy: 0,
-                size: 1 + Math.random() * 2,
-                baseSize: 1 + Math.random() * 2,
-                alpha: 0.3 + Math.random() * 0.5,
-                hue: 220 + Math.random() * 30,  // 银蓝色
-                sat: 15 + Math.random() * 20,
-                light: 75 + Math.random() * 20,
-                noisePhase: Math.random() * Math.PI * 2,
-                noiseSpeed: 0.002 + Math.random() * 0.003,
-                noiseAmp: 1.5 + Math.random() * 3,
-                arrived: false,
-                delay: Math.random() * 1500,  // 延迟开始汇聚
-                age: 0,
-            });
-        }
-    }
-
-    // --- 更新 ---
-    update(dt, timestamp) {
-        const strength = 0.03;  // 吸引力强度
-
-        for (const p of this.particles) {
-            p.age += dt;
-
-            if (this.phase === 'gathering' || this.phase === 'formed') {
-                if (p.age < p.delay) continue;  // 还在延迟中
-
-                const dx = p.targetX - p.x;
-                const dy = p.targetY - p.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist > 2) {
-                    // 向目标吸引
-                    const s = this.phase === 'gathering' ? strength : strength * 0.5;
-                    p.vx += (dx / dist) * s * (dt / 16);
-                    p.vy += (dy / dist) * s * (dt / 16);
-                    p.arrived = false;
-                } else {
-                    p.arrived = true;
-                }
-
-                // 到达后微弱振荡
-                if (p.arrived) {
-                    const noise = Math.sin(timestamp * p.noiseSpeed + p.noisePhase) * p.noiseAmp;
-                    const noise2 = Math.cos(timestamp * p.noiseSpeed * 1.3 + p.noisePhase) * p.noiseAmp;
-                    p.x = p.targetX + noise;
-                    p.y = p.targetY + noise2;
-                    p.vx = 0;
-                    p.vy = 0;
-                } else {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vx *= 0.95;
-                    p.vy *= 0.95;
-                }
-            } else if (this.phase === 'transition') {
-                // 向中心坍缩
-                const dx = this.centerX - p.x;
-                const dy = this.centerY - p.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > this.pensieveRadius * 0.8) {
-                    p.vx += (dx / dist) * 0.08 * (dt / 16);
-                    p.vy += (dy / dist) * 0.08 * (dt / 16);
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vx *= 0.92;
-                    p.vy *= 0.92;
-                } else {
-                    // 到达冥想盆范围，围绕旋转
-                    const angle = Math.atan2(p.y - this.centerY, p.x - this.centerX);
-                    const r = dist;
-                    const newAngle = angle + 0.02;
-                    p.x = this.centerX + Math.cos(newAngle) * r * 0.98;
-                    p.y = this.centerY + Math.sin(newAngle) * r * 0.98;
-                    p.alpha *= 0.995;
-                }
-            } else if (this.phase === 'dispersing') {
-                // 向外扩散
-                const dx = p.x - this.centerX;
-                const dy = p.y - this.centerY;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                p.vx += (dx / dist) * 0.05 * (dt / 16);
-                p.vy += (dy / dist) * 0.05 * (dt / 16);
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= 0.003 * (dt / 16);
-                if (p.alpha < 0) p.alpha = 0;
-            }
-
-            // 大小脉冲
-            p.size = p.baseSize * (0.8 + 0.4 * Math.sin(timestamp * 0.003 + p.noisePhase));
-        }
-
-        // 移除完全透明的粒子
-        if (this.phase === 'dispersing') {
-            this.particles = this.particles.filter(p => p.alpha > 0.01);
-        }
-    }
-
-    // --- 绘制 ---
-    draw() {
-        this.ctx.clearRect(0, 0, this.width, this.height);
-
-        for (const p of this.particles) {
-            if (p.age < p.delay && this.phase === 'gathering') continue;
-            if (p.alpha <= 0) continue;
-
-            const alpha = Math.min(p.alpha, 0.85);
-
-            // 主体
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            this.ctx.fillStyle = `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${alpha})`;
-            this.ctx.fill();
-
-            // 辉光
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-            this.ctx.fillStyle = `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${alpha * 0.1})`;
-            this.ctx.fill();
-        }
-    }
-
-    clear() {
-        this.particles = [];
-        this.ctx.clearRect(0, 0, this.width, this.height);
-    }
-}
-
-// ========================================
-// 3. 动画阶段管理器
-// ========================================
-class IncomingCallAnimation {
+class RuneAwakeningAnimation {
     constructor() {
-        // DOM 引用
-        this.dhContainer = document.getElementById('dhContainer');
-        this.overlay = document.getElementById('fullscreenOverlay');
-        this.silverMist = document.getElementById('silverMist');
+        // DOM
+        this.container = document.getElementById('dhContainer');
+        this.darkOverlay = document.getElementById('darkOverlay');
         this.callInfo = document.getElementById('callInfo');
         this.callButtons = document.getElementById('callButtons');
-        this.pensieveContainer = document.getElementById('pensieveContainer');
         this.subtitleArea = document.getElementById('subtitleArea');
         this.subtitleText = document.getElementById('subtitleText');
-        this.debugInfo = document.getElementById('debugInfo');
-
-        // 粒子系统
-        const canvas = document.getElementById('patronusCanvas');
-        this.patronus = new PatronusParticleSystem(canvas);
 
         // 状态
-        this.currentPhase = 'idle';
-        this.phaseTimers = [];
-        this.animating = false;
-        this.lastTime = 0;
-        this.frameCount = 0;
-        this.fpsTime = 0;
+        this.phase = 'idle';
+        this.timers = [];
+        this.subtitleTimer = null;
 
-        // 字幕演示数据
-        this.demoSubtitles = [
+        // 原始位置（base.js 漂浮位置，用于回位）
+        this.originalPosition = null;
+
+        // 字幕演示
+        this.demoSubs = [
             '你不必害怕黑暗……',
             '因为光明从未真正离开。',
             '它只是在等待你的召唤。',
         ];
-        this.currentSubIdx = 0;
-        this.subtitleTimer = null;
-
-        // 启动动画循环
-        this._startLoop();
+        this.subIdx = 0;
     }
 
-    // --- 动画循环 ---
-    _startLoop() {
-        this.lastTime = performance.now();
-        this.fpsTime = this.lastTime;
-        const loop = (timestamp) => {
-            requestAnimationFrame(loop);
-            const dt = timestamp - this.lastTime;
-            this.lastTime = timestamp;
+    // ==========================================
+    // 公共 API
+    // ==========================================
 
-            // FPS
-            this.frameCount++;
-            if (timestamp - this.fpsTime >= 1000) {
-                if (this.debugInfo) {
-                    this.debugInfo.textContent = `FPS: ${this.frameCount} | Particles: ${this.patronus.particles.length} | Phase: ${this.currentPhase}`;
-                }
-                this.frameCount = 0;
-                this.fpsTime = timestamp;
-            }
-
-            // 粒子更新与绘制
-            if (this.patronus.phase !== 'idle') {
-                this.patronus.update(dt, timestamp);
-                this.patronus.draw();
-            }
-        };
-        requestAnimationFrame(loop);
-    }
-
-    // --- 阶段切换 ---
     enterPhase(phase) {
-        // 清理所有待执行的定时器
-        this.phaseTimers.forEach(t => clearTimeout(t));
-        this.phaseTimers = [];
-        if (this.subtitleTimer) { clearInterval(this.subtitleTimer); this.subtitleTimer = null; }
-
-        this.currentPhase = phase;
+        this._clearTimers();
+        this.phase = phase;
         console.log(`[Phase] → ${phase}`);
 
         switch (phase) {
-            case 'idle': this._phaseIdle(); break;
-            case 'omen': this._phaseOmen(); break;
-            case 'gathering': this._phaseGathering(); break;
-            case 'patronus': this._phasePatronus(); break;
-            case 'transition': this._phaseTransition(); break;
-            case 'active_call': this._phaseActiveCall(); break;
-            case 'dispersing': this._phaseDispersing(); break;
+            case 'idle': this._idle(); break;
+            case 'omen': this._omen(); break;
+            case 'centering': this._centering(); break;
+            case 'separated': this._separated(); break;
+            case 'accepted': this._accepted(); break;
+            case 'dispersing': this._dispersing(); break;
         }
-
-        // 更新 debug 按钮
-        document.querySelectorAll('.debug-btn').forEach(b => b.classList.remove('active'));
-        const btnMap = {
-            idle: 'btnIdle', omen: 'btnCall', gathering: 'btnCall',
-            patronus: 'btnCall', active_call: 'btnActive', dispersing: 'btnEnd',
-        };
-        const btn = document.getElementById(btnMap[phase]);
-        if (btn) btn.classList.add('active');
+        this._updateDebugButtons(phase);
     }
 
-    // --- 各阶段实现 ---
+    // ==========================================
+    // 阶段实现
+    // ==========================================
 
-    _phaseIdle() {
-        this.dhContainer.className = 'proto-element dh-container';
-        this.overlay.classList.remove('visible');
-        this.silverMist.classList.remove('active');
+    _idle() {
+        this.container.className = 'proto-element dh-container';
+
+        // 恢复到 base.js 控制的漂浮定位
+        this.container.style.width = '';
+        this.container.style.height = '';
+        this.container.style.position = '';
+        this.container.style.left = '';
+        this.container.style.top = '';
+        this.container.style.transform = '';
+        this.container.style.transition = '';
+
+        this.darkOverlay.classList.remove('visible');
         this.callInfo.classList.remove('visible');
         this.callButtons.classList.remove('visible');
-        this.pensieveContainer.classList.remove('visible');
         this.subtitleArea.classList.remove('visible');
-        this.patronus.phase = 'idle';
-        this.patronus.clear();
-        this.currentSubIdx = 0;
+
+        // 移除冲击波
+        document.querySelectorAll('.shockwave').forEach(el => el.remove());
+
+        this.subIdx = 0;
     }
 
-    _phaseOmen() {
-        // 符文剧烈发光
-        this.dhContainer.className = 'proto-element dh-container omen';
+    _omen() {
+        // 保存当前位置
+        const rect = this.container.getBoundingClientRect();
+        this.originalPosition = {
+            left: rect.left + rect.width / 2,
+            top: rect.top + rect.height / 2,
+        };
 
-        // 0.3s 后显示 overlay + 银雾
+        // 1) 符文激活
+        this.container.classList.add('omen');
+
+        // 2) 冲击波
+        this._fireShockwave(this.originalPosition.left, this.originalPosition.top);
+
+        // 3) 暗幕降临
         this._delay(300, () => {
-            this.overlay.classList.add('visible');
-            this.silverMist.classList.add('active');
+            this.darkOverlay.classList.add('visible');
         });
 
-        // 1s 后自动进入 gathering
-        this._delay(1000, () => {
-            this.enterPhase('gathering');
-        });
-    }
-
-    _phaseGathering() {
-        // 符文淡出
-        this.dhContainer.classList.add('fade-out');
-
-        // 生成粒子并启动汇聚
-        this.patronus.spawnGatheringParticles(250);
-        this.patronus.phase = 'gathering';
-
-        // 2.5s 后粒子应大部分到达 → 进入 patronus
-        this._delay(3000, () => {
-            this.enterPhase('patronus');
+        // 4) 自动进入 centering
+        this._delay(600, () => {
+            this.enterPhase('centering');
         });
     }
 
-    _phasePatronus() {
-        this.patronus.phase = 'formed';
+    _centering() {
+        // 将符文从 base.js 的 absolute 定位改为 fixed 居中
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.55;
+
+        // 先锁定到当前位置（阻止 base.js 漂浮）
+        this.container.style.position = 'fixed';
+        this.container.style.left = this.originalPosition.left + 'px';
+        this.container.style.top = this.originalPosition.top + 'px';
+        this.container.style.transform = 'translate(-50%, -50%)';
+        this.container.style.zIndex = '55';
+
+        // 强制回流，然后触发过渡
+        void this.container.offsetWidth;
+
+        this.container.style.transition = 'all 1s cubic-bezier(0.22, 1, 0.36, 1)';
+        this.container.style.left = cx + 'px';
+        this.container.style.top = cy + 'px';
+        this.container.style.width = targetSize + 'px';
+        this.container.style.height = targetSize + 'px';
+
+        // 过渡完成后进入分离
+        this._delay(1200, () => {
+            this.enterPhase('separated');
+        });
+    }
+
+    _separated() {
+        this.container.classList.remove('omen');
+        this.container.classList.add('separated');
 
         // 显示来电信息
-        this._delay(500, () => {
+        this._delay(600, () => {
             this._showCallerName('✦ 赫敏·格兰杰 ✦');
-            document.getElementById('callerSub').textContent = '';
             this.callInfo.classList.add('visible');
         });
 
-        // 显示副标题
-        this._delay(1500, () => {
+        // 副标题
+        this._delay(1200, () => {
             this._typeText(document.getElementById('callerSub'),
-                '正在通过魔法通讯联络你…', 'caller-sub-char');
+                '正在通过魔法通讯联络你…');
         });
 
-        // 显示按钮
-        this._delay(2200, () => {
+        // 按钮
+        this._delay(1800, () => {
             this.callButtons.classList.add('visible');
         });
     }
 
-    _phaseTransition() {
+    _accepted() {
         // 隐藏来电 UI
         this.callInfo.classList.remove('visible');
         this.callButtons.classList.remove('visible');
 
-        // 粒子向中心坍缩
-        this.patronus.phase = 'transition';
+        // 切换到 accepted 态（三角/线隐去，圆变冥想盆）
+        this.container.classList.remove('separated');
+        this.container.classList.add('accepted');
 
-        // 1.5s 后显示冥想盆
-        this._delay(1500, () => {
-            this.enterPhase('active_call');
-        });
-    }
-
-    _phaseActiveCall() {
-        // 清除残余粒子
-        this.patronus.phase = 'idle';
-        this.patronus.clear();
-
-        // 显示冥想盆
-        this.pensieveContainer.classList.add('visible');
-
-        // 显示字幕
+        // 字幕
         this._delay(800, () => {
             this.subtitleArea.classList.add('visible');
-            this._startSubtitleDemo();
+            this._nextSubtitle();
         });
     }
 
-    _phaseDispersing() {
-        // 隐藏 UI
-        this.pensieveContainer.classList.remove('visible');
+    _dispersing() {
+        // 隐藏所有 UI
+        this.callInfo.classList.remove('visible');
+        this.callButtons.classList.remove('visible');
         this.subtitleArea.classList.remove('visible');
 
-        // 生成少量粒子从中心向外扩散
-        this.patronus.spawnGatheringParticles(80);
-        // 将所有粒子放在中心
-        for (const p of this.patronus.particles) {
-            p.x = this.patronus.centerX + (Math.random() - 0.5) * 60;
-            p.y = this.patronus.centerY + (Math.random() - 0.5) * 60;
-            p.delay = 0;
-            p.age = 1000;
-        }
-        this.patronus.phase = 'dispersing';
+        // 回到小尺寸 + 原始位置
+        this.container.classList.remove('separated', 'accepted');
+        this.container.classList.add('dispersing');
 
-        // 2s 后回到 idle
-        this._delay(2500, () => {
+        const origX = window.innerWidth * 0.78;
+        const origY = window.innerHeight * 0.50;
+
+        this.container.style.transition = 'all 1.5s cubic-bezier(0.22, 1, 0.36, 1)';
+        this.container.style.left = origX + 'px';
+        this.container.style.top = origY + 'px';
+        this.container.style.width = '72px';
+        this.container.style.height = '72px';
+
+        // 暗幕退场
+        this._delay(500, () => {
+            this.darkOverlay.classList.remove('visible');
+        });
+
+        // 回到 idle
+        this._delay(2000, () => {
             this.enterPhase('idle');
         });
     }
 
-    // --- 工具方法 ---
+    // ==========================================
+    // 工具方法
+    // ==========================================
 
-    _delay(ms, fn) {
-        this.phaseTimers.push(setTimeout(fn, ms));
+    _fireShockwave(x, y) {
+        const wave = document.createElement('div');
+        wave.className = 'shockwave';
+        wave.style.left = x + 'px';
+        wave.style.top = y + 'px';
+        wave.style.transform = 'translate(-50%, -50%)';
+        document.body.appendChild(wave);
+
+        void wave.offsetWidth;
+        wave.classList.add('fire');
+
+        setTimeout(() => wave.remove(), 1000);
     }
 
     _showCallerName(text) {
@@ -496,29 +231,22 @@ class IncomingCallAnimation {
         });
     }
 
-    _typeText(el, text, className) {
+    _typeText(el, text) {
         el.innerHTML = '';
         [...text].forEach((char, i) => {
             const span = document.createElement('span');
-            span.className = className || 'char-reveal';
+            span.className = 'char-reveal';
             span.textContent = char === ' ' ? '\u00a0' : char;
             span.style.animationDelay = `${i * 0.05}s`;
             el.appendChild(span);
         });
     }
 
-    _startSubtitleDemo() {
-        this.currentSubIdx = 0;
-        this._showNextSubtitle();
-    }
+    _nextSubtitle() {
+        if (this.phase !== 'accepted') return;
+        if (this.subIdx >= this.demoSubs.length) this.subIdx = 0;
 
-    _showNextSubtitle() {
-        if (this.currentPhase !== 'active_call') return;
-        if (this.currentSubIdx >= this.demoSubtitles.length) {
-            this.currentSubIdx = 0;  // 循环
-        }
-
-        const text = this.demoSubtitles[this.currentSubIdx];
+        const text = this.demoSubs[this.subIdx++];
         this.subtitleText.innerHTML = '';
 
         [...text].forEach((char, i) => {
@@ -529,57 +257,61 @@ class IncomingCallAnimation {
             this.subtitleText.appendChild(span);
         });
 
-        this.currentSubIdx++;
-        const displayTime = text.length * 60 + 2000;
-
+        const wait = text.length * 60 + 2000;
         this.subtitleTimer = setTimeout(() => {
-            // 淡出当前字幕，显示下一条
             this.subtitleText.style.opacity = '0';
             setTimeout(() => {
                 this.subtitleText.style.opacity = '1';
-                this._showNextSubtitle();
+                this._nextSubtitle();
             }, 500);
-        }, displayTime);
+        }, wait);
+    }
+
+    _delay(ms, fn) {
+        this.timers.push(setTimeout(fn, ms));
+    }
+
+    _clearTimers() {
+        this.timers.forEach(t => clearTimeout(t));
+        this.timers = [];
+        if (this.subtitleTimer) { clearTimeout(this.subtitleTimer); this.subtitleTimer = null; }
+    }
+
+    _updateDebugButtons(phase) {
+        document.querySelectorAll('.debug-btn').forEach(b => b.classList.remove('active'));
+        const map = {
+            idle: 'btnIdle', omen: 'btnCall', centering: 'btnCall',
+            separated: 'btnCall', accepted: 'btnActive', dispersing: 'btnEnd',
+        };
+        const btn = document.getElementById(map[phase]);
+        if (btn) btn.classList.add('active');
     }
 }
 
-// ========================================
-// 4. 初始化 + 全局控制函数
-// ========================================
+// ==========================================
+// 全局控制
+// ==========================================
 let anim;
 
-function initAnimation() {
-    anim = new IncomingCallAnimation();
-}
+document.addEventListener('DOMContentLoaded', () => {
+    anim = new RuneAwakeningAnimation();
+});
 
-// Debug 控制
-function triggerIncomingCall() {
-    anim.enterPhase('omen');
-}
-
+function triggerIncomingCall() { anim.enterPhase('omen'); }
 function jumpToActive() {
-    // 跳过过渡动画，直接进入通话
-    anim.dhContainer.className = 'proto-element dh-container fade-out';
-    anim.overlay.classList.add('visible');
-    anim.silverMist.classList.add('active');
-    anim.enterPhase('active_call');
+    // 快速跳到通话中
+    anim.container.style.position = 'fixed';
+    anim.container.style.left = (window.innerWidth / 2) + 'px';
+    anim.container.style.top = (window.innerHeight / 2) + 'px';
+    anim.container.style.transform = 'translate(-50%, -50%)';
+    anim.container.style.zIndex = '55';
+    const s = Math.min(window.innerWidth, window.innerHeight) * 0.55;
+    anim.container.style.width = s + 'px';
+    anim.container.style.height = s + 'px';
+    anim.darkOverlay.classList.add('visible');
+    anim.enterPhase('accepted');
 }
-
-function endCall() {
-    anim.enterPhase('dispersing');
-}
-
-function acceptCall() {
-    anim.enterPhase('transition');
-}
-
-function declineCall() {
-    anim.enterPhase('idle');
-}
-
-function resetAll() {
-    anim.enterPhase('idle');
-}
-
-// 页面加载后初始化
-document.addEventListener('DOMContentLoaded', initAnimation);
+function acceptCall() { anim.enterPhase('accepted'); }
+function declineCall() { anim.enterPhase('dispersing'); }
+function endCall() { anim.enterPhase('dispersing'); }
+function resetAll() { anim.enterPhase('idle'); }
