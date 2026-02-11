@@ -649,41 +649,174 @@
         0 0 100px 40px rgba(var(--wh-blue-rgb), 0.06);
 }
 
-/* 涟漪（聆听盆内） */
-.pensieve-ripple-svg {
+/* ========================================
+   6b. 记忆涡流（冥想盆 — 分离/聆听态可见）
+   ======================================== */
+.pensieve-vortex {
     transform-origin: 28px 32px;
     opacity: 0;
+    transition: opacity 1s ease;
 }
 
-.dh-container.separated .pensieve-ripple-svg {
+.dh-container.separated .pensieve-vortex,
+.dh-container.listening .pensieve-vortex {
     opacity: 1;
 }
 
-.ripple-ring {
-    fill: none;
-    stroke: rgba(var(--wh-glow-rgb), 0.2);
-    stroke-width: 0.3;
+/* --- 涡流底池 --- */
+.vortex-pool {
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+.dh-container.separated .vortex-pool,
+.dh-container.listening .vortex-pool {
+    animation: pool-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes pool-shimmer {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.9;
+    }
+}
+
+/* --- 涡流臂组（缓慢旋转） --- */
+.vortex-arms {
     transform-origin: 28px 32px;
-    animation: svg-ripple 3s ease-out infinite;
+    animation: vortex-spin 15s linear infinite;
 }
 
-.ripple-ring:nth-child(2) {
-    animation-delay: 1s;
+@keyframes vortex-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-.ripple-ring:nth-child(3) {
-    animation-delay: 2s;
+/* --- 记忆丝线 — 基础 --- */
+.vortex-thread {
+    fill: none;
+    stroke-linecap: round;
+    transform-origin: 28px 32px;
 }
 
-@keyframes svg-ripple {
+/* 内层 — 亮、快流动（蓝紫光） */
+.vt-i1,
+.vt-i2 {
+    stroke: rgba(var(--wh-glow-rgb), 0.5);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 6;
+    filter: drop-shadow(0 0 2px rgba(var(--wh-glow-rgb), 0.4));
+    animation: thread-flow-fast 2s linear infinite;
+}
+
+/* 中层 — 中等 */
+.vt-m1,
+.vt-m2 {
+    stroke: rgba(var(--wh-glow-rgb), 0.35);
+    stroke-width: 0.4;
+    stroke-dasharray: 5 10;
+    filter: drop-shadow(0 0 3px rgba(var(--wh-purple-rgb), 0.3));
+    animation: thread-flow-mid 3.5s linear infinite;
+}
+
+/* 外层 — 淡、慢瓦解 */
+.vt-o1,
+.vt-o2 {
+    stroke: rgba(var(--wh-purple-rgb), 0.2);
+    stroke-width: 0.3;
+    stroke-dasharray: 6 14;
+    filter: drop-shadow(0 0 4px rgba(var(--wh-purple-rgb), 0.15));
+    animation: thread-flow-slow 5s linear infinite;
+}
+
+@keyframes thread-flow-fast {
+    to {
+        stroke-dashoffset: -18;
+    }
+}
+
+@keyframes thread-flow-mid {
+    to {
+        stroke-dashoffset: -30;
+    }
+}
+
+@keyframes thread-flow-slow {
+    to {
+        stroke-dashoffset: -40;
+    }
+}
+
+/* --- 涡旋涟漪（旋转 + 扩散） --- */
+.vortex-ripple {
+    fill: none;
+    stroke: rgba(var(--wh-glow-rgb), 0.15);
+    stroke-width: 0.25;
+    transform-origin: 28px 32px;
+    animation: vortex-ripple-expand 4.5s ease-out infinite;
+}
+
+.vr-2 {
+    animation-delay: 1.5s;
+}
+
+.vr-3 {
+    animation-delay: 3s;
+}
+
+@keyframes vortex-ripple-expand {
     0% {
-        transform: scale(0.3);
-        opacity: 0.5;
+        transform: scale(0.2) rotate(0deg);
+        opacity: 0.6;
+        stroke-width: 0.4;
     }
 
     100% {
-        transform: scale(1.8);
+        transform: scale(2.5) rotate(90deg);
         opacity: 0;
+        stroke-width: 0.1;
+    }
+}
+
+/* --- 记忆光点 --- */
+.memory-glint {
+    fill: rgba(var(--wh-glow-rgb), 0.9);
+    filter: drop-shadow(0 0 2px rgba(var(--wh-glow-rgb), 0.7));
+    opacity: 0;
+}
+
+.dh-container.separated .memory-glint,
+.dh-container.listening .memory-glint {
+    animation: glint-twinkle 3s ease-in-out infinite;
+}
+
+.mg-2 {
+    animation-delay: 1s;
+}
+
+.mg-3 {
+    animation-delay: 2s;
+}
+
+@keyframes glint-twinkle {
+
+    0%,
+    100% {
+        opacity: 0.2;
+    }
+
+    30% {
+        opacity: 0.9;
+    }
+
+    60% {
+        opacity: 0.4;
     }
 }
 
