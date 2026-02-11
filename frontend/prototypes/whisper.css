@@ -1,27 +1,39 @@
 /* ========================================
-   符文觉醒 — Rune Awakening Incoming Call
+   低语/灵犀感应 — Whisper Animation
    
    依赖: base.css
+   风格: 同来电的「符文觉醒」，但色调为深蓝紫
    ======================================== */
 
 /* ========================================
-   1. 配色（同死亡圣器）
+   1. 配色
    ======================================== */
 :root {
     --proto-primary-rgb: 220, 195, 130;
     --proto-accent-rgb: 123, 47, 190;
     --proto-text-color: #D4B86A;
-    --proto-bg-spot-rgb: 45, 35, 18;
-    --proto-bg-base: #08081a;
-    --proto-bg-mid: #0c0c24;
-    --proto-bg-dark: #151530;
-    --proto-bg-end: #0a0a1c;
+    --proto-bg-spot-rgb: 18, 18, 45;
+    --proto-bg-base: #06061a;
+    --proto-bg-mid: #0a0a24;
+    --proto-bg-dark: #0e0e30;
+    --proto-bg-end: #08081c;
 
     --dh-gold: #D4A853;
     --dh-gold-bright: #FFE4A0;
     --dh-gold-rgb: 212, 168, 83;
     --dh-silver: #C8C8E8;
     --dh-silver-rgb: 200, 200, 232;
+
+    /* 低语专属 */
+    --wh-blue: #4A00E0;
+    --wh-purple: #7B2FBE;
+    --wh-blue-rgb: 74, 0, 224;
+    --wh-purple-rgb: 123, 47, 190;
+    --wh-deep: #1a0a3e;
+    --wh-glow: #A878FF;
+    --wh-glow-rgb: 168, 120, 255;
+    --wh-thread: #B8B8E8;
+    --wh-thread-rgb: 184, 184, 232;
 }
 
 /* ========================================
@@ -86,10 +98,9 @@
     width: 100%;
     height: 100%;
     overflow: visible;
-    /* 用 viewBox 保持自适应 */
 }
 
-/* --- 轨道环 --- */
+/* 轨道环 */
 .dh-orbit-outer {
     fill: none;
     stroke: rgba(var(--dh-gold-rgb), 0.35);
@@ -120,7 +131,7 @@
     }
 }
 
-/* --- 符文标记环 --- */
+/* 符文标记环 */
 .dh-rune-ring {
     opacity: 0;
     transition: opacity 0.8s ease;
@@ -147,7 +158,7 @@
     transform-origin: 28px 28px;
 }
 
-/* --- 三角形 --- */
+/* 三角/圆/线基础 */
 .dh-triangle {
     fill: none;
     stroke: var(--dh-silver);
@@ -179,7 +190,6 @@
     }
 }
 
-/* --- 圆 --- */
 .dh-circle {
     fill: none;
     stroke: var(--dh-silver);
@@ -207,7 +217,6 @@
     }
 }
 
-/* --- 竖线 --- */
 .dh-line {
     stroke: var(--dh-silver);
     stroke-width: 0.8;
@@ -235,11 +244,11 @@
     }
 }
 
-/* --- 核心光点 & 节点 --- */
 .dh-core {
     fill: var(--dh-gold-bright);
     opacity: 0.9;
     animation: core-glow 2.5s ease-in-out infinite;
+    transition: fill 1s ease;
 }
 
 @keyframes core-glow {
@@ -259,9 +268,9 @@
 .dh-node {
     fill: var(--dh-gold);
     opacity: 0.6;
+    transition: all 1s ease;
 }
 
-/* --- 辉光 --- */
 .dh-glow {
     position: absolute;
     top: 50%;
@@ -274,7 +283,7 @@
     box-shadow: 0 0 15px 4px rgba(var(--dh-gold-rgb), 0.2),
         0 0 35px 8px rgba(var(--dh-gold-rgb), 0.1);
     animation: dh-glow-pulse 4.5s ease-in-out infinite;
-    transition: all 0.6s ease;
+    transition: all 1s ease;
 }
 
 @keyframes dh-glow-pulse {
@@ -289,7 +298,6 @@
     }
 }
 
-/* 投影光斑 */
 .dh-shadow {
     position: absolute;
     bottom: -10px;
@@ -318,232 +326,6 @@
     }
 }
 
-/* ========================================
-   3. 冲击波
-   ======================================== */
-.shockwave {
-    position: fixed;
-    border-radius: 50%;
-    border: 2px solid rgba(var(--dh-gold-rgb), 0.6);
-    box-shadow: 0 0 15px 3px rgba(var(--dh-gold-rgb), 0.4),
-        inset 0 0 15px 3px rgba(var(--dh-gold-rgb), 0.2);
-    pointer-events: none;
-    z-index: 60;
-    opacity: 0;
-}
-
-.shockwave.fire {
-    animation: shockwave-expand 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-@keyframes shockwave-expand {
-    0% {
-        width: 40px;
-        height: 40px;
-        opacity: 1;
-    }
-
-    100% {
-        width: 200vmax;
-        height: 200vmax;
-        opacity: 0;
-        border-color: rgba(var(--dh-gold-rgb), 0);
-    }
-}
-
-/* ========================================
-   4. 暗幕
-   ======================================== */
-.dark-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(8, 8, 26, 0.92);
-    z-index: 40;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.8s ease;
-}
-
-.dark-overlay.visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* ========================================
-   5. 符文居中态（omen）
-   ======================================== */
-.dh-container.omen {
-    /* JS 会动态设置 left/top 到屏幕中心 */
-    z-index: 55;
-}
-
-.dh-container.omen .dh-inner {
-    animation: dh-breathe 1s ease-in-out infinite;
-}
-
-.dh-container.omen .dh-glow {
-    box-shadow: 0 0 30px 10px rgba(232, 232, 255, 0.6),
-        0 0 60px 20px rgba(232, 232, 255, 0.3);
-}
-
-.dh-container.omen .dh-triangle-flow {
-    stroke: #fff;
-    stroke-width: 1.8;
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
-    animation: gold-flow-tri 1.5s linear infinite;
-}
-
-.dh-container.omen .dh-circle-flow {
-    stroke: var(--dh-gold-bright);
-    stroke-width: 1.5;
-    filter: drop-shadow(0 0 5px rgba(var(--dh-gold-rgb), 0.7));
-    animation: gold-flow-circle 1.2s linear infinite;
-}
-
-.dh-container.omen .dh-line-flow {
-    stroke: #fff;
-    stroke-width: 1.5;
-    opacity: 1;
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
-    animation: gold-flow-line 1.2s linear infinite;
-}
-
-.dh-container.omen .dh-core {
-    fill: #fff;
-    animation: core-glow 0.4s ease-in-out infinite;
-}
-
-.dh-container.omen .dh-orbit-outer {
-    stroke: rgba(255, 228, 160, 0.5);
-    animation: orbit-spin 6s linear infinite;
-}
-
-.dh-container.omen .dh-orbit-mid {
-    stroke: rgba(var(--dh-silver-rgb), 0.4);
-    animation: orbit-spin-reverse 4s linear infinite;
-}
-
-.dh-container.omen .dh-rune-ring {
-    opacity: 1;
-}
-
-.dh-container.omen .dh-shadow {
-    opacity: 0;
-}
-
-/* ========================================
-   6. 三圣器分离态（separated）
-   ======================================== */
-
-/* 三角形 → 扩大成结界外框 */
-.dh-container.separated .g-triangle {
-    transform: scale(2.8);
-    opacity: 0.3;
-}
-
-.dh-container.separated .dh-triangle {
-    stroke: rgba(var(--dh-gold-rgb), 0.2);
-    stroke-width: 0.4;
-}
-
-.dh-container.separated .dh-triangle-flow {
-    stroke: rgba(var(--dh-gold-rgb), 0.5);
-    stroke-width: 0.5;
-    stroke-dasharray: 20 80;
-    filter: drop-shadow(0 0 8px rgba(var(--dh-gold-rgb), 0.3));
-}
-
-/* 圆 → 放大成通讯盆 */
-.dh-container.separated .g-circle {
-    transform: scale(2.2) translateY(-4px);
-}
-
-.dh-container.separated .dh-circle {
-    stroke: rgba(var(--dh-silver-rgb), 0.4);
-    stroke-width: 0.6;
-    opacity: 0.8;
-}
-
-.dh-container.separated .dh-circle-flow {
-    stroke: rgba(var(--dh-silver-rgb), 0.6);
-    stroke-width: 0.8;
-    stroke-dasharray: 8 58;
-    filter: drop-shadow(0 0 10px rgba(var(--dh-silver-rgb), 0.4));
-    animation: gold-flow-circle 3s linear infinite;
-}
-
-/* 竖线 → 拉伸成能量柱 */
-.dh-container.separated .g-line {
-    transform: scaleY(3.5);
-    opacity: 0.25;
-}
-
-.dh-container.separated .dh-line {
-    stroke: rgba(var(--dh-gold-rgb), 0.15);
-}
-
-.dh-container.separated .dh-line-flow {
-    stroke: rgba(var(--dh-gold-rgb), 0.4);
-    stroke-dasharray: 4 30;
-    filter: drop-shadow(0 0 6px rgba(var(--dh-gold-rgb), 0.3));
-}
-
-/* 核心光点放大 */
-.dh-container.separated .dh-core {
-    fill: rgba(var(--dh-silver-rgb), 0.9);
-    animation: core-glow-big 2s ease-in-out infinite;
-}
-
-@keyframes core-glow-big {
-
-    0%,
-    100% {
-        opacity: 0.4;
-        r: 2;
-    }
-
-    50% {
-        opacity: 1;
-        r: 4;
-    }
-}
-
-/* 交汇节点隐藏 */
-.dh-container.separated .dh-node {
-    opacity: 0;
-}
-
-/* 轨道环加速 */
-.dh-container.separated .dh-orbit-outer {
-    stroke: rgba(var(--dh-gold-rgb), 0.25);
-    stroke-width: 0.4;
-    animation: orbit-spin 10s linear infinite;
-}
-
-.dh-container.separated .dh-orbit-mid {
-    stroke: rgba(var(--dh-silver-rgb), 0.15);
-    stroke-width: 0.3;
-    animation: orbit-spin-reverse 7s linear infinite;
-}
-
-/* 符文标记环（放大后的外装饰） */
-.dh-container.separated .dh-rune-ring {
-    opacity: 0.7;
-    animation: orbit-spin 20s linear infinite;
-}
-
-/* 辉光扩大 */
-.dh-container.separated .dh-glow {
-    width: 100%;
-    height: 100%;
-    box-shadow: 0 0 40px 15px rgba(var(--dh-silver-rgb), 0.1),
-        0 0 80px 30px rgba(var(--dh-silver-rgb), 0.05);
-}
-
-/* .g-triangle, .g-circle, .g-line 的过渡 */
 .g-triangle,
 .g-circle,
 .g-line {
@@ -560,8 +342,314 @@
 }
 
 /* ========================================
-   7. 通讯盆涟漪（分离态时圆内涟漪）
+   3. 墨色涟漪（多层嵌套 → 更华丽）
    ======================================== */
+.ink-ripple {
+    position: fixed;
+    border-radius: 50%;
+    border: 1.5px solid rgba(var(--wh-purple-rgb), 0.4);
+    box-shadow: 0 0 20px 5px rgba(var(--wh-purple-rgb), 0.15),
+        inset 0 0 20px 5px rgba(var(--wh-blue-rgb), 0.08);
+    pointer-events: none;
+    z-index: 45;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+}
+
+.ink-ripple.fire {
+    animation: ink-expand 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ink-expand {
+    0% {
+        width: 20px;
+        height: 20px;
+        opacity: 0.8;
+    }
+
+    100% {
+        width: 180vmax;
+        height: 180vmax;
+        opacity: 0;
+    }
+}
+
+/* 内层涟漪（更亮的蓝紫光） */
+.ink-ripple-inner {
+    position: fixed;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--wh-glow-rgb), 0.5);
+    box-shadow: 0 0 30px 8px rgba(var(--wh-glow-rgb), 0.12);
+    pointer-events: none;
+    z-index: 46;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+}
+
+.ink-ripple-inner.fire {
+    animation: ink-expand-inner 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ink-expand-inner {
+    0% {
+        width: 10px;
+        height: 10px;
+        opacity: 0.9;
+    }
+
+    100% {
+        width: 120vmax;
+        height: 120vmax;
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   4. 暗幕（深蓝紫调 — 区别于来电的纯黑）
+   ======================================== */
+.dark-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 45%,
+            rgba(var(--wh-purple-rgb), 0.08) 0%,
+            var(--wh-deep) 60%,
+            #050518 100%);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease;
+}
+
+.dark-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ========================================
+   5. 符文变色态（whisper-active — 蓝紫色）
+   ======================================== */
+.dh-container.whisper-active {
+    filter: drop-shadow(0 0 25px rgba(var(--wh-purple-rgb), 0.5));
+    z-index: 55;
+}
+
+.dh-container.whisper-active .dh-inner {
+    animation: dh-breathe 1.2s ease-in-out infinite;
+}
+
+.dh-container.whisper-active .dh-triangle {
+    stroke: rgba(var(--wh-purple-rgb), 0.6);
+}
+
+.dh-container.whisper-active .dh-triangle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.8);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 6px rgba(var(--wh-glow-rgb), 0.6));
+    animation: gold-flow-tri 2s linear infinite;
+}
+
+.dh-container.whisper-active .dh-circle {
+    stroke: rgba(var(--wh-purple-rgb), 0.5);
+}
+
+.dh-container.whisper-active .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.7);
+    stroke-width: 1.2;
+    filter: drop-shadow(0 0 5px rgba(var(--wh-blue-rgb), 0.5));
+    animation: gold-flow-circle 1.5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-line {
+    stroke: rgba(var(--wh-purple-rgb), 0.5);
+}
+
+.dh-container.whisper-active .dh-line-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.9);
+    stroke-width: 1.5;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(var(--wh-glow-rgb), 0.7));
+    animation: gold-flow-line 1.5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-core {
+    fill: var(--wh-glow);
+    animation: core-glow-wh 1s ease-in-out infinite;
+}
+
+@keyframes core-glow-wh {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        r: 1.5;
+        fill: rgba(var(--wh-purple-rgb), 0.8);
+    }
+
+    50% {
+        opacity: 1;
+        r: 3;
+        fill: var(--wh-glow);
+    }
+}
+
+.dh-container.whisper-active .dh-node {
+    fill: rgba(var(--wh-glow-rgb), 0.7);
+}
+
+.dh-container.whisper-active .dh-glow {
+    box-shadow: 0 0 30px 10px rgba(var(--wh-purple-rgb), 0.35),
+        0 0 60px 20px rgba(var(--wh-blue-rgb), 0.15);
+    animation: wh-glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes wh-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px 5px rgba(var(--wh-purple-rgb), 0.25), 0 0 40px 10px rgba(var(--wh-blue-rgb), 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 40px 15px rgba(var(--wh-purple-rgb), 0.5), 0 0 70px 25px rgba(var(--wh-blue-rgb), 0.25);
+    }
+}
+
+.dh-container.whisper-active .dh-orbit-outer {
+    stroke: rgba(var(--wh-purple-rgb), 0.35);
+    animation: orbit-spin 8s linear infinite;
+}
+
+.dh-container.whisper-active .dh-orbit-mid {
+    stroke: rgba(var(--wh-blue-rgb), 0.25);
+    animation: orbit-spin-reverse 5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-rune-ring {
+    opacity: 1;
+}
+
+.dh-container.whisper-active .rune-text-outer {
+    fill: rgba(var(--wh-glow-rgb), 0.6);
+    filter: drop-shadow(0 0 3px rgba(var(--wh-glow-rgb), 0.5));
+}
+
+.dh-container.whisper-active .rune-text-inner {
+    fill: rgba(var(--wh-purple-rgb), 0.4);
+    filter: drop-shadow(0 0 2px rgba(var(--wh-purple-rgb), 0.3));
+}
+
+.dh-container.whisper-active .dh-shadow {
+    opacity: 0;
+}
+
+/* ========================================
+   6. 三圣器分离态（separated — 蓝紫版）
+   ======================================== */
+/* 三角形 → 扩大成结界外框 */
+.dh-container.separated .g-triangle {
+    transform: scale(2.8);
+    opacity: 0.3;
+}
+
+.dh-container.separated .dh-triangle {
+    stroke: rgba(var(--wh-purple-rgb), 0.2);
+    stroke-width: 0.4;
+}
+
+.dh-container.separated .dh-triangle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.4);
+    stroke-width: 0.5;
+    stroke-dasharray: 20 80;
+    filter: drop-shadow(0 0 8px rgba(var(--wh-purple-rgb), 0.3));
+}
+
+/* 圆 → 放大成聆听盆 */
+.dh-container.separated .g-circle {
+    transform: scale(2.2) translateY(-4px);
+}
+
+.dh-container.separated .dh-circle {
+    stroke: rgba(var(--wh-thread-rgb), 0.4);
+    stroke-width: 0.6;
+    opacity: 0.8;
+}
+
+.dh-container.separated .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.5);
+    stroke-width: 0.8;
+    stroke-dasharray: 8 58;
+    filter: drop-shadow(0 0 12px rgba(var(--wh-purple-rgb), 0.4));
+    animation: gold-flow-circle 3s linear infinite;
+}
+
+/* 竖线 → 能量柱 */
+.dh-container.separated .g-line {
+    transform: scaleY(3.5);
+    opacity: 0.25;
+}
+
+.dh-container.separated .dh-line {
+    stroke: rgba(var(--wh-purple-rgb), 0.15);
+}
+
+.dh-container.separated .dh-line-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.3);
+    stroke-dasharray: 4 30;
+    filter: drop-shadow(0 0 6px rgba(var(--wh-purple-rgb), 0.3));
+}
+
+/* 核心/节点 */
+.dh-container.separated .dh-core {
+    fill: var(--wh-glow);
+    animation: core-glow-wh-big 2s ease-in-out infinite;
+}
+
+@keyframes core-glow-wh-big {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        r: 2;
+    }
+
+    50% {
+        opacity: 1;
+        r: 4;
+    }
+}
+
+.dh-container.separated .dh-node {
+    opacity: 0;
+}
+
+.dh-container.separated .dh-orbit-outer {
+    stroke: rgba(var(--wh-purple-rgb), 0.25);
+    stroke-width: 0.4;
+    animation: orbit-spin 10s linear infinite;
+}
+
+.dh-container.separated .dh-orbit-mid {
+    stroke: rgba(var(--wh-blue-rgb), 0.15);
+    stroke-width: 0.3;
+    animation: orbit-spin-reverse 7s linear infinite;
+}
+
+.dh-container.separated .dh-rune-ring {
+    opacity: 0.8;
+    animation: orbit-spin 18s linear infinite;
+}
+
+.dh-container.separated .dh-glow {
+    width: 100%;
+    height: 100%;
+    box-shadow: 0 0 50px 20px rgba(var(--wh-purple-rgb), 0.12),
+        0 0 100px 40px rgba(var(--wh-blue-rgb), 0.06);
+}
+
+/* 涟漪（聆听盆内） */
 .pensieve-ripple-svg {
     transform-origin: 28px 32px;
     opacity: 0;
@@ -573,7 +661,7 @@
 
 .ripple-ring {
     fill: none;
-    stroke: rgba(var(--dh-silver-rgb), 0.2);
+    stroke: rgba(var(--wh-glow-rgb), 0.2);
     stroke-width: 0.3;
     transform-origin: 28px 32px;
     animation: svg-ripple 3s ease-out infinite;
@@ -600,9 +688,48 @@
 }
 
 /* ========================================
-   8. 来电信息 UI
+   7. 聆听态（listening）— 三角/线隐去，圆变聆听盆
    ======================================== */
-.call-info {
+.dh-container.listening .g-triangle {
+    opacity: 0;
+}
+
+.dh-container.listening .g-line {
+    opacity: 0;
+}
+
+.dh-container.listening .dh-orbit-outer {
+    opacity: 0.1;
+}
+
+.dh-container.listening .dh-orbit-mid {
+    opacity: 0.05;
+}
+
+.dh-container.listening .dh-rune-ring {
+    opacity: 0.25;
+}
+
+.dh-container.listening .g-circle {
+    transform: scale(2.8) translateY(-4px);
+}
+
+.dh-container.listening .dh-circle {
+    stroke: rgba(var(--wh-thread-rgb), 0.3);
+    stroke-width: 0.8;
+    fill: rgba(var(--wh-purple-rgb), 0.03);
+}
+
+.dh-container.listening .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.35);
+    stroke-width: 0.6;
+    animation: gold-flow-circle 4s linear infinite;
+}
+
+/* ========================================
+   8. 低语提示 UI
+   ======================================== */
+.whisper-info {
     position: fixed;
     top: 62%;
     left: 50%;
@@ -614,36 +741,27 @@
     transition: opacity 0.8s ease;
 }
 
-.call-info.visible {
+.whisper-info.visible {
     opacity: 1;
     pointer-events: auto;
 }
 
-.caller-name {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
-    color: var(--dh-gold-bright);
-    text-shadow: 0 0 20px rgba(var(--dh-gold-rgb), 0.6),
-        0 0 40px rgba(var(--dh-gold-rgb), 0.3);
-    letter-spacing: 4px;
-    margin-bottom: 8px;
-}
-
-.caller-subtitle {
+.whisper-hint {
     font-family: 'Lora', serif;
-    font-size: 14px;
+    font-size: 20px;
     font-style: italic;
-    color: rgba(var(--dh-silver-rgb), 0.7);
-    letter-spacing: 2px;
+    color: rgba(var(--wh-thread-rgb), 0.85);
+    text-shadow: 0 0 15px rgba(var(--wh-purple-rgb), 0.5),
+        0 0 30px rgba(var(--wh-blue-rgb), 0.25);
+    letter-spacing: 3px;
     margin-bottom: 32px;
 }
 
-/* 逐字浮现 */
 .char-reveal {
     display: inline-block;
     opacity: 0;
     transform: translateY(8px);
-    animation: charReveal 0.4s ease forwards;
+    animation: charReveal 0.5s ease forwards;
 }
 
 @keyframes charReveal {
@@ -653,22 +771,21 @@
     }
 }
 
-/* 按钮 */
-.call-buttons {
+.whisper-buttons {
     display: flex;
     gap: 24px;
     justify-content: center;
     opacity: 0;
-    transform: translateY(15px);
+    transform: translateY(12px);
     transition: all 0.6s ease;
 }
 
-.call-buttons.visible {
+.whisper-buttons.visible {
     opacity: 1;
     transform: translateY(0);
 }
 
-.call-btn {
+.wh-btn {
     padding: 14px 36px;
     border-radius: 30px;
     font-family: 'Cinzel', serif;
@@ -680,77 +797,38 @@
     outline: none;
 }
 
-.call-btn:hover {
+.wh-btn:hover {
     transform: scale(1.08);
 }
 
-.call-btn.accept {
-    background: linear-gradient(135deg, rgba(var(--dh-gold-rgb), 0.25), rgba(var(--dh-gold-rgb), 0.1));
-    border: 1.5px solid rgba(var(--dh-gold-rgb), 0.6);
-    color: var(--dh-gold-bright);
-    box-shadow: 0 0 20px rgba(var(--dh-gold-rgb), 0.3), inset 0 0 15px rgba(var(--dh-gold-rgb), 0.1);
-    animation: btn-pulse 2s ease-in-out infinite;
+.wh-btn.listen {
+    background: linear-gradient(135deg, rgba(var(--wh-purple-rgb), 0.3), rgba(var(--wh-blue-rgb), 0.12));
+    border: 1.5px solid rgba(var(--wh-glow-rgb), 0.6);
+    color: var(--wh-glow);
+    box-shadow: 0 0 20px rgba(var(--wh-purple-rgb), 0.3), inset 0 0 15px rgba(var(--wh-blue-rgb), 0.1);
+    animation: wh-btn-pulse 2s ease-in-out infinite;
 }
 
-@keyframes btn-pulse {
+@keyframes wh-btn-pulse {
 
     0%,
     100% {
-        box-shadow: 0 0 15px rgba(var(--dh-gold-rgb), 0.2);
+        box-shadow: 0 0 15px rgba(var(--wh-purple-rgb), 0.2);
     }
 
     50% {
-        box-shadow: 0 0 30px rgba(var(--dh-gold-rgb), 0.5);
+        box-shadow: 0 0 30px rgba(var(--wh-purple-rgb), 0.5), 0 0 50px rgba(var(--wh-blue-rgb), 0.2);
     }
 }
 
-.call-btn.decline {
-    background: rgba(var(--dh-silver-rgb), 0.05);
-    border: 1px solid rgba(var(--dh-silver-rgb), 0.25);
-    color: rgba(var(--dh-silver-rgb), 0.5);
+.wh-btn.ignore {
+    background: rgba(var(--wh-thread-rgb), 0.05);
+    border: 1px solid rgba(var(--wh-thread-rgb), 0.2);
+    color: rgba(var(--wh-thread-rgb), 0.4);
 }
 
 /* ========================================
-   9. 通话中态（accepted）— 三角/线隐去，圆变冥想盆
-   ======================================== */
-.dh-container.accepted .g-triangle {
-    opacity: 0;
-}
-
-.dh-container.accepted .g-line {
-    opacity: 0;
-}
-
-.dh-container.accepted .dh-orbit-outer {
-    opacity: 0.1;
-}
-
-.dh-container.accepted .dh-orbit-mid {
-    opacity: 0.05;
-}
-
-.dh-container.accepted .dh-rune-ring {
-    opacity: 0.2;
-}
-
-.dh-container.accepted .g-circle {
-    transform: scale(2.8) translateY(-4px);
-}
-
-.dh-container.accepted .dh-circle {
-    stroke: rgba(var(--dh-silver-rgb), 0.3);
-    stroke-width: 0.8;
-    fill: rgba(var(--dh-silver-rgb), 0.03);
-}
-
-.dh-container.accepted .dh-circle-flow {
-    stroke: rgba(var(--dh-silver-rgb), 0.4);
-    stroke-width: 0.6;
-    animation: gold-flow-circle 4s linear infinite;
-}
-
-/* ========================================
-   10. 字幕
+   9. 字幕（微颤手写体 — 低语独有）
    ======================================== */
 .subtitle-area {
     position: fixed;
@@ -773,36 +851,46 @@
     font-family: 'Lora', serif;
     font-size: 18px;
     font-style: italic;
-    color: rgba(var(--dh-silver-rgb), 0.85);
+    color: rgba(var(--wh-thread-rgb), 0.8);
     line-height: 1.8;
     letter-spacing: 1px;
-    text-shadow: 0 0 10px rgba(var(--dh-silver-rgb), 0.3);
+    text-shadow: 0 0 10px rgba(var(--wh-purple-rgb), 0.3);
 }
 
 .sub-char {
     display: inline-block;
     opacity: 0;
-    transform: translateY(6px);
-    animation: subReveal 0.3s ease forwards;
+    transform: translateY(5px) rotate(-0.5deg);
+    animation: subTremble 0.35s ease forwards;
 }
 
-@keyframes subReveal {
-    to {
+@keyframes subTremble {
+    0% {
+        opacity: 0;
+        transform: translateY(5px) rotate(-1deg);
+    }
+
+    60% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(-1px) rotate(0.5deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
     }
 }
 
 /* ========================================
-   11. 结束态 — 缩小回原位
+   10. 结束态 — 缩回
    ======================================== */
-.dh-container.dispersing {
+.dh-container.ending {
     transition: all 1.5s cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
-.dh-container.dispersing .g-triangle,
-.dh-container.dispersing .g-circle,
-.dh-container.dispersing .g-line {
+.dh-container.ending .g-triangle,
+.dh-container.ending .g-circle,
+.dh-container.ending .g-line {
     transform: scale(1) translateY(0) !important;
     opacity: 0.5;
 }

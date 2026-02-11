@@ -4,21 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Patronus UI — Rune Awakening</title>
+    <title>🔮 Patronus UI — Whisper</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&family=Noto+Sans+Runic&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="base.css">
-    <link rel="stylesheet" href="incoming_call.css">
+    <link rel="stylesheet" href="whisper.css">
 </head>
 
 <body>
-    <div class="title-watermark">Patronus UI — Rune Awakening</div>
+    <div class="title-watermark">Patronus UI — Whisper / 灵犀感应</div>
 
     <!-- 背景粒子（base.js） -->
     <canvas id="particleCanvas"></canvas>
 
-    <!-- 暗幕 -->
+    <!-- 暗幕（深蓝紫调） -->
     <div class="dark-overlay" id="darkOverlay"></div>
 
     <!-- ====== 死亡圣器符文 ====== -->
@@ -34,9 +34,7 @@
 
                 <!-- 符文标记环 —— 古卢恩符文沿圆弧排列 -->
                 <defs>
-                    <!-- 外环路径 r=27 -->
                     <path id="runePathOuter" d="M 55,28 A 27,27 0 1,1 1,28 A 27,27 0 1,1 55,28" fill="none" />
-                    <!-- 内环路径 r=24 -->
                     <path id="runePathInner" d="M 52,28 A 24,24 0 1,0 4,28 A 24,24 0 1,0 52,28" fill="none" />
                 </defs>
                 <g class="dh-rune-ring">
@@ -45,7 +43,7 @@
                         <textPath href="#runePathOuter" startOffset="0%">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛈ ᛇ ᛉ ᛊ ᛏ ᛒ ᛗ ᛚ ᛜ ᛞ ᛟ ᚠ
                         </textPath>
                     </text>
-                    <!-- 内环：反向排列，不同符文序列 -->
+                    <!-- 内环：反向排列 -->
                     <text class="rune-text rune-text-inner">
                         <textPath href="#runePathInner" startOffset="8%">ᛟ ᛞ ᛜ ᛚ ᛗ ᛒ ᛏ ᛊ ᛉ ᛇ ᛈ ᛃ ᛁ ᚾ ᚺ ᚹ ᚷ ᚲ ᚱ ᚨ ᚦ ᚢ
                         </textPath>
@@ -54,11 +52,10 @@
 
                 <!-- ===== 三圣器：各自包裹 <g> 以便独立 transform ===== -->
 
-                <!-- 三角形（隐形斗篷）→ 分离后变结界外框 -->
+                <!-- 三角形 → 分离后变结界外框 -->
                 <g class="g-triangle">
                     <path class="dh-triangle" d="M28,10 L42,44 L14,44 Z" />
                     <path class="dh-triangle-flow" d="M28,10 L42,44 L14,44 Z" />
-                    <!-- 三角形顶点光点 -->
                     <circle class="dh-node" cx="28" cy="10" r="1.2">
                         <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinite" />
                     </circle>
@@ -70,17 +67,15 @@
                     </circle>
                 </g>
 
-                <!-- 圆（复活石）→ 分离后变通讯盆 -->
+                <!-- 圆 → 分离后变聆听盆 -->
                 <g class="g-circle">
                     <circle class="dh-circle" cx="28" cy="32" r="10.5" />
                     <circle class="dh-circle-flow" cx="28" cy="32" r="10.5" />
-                    <!-- 通讯盆涟漪（分离后可见） -->
                     <g class="pensieve-ripple-svg">
                         <circle class="ripple-ring" cx="28" cy="32" r="4" />
                         <circle class="ripple-ring" cx="28" cy="32" r="4" />
                         <circle class="ripple-ring" cx="28" cy="32" r="4" />
                     </g>
-                    <!-- 圆与三角交点光点 -->
                     <circle class="dh-node" cx="21.5" cy="40" r="0.8" opacity="0.4">
                         <animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.5s" repeatCount="indefinite" />
                     </circle>
@@ -89,7 +84,7 @@
                     </circle>
                 </g>
 
-                <!-- 竖线（老魔杖）→ 分离后变能量柱 -->
+                <!-- 竖线 → 能量柱 -->
                 <g class="g-line">
                     <line class="dh-line" x1="28" y1="10" x2="28" y2="44" />
                     <line class="dh-line-flow" x1="28" y1="10" x2="28" y2="44" />
@@ -103,13 +98,12 @@
         </div>
     </div>
 
-    <!-- ====== 来电信息 ====== -->
-    <div class="call-info" id="callInfo">
-        <div class="caller-name" id="callerNameText"></div>
-        <div class="caller-subtitle" id="callerSub"></div>
-        <div class="call-buttons" id="callButtons">
-            <button class="call-btn accept" onclick="acceptCall()">Accio ✨</button>
-            <button class="call-btn decline" onclick="declineCall()">Silencio 🤫</button>
+    <!-- ====== 低语提示 UI ====== -->
+    <div class="whisper-info" id="whisperInfo">
+        <div class="whisper-hint" id="whisperHintText"></div>
+        <div class="whisper-buttons" id="whisperButtons">
+            <button class="wh-btn listen" onclick="acceptListen()">聆听 👂</button>
+            <button class="wh-btn ignore" onclick="ignoreListen()">忽略 💤</button>
         </div>
     </div>
 
@@ -123,20 +117,17 @@
 
     <div class="debug-bar">
         <button class="debug-btn active" id="btnIdle" onclick="resetAll()">⚡ 待机</button>
-        <button class="debug-btn" id="btnCall" onclick="triggerIncomingCall()">🦌 来电触发</button>
-        <button class="debug-btn" id="btnActive" onclick="jumpToActive()">📞 通话中</button>
-        <button class="debug-btn" id="btnEnd" onclick="endCall()">🔚 结束</button>
+        <button class="debug-btn" id="btnWhisper" onclick="triggerWhisper()">🔮 低语触发</button>
+        <button class="debug-btn" id="btnListen" onclick="jumpToListening()">👂 聆听中</button>
+        <button class="debug-btn" id="btnEnd" onclick="endWhisper()">🔚 结束</button>
         <button class="debug-btn" id="btnReset" onclick="resetAll()">↻ 重置</button>
     </div>
 
     <script src="base.js"></script>
-    <script src="incoming_call.js"></script>
+    <script src="whisper.js"></script>
 
     <script>
         // base.js 粒子系统（待机态符文漂浮+星尘）
-        const dhInner = document.getElementById('dhInner');
-        const dhContainer = document.getElementById('dhContainer');
-
         const proto = new PrototypeBase({
             elementId: 'dhContainer',
             elementSize: 72,
