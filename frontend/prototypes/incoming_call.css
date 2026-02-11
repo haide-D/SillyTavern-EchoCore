@@ -360,7 +360,11 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(8, 8, 26, 0.92);
+    background:
+        radial-gradient(ellipse at 50% 40%, rgba(180, 130, 50, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 30% 70%, rgba(160, 110, 40, 0.04) 0%, transparent 40%),
+        radial-gradient(ellipse at 75% 60%, rgba(140, 100, 30, 0.03) 0%, transparent 35%),
+        rgba(8, 8, 20, 0.94);
     z-index: 40;
     opacity: 0;
     pointer-events: none;
@@ -532,6 +536,8 @@
 /* 符文标记环（放大后的外装饰） */
 .dh-container.separated .dh-rune-ring {
     opacity: 0.7;
+    transform: scale(2.8);
+    transform-origin: 28px 28px;
     animation: orbit-spin 20s linear infinite;
 }
 
@@ -618,31 +624,31 @@
 /* 内层 — 亮、快流动 */
 .vt-i1,
 .vt-i2 {
-    stroke: rgba(var(--dh-silver-rgb), 0.5);
-    stroke-width: 0.5;
-    stroke-dasharray: 3 6;
-    filter: drop-shadow(0 0 2px rgba(var(--dh-silver-rgb), 0.4));
-    animation: thread-flow-fast 2s linear infinite;
+    stroke: rgba(var(--dh-gold-rgb), 0.45);
+    stroke-width: 0.3;
+    stroke-dasharray: 4 8;
+    filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.3));
+    animation: thread-flow-fast 3s linear infinite;
 }
 
 /* 中层 — 中等 */
 .vt-m1,
 .vt-m2 {
-    stroke: rgba(var(--dh-silver-rgb), 0.35);
-    stroke-width: 0.4;
-    stroke-dasharray: 5 10;
-    filter: drop-shadow(0 0 3px rgba(var(--dh-silver-rgb), 0.3));
-    animation: thread-flow-mid 3.5s linear infinite;
+    stroke: rgba(var(--dh-gold-rgb), 0.3);
+    stroke-width: 0.25;
+    stroke-dasharray: 6 12;
+    filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.2));
+    animation: thread-flow-mid 4.5s linear infinite;
 }
 
 /* 外层 — 淡、慢瓦解 */
 .vt-o1,
 .vt-o2 {
-    stroke: rgba(var(--dh-silver-rgb), 0.2);
-    stroke-width: 0.3;
-    stroke-dasharray: 6 14;
-    filter: drop-shadow(0 0 4px rgba(var(--dh-silver-rgb), 0.15));
-    animation: thread-flow-slow 5s linear infinite;
+    stroke: rgba(var(--dh-gold-rgb), 0.18);
+    stroke-width: 0.2;
+    stroke-dasharray: 8 16;
+    filter: drop-shadow(0 0 3px rgba(var(--dh-gold-rgb), 0.1));
+    animation: thread-flow-slow 6s linear infinite;
 }
 
 @keyframes thread-flow-fast {
@@ -666,10 +672,10 @@
 /* --- 涡旋涟漪（旋转 + 扩散） --- */
 .vortex-ripple {
     fill: none;
-    stroke: rgba(var(--dh-silver-rgb), 0.15);
-    stroke-width: 0.25;
+    stroke: rgba(var(--dh-gold-rgb), 0.12);
+    stroke-width: 0.2;
     transform-origin: 28px 32px;
-    animation: vortex-ripple-expand 4.5s ease-out infinite;
+    animation: vortex-ripple-expand 5s ease-out infinite;
 }
 
 .vr-2 {
@@ -696,8 +702,8 @@
 
 /* --- 记忆光点 --- */
 .memory-glint {
-    fill: rgba(var(--dh-silver-rgb), 0.9);
-    filter: drop-shadow(0 0 2px rgba(var(--dh-silver-rgb), 0.7));
+    fill: rgba(var(--dh-gold-rgb), 0.9);
+    filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.6));
     opacity: 0;
 }
 
@@ -735,14 +741,37 @@
    ======================================== */
 .call-info {
     position: fixed;
-    top: 62%;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -30%);
     text-align: center;
     z-index: 65;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.8s ease;
+    padding: 20px 40px;
+}
+
+/* 装饰角花 — 左上/右下 */
+.call-info::before,
+.call-info::after {
+    content: '⟡';
+    position: absolute;
+    font-size: 14px;
+    color: rgba(var(--dh-gold-rgb), 0.3);
+    pointer-events: none;
+}
+
+.call-info::before {
+    top: 0;
+    left: 8px;
+    text-shadow: 12px 0 0 rgba(var(--dh-gold-rgb), 0.15);
+}
+
+.call-info::after {
+    bottom: -4px;
+    right: 8px;
+    text-shadow: -12px 0 0 rgba(var(--dh-gold-rgb), 0.15);
 }
 
 .call-info.visible {
@@ -751,8 +780,8 @@
 }
 
 .caller-name {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
+    font-family: 'MedievalSharp', 'Cinzel', serif;
+    font-size: 28px;
     color: var(--dh-gold-bright);
     text-shadow: 0 0 20px rgba(var(--dh-gold-rgb), 0.6),
         0 0 40px rgba(var(--dh-gold-rgb), 0.3);
@@ -800,45 +829,68 @@
 }
 
 .call-btn {
-    padding: 14px 36px;
-    border-radius: 30px;
-    font-family: 'Cinzel', serif;
+    padding: 12px 32px;
+    border-radius: 4px;
+    font-family: 'MedievalSharp', 'Cinzel', serif;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    letter-spacing: 2px;
+    transition: all 0.35s ease;
+    letter-spacing: 3px;
     border: none;
     outline: none;
+    position: relative;
+    text-transform: uppercase;
+}
+
+/* 双线框装饰 — 外层由 box-shadow 实现，内层由 outline 实现 */
+.call-btn::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(var(--dh-gold-rgb), 0.25);
+    border-radius: 2px;
+    pointer-events: none;
 }
 
 .call-btn:hover {
-    transform: scale(1.08);
+    transform: scale(1.06);
+    filter: brightness(1.2);
 }
 
 .call-btn.accept {
-    background: linear-gradient(135deg, rgba(var(--dh-gold-rgb), 0.25), rgba(var(--dh-gold-rgb), 0.1));
-    border: 1.5px solid rgba(var(--dh-gold-rgb), 0.6);
+    background: linear-gradient(170deg, rgba(var(--dh-gold-rgb), 0.18), rgba(var(--dh-gold-rgb), 0.06));
+    border: 1.5px solid rgba(var(--dh-gold-rgb), 0.5);
     color: var(--dh-gold-bright);
-    box-shadow: 0 0 20px rgba(var(--dh-gold-rgb), 0.3), inset 0 0 15px rgba(var(--dh-gold-rgb), 0.1);
-    animation: btn-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(var(--dh-gold-rgb), 0.15),
+        inset 0 1px 0 rgba(var(--dh-gold-rgb), 0.1);
+    animation: btn-pulse 3s ease-in-out infinite;
+}
+
+.call-btn.accept::before {
+    border-color: rgba(var(--dh-gold-rgb), 0.2);
 }
 
 @keyframes btn-pulse {
 
     0%,
     100% {
-        box-shadow: 0 0 15px rgba(var(--dh-gold-rgb), 0.2);
+        box-shadow: 0 0 10px rgba(var(--dh-gold-rgb), 0.12);
     }
 
     50% {
-        box-shadow: 0 0 30px rgba(var(--dh-gold-rgb), 0.5);
+        box-shadow: 0 0 22px rgba(var(--dh-gold-rgb), 0.35),
+            inset 0 0 8px rgba(var(--dh-gold-rgb), 0.08);
     }
 }
 
 .call-btn.decline {
-    background: rgba(var(--dh-silver-rgb), 0.05);
-    border: 1px solid rgba(var(--dh-silver-rgb), 0.25);
-    color: rgba(var(--dh-silver-rgb), 0.5);
+    background: rgba(var(--dh-silver-rgb), 0.04);
+    border: 1px solid rgba(var(--dh-silver-rgb), 0.2);
+    color: rgba(var(--dh-silver-rgb), 0.45);
+}
+
+.call-btn.decline::before {
+    border-color: rgba(var(--dh-silver-rgb), 0.1);
 }
 
 /* ========================================
