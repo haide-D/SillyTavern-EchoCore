@@ -555,57 +555,57 @@
 /* ========================================
    6. 三圣器分离态（separated — 蓝紫版）
    ======================================== */
-/* 三角形 → 扩大成结界外框 */
+/* 三角形 → 极淡结界暗示 */
 .dh-container.separated .g-triangle {
     transform: scale(2.8);
-    opacity: 0.3;
+    opacity: 0.08;
 }
 
 .dh-container.separated .dh-triangle {
-    stroke: rgba(var(--wh-purple-rgb), 0.2);
-    stroke-width: 0.4;
+    stroke: rgba(var(--wh-purple-rgb), 0.1);
+    stroke-width: 0.3;
 }
 
 .dh-container.separated .dh-triangle-flow {
-    stroke: rgba(var(--wh-glow-rgb), 0.4);
-    stroke-width: 0.5;
+    stroke: rgba(var(--wh-glow-rgb), 0.15);
+    stroke-width: 0.3;
     stroke-dasharray: 20 80;
-    filter: drop-shadow(0 0 8px rgba(var(--wh-purple-rgb), 0.3));
+    filter: drop-shadow(0 0 4px rgba(var(--wh-purple-rgb), 0.12));
 }
 
-/* 圆 → 放大成聆听盆 */
+/* 圆 → 主角，放大成聆听镜面 */
 .dh-container.separated .g-circle {
-    transform: scale(2.2) translateY(-4px);
+    transform: scale(2.6) translateY(-4px);
 }
 
 .dh-container.separated .dh-circle {
-    stroke: rgba(var(--wh-thread-rgb), 0.4);
+    stroke: rgba(var(--wh-glow-rgb), 0.5);
     stroke-width: 0.6;
-    opacity: 0.8;
+    opacity: 0.9;
 }
 
 .dh-container.separated .dh-circle-flow {
-    stroke: rgba(var(--wh-glow-rgb), 0.5);
-    stroke-width: 0.8;
-    stroke-dasharray: 8 58;
-    filter: drop-shadow(0 0 12px rgba(var(--wh-purple-rgb), 0.4));
-    animation: gold-flow-circle 3s linear infinite;
+    stroke: rgba(var(--wh-glow-rgb), 0.55);
+    stroke-width: 0.7;
+    stroke-dasharray: 10 56;
+    filter: drop-shadow(0 0 12px rgba(var(--wh-purple-rgb), 0.3));
+    animation: gold-flow-circle 4s linear infinite;
 }
 
-/* 竖线 → 能量柱 */
+/* 竖线 → 极淡 */
 .dh-container.separated .g-line {
     transform: scaleY(3.5);
-    opacity: 0.25;
+    opacity: 0.06;
 }
 
 .dh-container.separated .dh-line {
-    stroke: rgba(var(--wh-purple-rgb), 0.15);
+    stroke: rgba(var(--wh-purple-rgb), 0.06);
 }
 
 .dh-container.separated .dh-line-flow {
-    stroke: rgba(var(--wh-glow-rgb), 0.3);
+    stroke: rgba(var(--wh-glow-rgb), 0.1);
     stroke-dasharray: 4 30;
-    filter: drop-shadow(0 0 6px rgba(var(--wh-purple-rgb), 0.3));
+    filter: none;
 }
 
 /* 核心/节点 */
@@ -633,29 +633,29 @@
 }
 
 .dh-container.separated .dh-orbit-outer {
-    stroke: rgba(var(--wh-purple-rgb), 0.25);
-    stroke-width: 0.4;
-    animation: orbit-spin 10s linear infinite;
+    stroke: rgba(var(--wh-purple-rgb), 0.1);
+    stroke-width: 0.3;
+    animation: orbit-spin 12s linear infinite;
 }
 
 .dh-container.separated .dh-orbit-mid {
-    stroke: rgba(var(--wh-blue-rgb), 0.15);
-    stroke-width: 0.3;
-    animation: orbit-spin-reverse 7s linear infinite;
+    stroke: rgba(var(--wh-blue-rgb), 0.06);
+    stroke-width: 0.2;
+    animation: orbit-spin-reverse 8s linear infinite;
 }
 
 .dh-container.separated .dh-rune-ring {
-    opacity: 0.8;
+    opacity: 0.15;
     transform: scale(2.8);
     transform-origin: 28px 28px;
-    animation: orbit-spin 18s linear infinite;
+    animation: orbit-spin 25s linear infinite;
 }
 
 .dh-container.separated .dh-glow {
     width: 100%;
     height: 100%;
-    box-shadow: 0 0 50px 20px rgba(var(--wh-purple-rgb), 0.12),
-        0 0 100px 40px rgba(var(--wh-blue-rgb), 0.06);
+    box-shadow: 0 0 30px 10px rgba(var(--wh-purple-rgb), 0.06),
+        0 0 60px 20px rgba(var(--wh-blue-rgb), 0.03);
 }
 
 /* ========================================
@@ -875,7 +875,7 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -30%);
+    transform: translate(-50%, 40%);
     text-align: center;
     z-index: 65;
     opacity: 0;
