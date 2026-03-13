@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 主题引擎引导程序
  *
  * 原「模拟手机 UI 核心框架」，现已重构为 ThemeEngine 的引导程序。
@@ -14,9 +14,11 @@
 
 import { ThemeEngine } from './theme_engine.js';
 import DefaultTheme from './themes/default/theme.js';
+import DeathlyHallowsTheme from './themes/deathly_hallows.js';
 
 // ==================== 注册默认主题 ====================
 ThemeEngine.registerTheme(DefaultTheme);
+ThemeEngine.registerTheme(DeathlyHallowsTheme);
 
 // ==================== 向后兼容 ====================
 // 保持 window.TTS_Mobile 接口不变，代理到 ThemeEngine
