@@ -102,38 +102,68 @@ class LLMService:
         print(f"[LLMService] ════════════════════════════════════")
 
         
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            async with client.stream(
-                "POST",
-                api_url,
-                headers=headers,
-                json=request_body
-            ) as response:
-                if response.status_code != 200:
-                    error_text = await response.aread()
-                    raise Exception(f"LLM API 错误 {response.status_code}: {error_text.decode()[:200]}")
-                
-                print(f"[{model}] ⬅️ 返回状态码: {response.status_code}")
-                # 解析 SSE 流
-                async for line in response.aiter_lines():
-                    if not line:
-                        continue                
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        
-                        if data == "[DONE]":
-                            break
-                        
-                        try:
-                            chunk = json.loads(data)
-                            delta = chunk.get("choices", [{}])[0].get("delta", {})
-                            content = delta.get("content", "")
+        max_retries = 3
+        retry_delay = 1.0
+        has_yielded = False
+
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with client.stream(
+                        "POST",
+                        api_url,
+                        headers=headers,
+                        json=request_body
+                    ) as response:
+                        if response.status_code != 200:
+                            error_text = await response.aread()
+                            error_msg = error_text.decode(errors='ignore')[:200]
                             
-                            if content:
-                                yield content
+                            # 如果下游代理因为非标准参数崩溃返回 502/500/400，尝试移除该参数重试
+                            if response.status_code in (400, 500, 502) and "chat_template_args" in request_body:
+                                print(f"[LLMService] ⚠️ 收到 {response.status_code}，可能是由于下游不兼容 chat_template_args，移除该参数并重试...")
+                                del request_body["chat_template_args"]
+                                continue
                                 
-                        except json.JSONDecodeError:
-                            continue
+                            if response.status_code >= 500 and attempt < max_retries - 1 and not has_yielded:
+                                print(f"[LLMService] ⚠️ 遇到 {response.status_code} 错误，等待 {retry_delay}s 后重试 ({attempt+1}/{max_retries})...")
+                                import asyncio
+                                await asyncio.sleep(retry_delay)
+                                continue
+                                
+                            raise Exception(f"LLM API 错误 {response.status_code}: {error_msg}")
+                        
+                        print(f"[{model}] ⬅️ 返回状态码: {response.status_code}")
+                        # 解析 SSE 流
+                        async for line in response.aiter_lines():
+                            if not line:
+                                continue                
+                            if line.startswith("data: "):
+                                data = line[6:]
+                                
+                                if data == "[DONE]":
+                                    break
+                                
+                                try:
+                                    chunk = json.loads(data)
+                                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    
+                                    if content:
+                                        has_yielded = True
+                                        yield content
+                                        
+                                except json.JSONDecodeError:
+                                    continue
+                # 成功完成跳出循环
+                break
+            except (httpx.RequestError, httpx.TimeoutException) as e:
+                if attempt < max_retries - 1 and not has_yielded:
+                    print(f"[LLMService] ⚠️ 请求异常 {e}，等待 {retry_delay}s 后重试 ({attempt+1}/{max_retries})...")
+                    import asyncio
+                    await asyncio.sleep(retry_delay)
+                    continue
+                raise Exception(f"LLM 请求失败: {str(e)}")
         
         print(f"[LLMService] ✅ 流式完成")
 

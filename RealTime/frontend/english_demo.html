@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Audio Streaming Architecture</title>
+    <!-- 外部样式表 -->
+    <link rel="stylesheet" href="./css/realtime.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎙️ Real-time Audio Streaming Architecture</h1>
+
+        <!-- LLM 配置 -->
+        <div class="card">
+            <h2>🤖 LLM Router Config</h2>
+            <div class="config-grid">
+                <div class="form-group full-width">
+                    <label>API URL</label>
+                    <input type="text" id="llm-api-url" value="" placeholder="http://127.0.0.1:7861/v1">
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="llm-api-key" placeholder="your-api-key">
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="llm-model" style="flex: 1;">
+                            <option value="">-- Fetch Models --</option>
+                        </select>
+                        <button id="btn-fetch-models" class="secondary" style="padding: 10px 12px;">Refresh</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button id="btn-test-llm" class="secondary">Test Connection</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TTS 配置 -->
+        <div class="card">
+            <h2>🔊 TTS Streaming Config</h2>
+            <div class="config-grid">
+                <div class="form-group full-width">
+                    <label>Reference Audio Path</label>
+                    <input type="text" id="ref-audio-path" placeholder="D:/GPT-SoVITS/references/default.wav">
+                </div>
+                <div class="form-group full-width">
+                    <label>Prompt Text</label>
+                    <input type="text" id="prompt-text" placeholder="参考音频对应的文本">
+                </div>
+                <div class="form-group">
+                    <label>Text Language</label>
+                    <select id="text-lang">
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="btn-load-ref" class="secondary">Load Default Config</button>
+                </div>
+                <div class="form-group">
+                    <button id="btn-warmup" class="secondary" style="background: #4ade80;">🔥 Warmup Engine</button>
+                </div>
+            </div>
+            <div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                <span style="font-size: 0.85rem; color: var(--text-secondary);">Warmup Status: </span>
+                <span id="warmup-status" style="font-size: 0.85rem;">Warmed Up (Cache Hit)</span>
+            </div>
+        </div>
+
+        <!-- 对话区 -->
+        <div class="card">
+            <h2>💬 Data Interaction Console</h2>
+            <div class="chat-area" id="chat-area">
+                <div class="message assistant">
+                    你好！我是Connection established. Streaming ready. Awaiting user input for intent detection and avatar routing...
+                </div>
+            </div>
+            <div class="input-area">
+                <button id="btn-mic" class="secondary" title="语音输入">🎤</button>
+                <input type="text" id="user-input" placeholder="Input message or click mic to start audio stream..."
+                    onkeypress="if(event.key==='Enter')sendMessage()">
+                <button id="btn-send" onclick="sendMessage()">Send</button>
+                <button id="btn-interrupt" class="danger" onclick="interrupt()" disabled>Interrupt</button>
+            </div>
+            <div id="stt-status"
+                style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary); display: none;">
+                🎙️ <span id="stt-status-text">正在聆听...</span>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="card">
+            <div class="status-bar">
+                <div class="status-indicator">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">Connected</span>
+                </div>
+                <div>
+                    <audio id="audio-player" controls style="height: 32px;"></audio>
+                </div>
+            </div>
+        </div>
+
+        <!-- 延迟统计 -->
+        <div class="card">
+            <h2>📊 Latency Dashboard</h2>
+            <div class="latency-stats" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-first-token">142ms</div>
+                    <div class="stat-label">First Token Latency</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-first-tts">165ms</div>
+                    <div class="stat-label">First TTS Call</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-first-audio">410ms</div>
+                    <div class="stat-label">First Audio Latency</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-total">1250ms</div>
+                    <div class="stat-label">Total Completion Time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 调试日志 -->
+        <div class="card">
+            <h2>🔧 Debug Logs (WebSocket/API)</h2>
+            <div class="debug-log" id="debug-log">
+    <div class="info" style="margin-bottom: 4px; font-family: monospace;">[10:42:01] [WebSocket] Connected to Avatar streaming endpoint...</div>
+    <div class="success" style="margin-bottom: 4px; font-family: monospace; color: #4ade80;">[10:42:02] [ElevenLabs-TTS] Engine warmed up. Latency optimized.</div>
+    <div class="info" style="margin-bottom: 4px; font-family: monospace;">[10:42:15] [LLM-Router] Incoming query: "Schedule a meeting for tomorrow"</div>
+    <div class="info" style="margin-bottom: 4px; font-family: monospace;">[10:42:15] [n8n-Webhook] Triggered Google Calendar integration event...</div>
+    <div class="success" style="margin-bottom: 4px; font-family: monospace; color: #4ade80;">[10:42:16] [n8n-Webhook] 200 OK - Calendar event created.</div>
+    <div class="info" style="margin-bottom: 4px; font-family: monospace;">[10:42:16] [LLM-Router] Generating verbal confirmation...</div>
+    <div class="info" style="margin-bottom: 4px; font-family: monospace;">[10:42:16] [ElevenLabs-TTS] Streaming audio chunks to LiveAvatar bridge...</div>
+    <div class="success" style="margin-bottom: 4px; font-family: monospace; color: #4ade80;">[10:42:17] [LiveAvatar] Lip-sync sync frames injected successfully.</div>
+</div>
+        </div>
+    </div>
+
+    <script src="realtime_client.js"></script>
+    <script type="module">
+        // 引入现有的 LLM_Client 模块（/static 挂载到 frontend 目录）
+        import { LLM_Client } from '/static/js/llm_client.js';
+        // 引入流式播放器
+        import { StreamingPlayer } from './audio_streaming/index.js';
+        // 引入语音识别模块
+        import { STTManager } from './speech_recognition/index.js';
+
+        // 将模块挂载到 window 上供 RealtimeClient 使用
+        window.LLM_Client = LLM_Client;
+        window.StreamingPlayer = StreamingPlayer;
+        window.STTManager = STTManager;
+
+        // 全局实例
+        let realtimeClient = null;
+        let streamingPlayer = null;
+        let sttManager = null;
+
+        // 页面初始化 (module 加载完成后自动执行)
+        log('info', '页面加载完成');
+        initPage();
+
+        async function initPage() {
+            // 尝试从后端加载配置
+            try {
+                const response = await fetch('/api/admin/settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    const llmConfig = settings.phone_call?.llm || {};
+
+                    if (llmConfig.api_url) {
+                        document.getElementById('llm-api-url').value = llmConfig.api_url;
+                    }
+                    if (llmConfig.api_key) {
+                        document.getElementById('llm-api-key').value = llmConfig.api_key;
+                    }
+                    if (llmConfig.model) {
+                        const select = document.getElementById('llm-model');
+                        select.innerHTML = `<option value="${llmConfig.model}">${llmConfig.model}</option>`;
+                    }
+
+                    log('success', '已从后端加载 LLM 配置');
+                }
+            } catch (e) {
+                log('info', '使用默认配置（后端加载失败）');
+            }
+
+            // 加载 TTS 配置
+            await loadRefAudio();
+
+            // 自动预热（加载配置后自动触发）
+            log('info', '正在自动预热模型...');
+            await warmupModel(true);
+
+            // 初始化语音识别
+            initSTT();
+        }
+
+        // 绑定按钮事件
+        document.getElementById('btn-load-ref').addEventListener('click', loadRefAudio);
+        document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
+        document.getElementById('btn-test-llm').addEventListener('click', testLLMConnection);
+        document.getElementById('btn-warmup').addEventListener('click', warmupModel);
+        document.getElementById('btn-mic').addEventListener('click', toggleSTT);
+
+        // ==================== 语音识别 ====================
+
+        /**
+         * 初始化语音识别
+         */
+        function initSTT() {
+            if (!STTManager) {
+                log('error', 'STTManager 模块未加载');
+                return;
+            }
+
+            // 检查可用引擎
+            const engines = STTManager.getAvailableEngines();
+            if (engines.length === 0) {
+                log('error', '当前浏览器不支持语音识别');
+                document.getElementById('btn-mic').disabled = true;
+                return;
+            }
+
+            log('success', `语音识别可用，引擎: ${engines.join(', ')}`);
+
+            // 创建 STT 管理器
+            sttManager = new STTManager({
+                lang: document.getElementById('text-lang').value === 'zh' ? 'zh-CN' :
+                    document.getElementById('text-lang').value === 'ja' ? 'ja-JP' : 'en-US',
+                continuous: true,
+                interimResults: true
+            });
+
+            // 绑定事件
+            sttManager
+                .onResult((text, isFinal) => {
+                    const input = document.getElementById('user-input');
+                    input.value = text;
+
+                    if (isFinal && text.trim()) {
+                        log('info', `🗣️ 识别结果: "${text}"`);
+                        // 自动发送消息
+                        sendMessage();
+                    }
+                })
+                .onError((error) => {
+                    log('error', `语音识别错误: ${error.message}`);
+                })
+                .onStateChange((state) => {
+                    updateSTTUI(state);
+                });
+        }
+
+        /**
+         * 切换语音识别状态
+         */
+        async function toggleSTT() {
+            if (!sttManager) {
+                log('error', '语音识别未初始化');
+                return;
+            }
+
+            try {
+                if (sttManager.isListening()) {
+                    await sttManager.stop();
+                    log('info', '🔇 停止语音识别');
+                } else {
+                    // 更新语言设置
+                    const lang = document.getElementById('text-lang').value;
+                    const langMap = { 'zh': 'zh-CN', 'ja': 'ja-JP', 'en': 'en-US' };
+                    sttManager.setLanguage(langMap[lang] || 'zh-CN');
+
+                    await sttManager.start();
+                    log('info', `🎤 开始语音识别 (${langMap[lang] || 'zh-CN'})`);
+                }
+            } catch (e) {
+                log('error', `语音识别失败: ${e.message}`);
+            }
+        }
+
+        /**
+         * 更新语音识别 UI 状态
+         */
+        function updateSTTUI(state) {
+            const btn = document.getElementById('btn-mic');
+            const statusDiv = document.getElementById('stt-status');
+            const statusText = document.getElementById('stt-status-text');
+
+            if (state === 'listening') {
+                btn.textContent = '🔴';
+                btn.style.background = '#ef4444';
+                btn.title = '点击停止';
+                statusDiv.style.display = 'block';
+                statusText.textContent = '正在聆听...';
+            } else {
+                btn.textContent = '🎤';
+                btn.style.background = '';
+                btn.title = '语音输入';
+                statusDiv.style.display = 'none';
+            }
+        }
+
+        // 加载默认参考音频
+        async function loadRefAudio() {
+            try {
+                const response = await fetch('/api/realtime/ref_audio');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('ref-audio-path').value = data.path || '';
+                    document.getElementById('prompt-text').value = data.text || '';
+                    log('success', '已加载默认参考音频配置');
+                } else {
+                    log('error', '加载参考音频失败: ' + response.statusText);
+                }
+            } catch (e) {
+                log('error', '加载参考音频失败: ' + e.message);
+            }
+        }
+
+        // 预热模型
+        async function warmupModel(isAuto = false) {
+            const btn = document.getElementById('btn-warmup');
+            const statusSpan = document.getElementById('warmup-status');
+
+            const refAudioPath = document.getElementById('ref-audio-path').value;
+            const promptText = document.getElementById('prompt-text').value;
+            const textLang = document.getElementById('text-lang').value;
+
+            if (!refAudioPath || !promptText) {
+                if (!isAuto) {
+                    log('error', '请先填写Reference Audio Path和Prompt Text');
+                }
+                statusSpan.textContent = '❌ 配置不完整';
+                statusSpan.style.color = '#f87171';
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '预热中...';
+                statusSpan.textContent = '🔄 预热中...';
+                statusSpan.style.color = 'var(--warning)';
+
+                const response = await fetch('/api/realtime/warmup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ref_audio_path: refAudioPath,
+                        prompt_text: promptText,
+                        prompt_lang: textLang,
+                        force: !isAuto  // 手动预热时强制重新预热
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.skipped) {
+                        log('info', '⏩ 跳过预热（已缓存）');
+                        statusSpan.textContent = '✅ 已预热（缓存命中）';
+                    } else {
+                        log('success', `✅ 预热完成！耗时: ${result.elapsed_ms}ms`);
+                        statusSpan.textContent = `✅ 已预热 (${result.elapsed_ms}ms)`;
+                    }
+                    statusSpan.style.color = 'var(--success)';
+                } else {
+                    log('error', '预热失败: ' + result.message);
+                    statusSpan.textContent = '❌ 预热失败';
+                    statusSpan.style.color = '#f87171';
+                }
+            } catch (e) {
+                log('error', '预热请求异常: ' + e.message);
+                statusSpan.textContent = '❌ 预热异常';
+                statusSpan.style.color = '#f87171';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔥 Warmup Engine';
+            }
+        }
+
+        // 获取模型列表 - 复用 LLM_Client.fetchModels
+        async function fetchModels() {
+            const apiUrl = document.getElementById('llm-api-url').value.trim();
+            const apiKey = document.getElementById('llm-api-key').value.trim();
+
+            if (!apiUrl || !apiKey) {
+                log('error', '请先填写 API URL 和 API Key');
+                return;
+            }
+
+            const select = document.getElementById('llm-model');
+            const btn = document.getElementById('btn-fetch-models');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '获取中...';
+                log('info', '正在获取模型列表...');
+
+                // 复用现有的 LLM_Client
+                const models = await LLM_Client.fetchModels(apiUrl, apiKey);
+
+                // 填充下拉框
+                select.innerHTML = '';
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    select.appendChild(opt);
+                });
+
+                log('success', `获取到 ${models.length} 个模型`);
+
+            } catch (e) {
+                log('error', '获取模型失败: ' + e.message);
+                select.innerHTML = '<option value="">获取失败</option>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '刷新';
+            }
+        }
+
+        // 测试LLM连接 - 复用 LLM_Client.callLLM
+        async function testLLMConnection() {
+            const apiUrl = document.getElementById('llm-api-url').value.trim();
+            const apiKey = document.getElementById('llm-api-key').value.trim();
+            const model = document.getElementById('llm-model').value;
+
+            if (!apiUrl || !apiKey) {
+                log('error', '请先填写 API URL 和 API Key');
+                return;
+            }
+
+            if (!model) {
+                log('error', '请先选择模型');
+                return;
+            }
+
+            const btn = document.getElementById('btn-test-llm');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '测试中...';
+                log('info', `正在测试连接... 模型: ${model}`);
+
+                // 复用现有的 LLM_Client
+                const content = await LLM_Client.callLLM({
+                    api_url: apiUrl,
+                    api_key: apiKey,
+                    model: model,
+                    prompt: '说"测试成功"',
+                    max_tokens: 20
+                });
+
+                log('success', `✅ 连接成功! 响应: ${content.substring(0, 50)}`);
+
+            } catch (e) {
+                log('error', '❌ 连接失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '测试连接';
+            }
+        }
+
+        // 发送消息 - 使用新的 RealtimeClient
+        window.sendMessage = async function () {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // 暂停语音识别（避免播放音频时被自己的声音干扰）
+            let wasListening = false;
+            if (sttManager && sttManager.isListening()) {
+                wasListening = true;
+                await sttManager.stop();
+                log('info', '🔇 对话期间暂停语音识别');
+            }
+
+            // 显示用户消息
+            addMessage('user', text);
+            input.value = '';
+
+            // 更新状态
+            setStatus('streaming', '正在生成...');
+            document.getElementById('btn-send').disabled = true;
+            document.getElementById('btn-interrupt').disabled = false;
+
+            // 记录开始时间
+            const startTime = performance.now();
+            let firstTokenTime = null;
+            let firstTTSTime = null;
+            let firstAudioTime = null;
+
+            try {
+                // 创建助手消息容器
+                const assistantMsg = addMessage('assistant', '', true);
+
+                // 获取 TTS 配置
+                const ttsConfig = {
+                    refAudioPath: document.getElementById('ref-audio-path').value,
+                    promptText: document.getElementById('prompt-text').value,
+                    textLang: document.getElementById('text-lang').value
+                };
+
+                // 创建或复用实时客户端（保持对话历史）
+                if (!realtimeClient) {
+                    realtimeClient = new RealtimeClient(ttsConfig);
+
+                    // 初始化流式播放器
+                    if (window.StreamingPlayer) {
+                        streamingPlayer = new StreamingPlayer();
+                        await streamingPlayer.init();
+                        realtimeClient.setStreamingPlayer(streamingPlayer);
+                        log('success', '流式播放器已启用');
+                    }
+                }
+
+                // 手动设置 LLM 配置（从界面获取）
+                realtimeClient.setLLMConfig({
+                    api_url: document.getElementById('llm-api-url').value,
+                    api_key: document.getElementById('llm-api-key').value,
+                    model: document.getElementById('llm-model').value
+                });
+
+                // 更新 TTS 配置
+                realtimeClient.config.refAudioPath = ttsConfig.refAudioPath;
+                realtimeClient.config.promptText = ttsConfig.promptText;
+                realtimeClient.config.textLang = ttsConfig.textLang;
+
+                // 开始流式对话
+                await realtimeClient.chat(text, {
+                    onToken: (token) => {
+                        if (!firstTokenTime) {
+                            firstTokenTime = performance.now() - startTime;
+                            document.getElementById('stat-first-token').textContent =
+                                Math.round(firstTokenTime) + 'ms';
+                            log('info', `首Token: ${Math.round(firstTokenTime)}ms`);
+                        }
+                        assistantMsg.textContent += token;
+                    },
+                    onFirstTTSCall: (textChunk) => {
+                        firstTTSTime = performance.now() - startTime;
+                        document.getElementById('stat-first-tts').textContent =
+                            Math.round(firstTTSTime) + 'ms';
+                        log('info', `🎤 First TTS Call: ${Math.round(firstTTSTime)}ms, 文本: "${textChunk}"`);
+                    },
+                    onAudio: (audioBlob) => {
+                        // 仅记录First Audio Latency（播放由 audioQueue 统一管理）
+                        if (!firstAudioTime) {
+                            firstAudioTime = performance.now() - startTime;
+                            document.getElementById('stat-first-audio').textContent =
+                                Math.round(firstAudioTime) + 'ms';
+                            log('success', `首音频: ${Math.round(firstAudioTime)}ms`);
+                        }
+                        // 不要在这里调用 playAudio()！audioQueue 会自动播放
+                    },
+                    onError: (error) => {
+                        log('error', error);
+                    },
+                    onComplete: (fullResponse) => {
+                        log('info', `对话历史: ${realtimeClient.conversationHistory.length} 条`);
+                    }
+                });
+
+                // 完成
+                const totalTime = performance.now() - startTime;
+                document.getElementById('stat-total').textContent =
+                    Math.round(totalTime) + 'ms';
+                assistantMsg.classList.remove('streaming');
+                log('success', `对话完成，Total Completion Time: ${Math.round(totalTime)}ms`);
+
+            } catch (e) {
+                log('error', e.message);
+            } finally {
+                setStatus('connected', '就绪');
+                document.getElementById('btn-send').disabled = false;
+                document.getElementById('btn-interrupt').disabled = true;
+            }
+        }
+
+        // 打断对话 - 使用 RealtimeClient
+        window.interrupt = async function () {
+            log('info', '发送打断请求...');
+            try {
+                // 客户端打断
+                if (realtimeClient) {
+                    realtimeClient.interrupt();
+                }
+
+                // 后端打断
+                const response = await fetch('/api/realtime/interrupt', {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    log('success', '已打断');
+                    // 停止音频播放
+                    document.getElementById('audio-player').pause();
+                }
+            } catch (e) {
+                log('error', '打断失败: ' + e.message);
+            }
+        }
+
+        // 添加消息到对话区
+        function addMessage(role, content, streaming = false) {
+            const chatArea = document.getElementById('chat-area');
+            const msg = document.createElement('div');
+            msg.className = `message ${role}${streaming ? ' streaming' : ''}`;
+            msg.textContent = content;
+            chatArea.appendChild(msg);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return msg;
+        }
+
+        // 播放音频
+        function playAudio(audioBlob) {
+            const player = document.getElementById('audio-player');
+            const url = URL.createObjectURL(audioBlob);
+            player.src = url;
+            player.play().catch(e => log('error', '播放失败: ' + e.message));
+        }
+
+        // 设置状态
+        function setStatus(state, text) {
+            const dot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            dot.className = 'status-dot';
+            if (state === 'connected') dot.classList.add('connected');
+            if (state === 'streaming') dot.classList.add('streaming');
+
+            statusText.textContent = text;
+        }
+
+        // 日志
+        function log(type, message) {
+            const logArea = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${time}] ${message}`;
+            logArea.appendChild(line);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>
