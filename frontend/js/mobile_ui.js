@@ -9,11 +9,11 @@
  *
  * 所有 UI 渲染、拖拽、场景路由逻辑已迁移到:
  * - theme_engine.js (核心引擎)
- * - themes/default/theme.js (默认主题)
+ * - themes/default/index.js (默认主题)
  */
 
 import { ThemeEngine } from './theme_engine.js';
-import DefaultTheme from './themes/default/theme.js';
+import DefaultTheme from './themes/default/index.js';
 import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
 
 // ==================== 注册默认主题 ====================
