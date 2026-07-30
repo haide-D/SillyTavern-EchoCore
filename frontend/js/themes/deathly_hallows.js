@@ -6,6 +6,9 @@ import * as LlmTestApp from '../mobile_apps/llm_test_app.js';
 import * as PhoneCallApp from '../mobile_apps/phone_call_app.js';
 import * as EavesdropApp from '../mobile_apps/eavesdrop_app.js';
 import { createNavbar } from './theme_utils.js';
+import { ChatInjector } from '../chat_injector.js';
+import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from '../mobile_apps/shared/audio_player.js';
+import { getCharacterAvatar } from '../mobile_apps/shared/utils.js';
 
 let _engine = null;
 let _particleEngine = null;
@@ -46,6 +49,294 @@ function ensureCSS() {
         link.type = 'text/css';
         link.href = cssPath;
         document.head.appendChild(link);
+    }
+
+    if ($('#dh-custom-call-css').length === 0) {
+        const style = document.createElement('style');
+        style.id = 'dh-custom-call-css';
+        style.innerHTML = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap');
+
+/* ========================================
+   DH FULLSCREEN UI - THEMES
+   ======================================== */
+:root {
+    --dh-gold-accent: 196, 155, 79;
+    --dh-gold-bg: rgba(22, 16, 4, 0.88);
+    
+    --dh-purple-accent: 167, 110, 255;
+    --dh-purple-bg: rgba(14, 8, 22, 0.88);
+}
+
+.dh-theme-gold {
+    --dh-accent: var(--dh-gold-accent);
+    --dh-bg-center: var(--dh-gold-bg);
+}
+
+.dh-theme-purple {
+    --dh-accent: var(--dh-purple-accent);
+    --dh-bg-center: var(--dh-purple-bg);
+}
+
+/* ========================================
+   DH FULLSCREEN CALL UI - PREMIUM REDESIGN
+   ======================================== */
+
+#dh-true-fullscreen-call {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    overflow: hidden;
+    /* Semi-transparent overlay based on theme */
+    background: radial-gradient(ellipse 60% 50% at 50% 50%, var(--dh-bg-center) 0%, rgba(0, 0, 0, 0.94) 100%);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    animation: dh-screen-fadein 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes dh-screen-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ---- Background Hallows Watermark ---- */
+.dh-bg-hallows {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: rgba(var(--dh-accent), 0.9);
+}
+.dh-bg-hallows svg {
+    width: min(70vw, 70vh);
+    height: min(70vw, 70vh);
+    opacity: 0.06;
+    animation: dh-hallows-breathe 8s ease-in-out infinite;
+}
+@keyframes dh-hallows-breathe {
+    0%, 100% { opacity: 0.05; transform: scale(1) rotate(0deg); }
+    50%       { opacity: 0.09; transform: scale(1.03) rotate(1.5deg); }
+}
+
+/* ---- Content Stack ---- */
+.dh-call-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0 24px;
+    text-align: center;
+}
+
+/* ---- Avatar ---- */
+.dh-call-avatar-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 32px;
+}
+.dh-call-avatar-ring {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--dh-accent), 0.55);
+    animation: dh-ring-pulse 2.8s ease-in-out infinite;
+}
+@keyframes dh-ring-pulse {
+    0%, 100% { transform: scale(1);    opacity: 0.55; }
+    50%       { transform: scale(1.08); opacity: 0.9; }
+}
+.dh-call-avatar-ring.outer {
+    inset: -12px;
+    border-color: rgba(var(--dh-accent), 0.2);
+    animation-delay: 0.6s;
+}
+.dh-call-avatar-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(var(--dh-accent), 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.dh-call-avatar-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.dh-call-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--dh-accent), 0.6);
+}
+.dh-call-avatar-placeholder svg {
+    width: 52px;
+    height: 52px;
+    opacity: 0.5;
+}
+
+/* ---- Typography ---- */
+.dh-call-name {
+    font-size: clamp(26px, 5vw, 36px);
+    font-weight: 200;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.92);
+    margin: 0 0 10px 0;
+    line-height: 1.1;
+}
+.dh-call-status {
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(var(--dh-accent), 0.75);
+    animation: dh-status-pulse 2.5s ease-in-out infinite;
+    margin-bottom: 64px;
+}
+@keyframes dh-status-pulse {
+    0%, 100% { opacity: 0.6; }
+    50%       { opacity: 1; }
+}
+
+/* ---- Action Buttons ---- */
+.dh-call-actions {
+    display: flex;
+    align-items: center;
+    gap: 52px;
+    z-index: 2;
+}
+.dh-action-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.dh-action-label {
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+}
+.dh-action-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                filter 0.25s ease,
+                opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+.dh-action-btn:active {
+    transform: scale(0.9);
+    opacity: 0.8;
+}
+.dh-action-btn.reject, .dh-action-btn.hangup {
+    background: rgba(220, 53, 53, 0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(220, 53, 53, 0.3);
+}
+.dh-action-btn.reject:hover, .dh-action-btn.hangup:hover {
+    background: rgba(220, 53, 53, 0.32);
+    transform: scale(1.06);
+    filter: brightness(1.15);
+}
+.dh-action-btn.answer {
+    background: rgba(34, 197, 94, 0.22);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+.dh-action-btn.answer:hover {
+    background: rgba(34, 197, 94, 0.36);
+    transform: scale(1.06);
+    filter: brightness(1.15);
+}
+
+/* ---- Eavesdrop Play/Stop Buttons ---- */
+.dh-action-btn.play {
+    background: rgba(var(--dh-accent), 0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(var(--dh-accent), 0.3);
+}
+.dh-action-btn.play:hover {
+    background: rgba(var(--dh-accent), 0.32);
+    transform: scale(1.06);
+    filter: brightness(1.15);
+}
+
+/* ---- In-call Waveform ---- */
+.dh-waveform {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    margin: 0 0 44px 0;
+}
+.dh-waveform-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: rgba(var(--dh-accent), 0.7);
+    animation: dh-wave 1.2s ease-in-out infinite alternate;
+}
+.dh-waveform-bar:nth-child(1)  { height: 8px;  animation-delay: 0.00s; }
+.dh-waveform-bar:nth-child(2)  { height: 16px; animation-delay: 0.10s; }
+.dh-waveform-bar:nth-child(3)  { height: 28px; animation-delay: 0.05s; }
+.dh-waveform-bar:nth-child(4)  { height: 38px; animation-delay: 0.15s; }
+.dh-waveform-bar:nth-child(5)  { height: 44px; animation-delay: 0.08s; }
+.dh-waveform-bar:nth-child(6)  { height: 38px; animation-delay: 0.20s; }
+.dh-waveform-bar:nth-child(7)  { height: 28px; animation-delay: 0.04s; }
+.dh-waveform-bar:nth-child(8)  { height: 16px; animation-delay: 0.12s; }
+.dh-waveform-bar:nth-child(9)  { height: 8px;  animation-delay: 0.02s; }
+@keyframes dh-wave {
+    0%   { transform: scaleY(0.3); opacity: 0.4; }
+    100% { transform: scaleY(1.1); opacity: 0.9; }
+}
+
+/* ---- Subtitle ---- */
+.dh-subtitle {
+    font-size: 15px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 0.04em;
+    min-height: 24px;
+    margin-bottom: 40px;
+    padding: 0 32px;
+    max-width: 480px;
+    line-height: 1.5;
+}
+
+/* Mobile tweaks */
+@media (max-height: 600px) {
+    .dh-call-avatar-wrap { width: 88px; height: 88px; margin-bottom: 20px; }
+    .dh-call-avatar-img  { width: 88px; height: 88px; }
+    .dh-call-status { margin-bottom: 32px; }
+    .dh-waveform    { margin-bottom: 24px; height: 32px; }
+    .dh-action-btn  { width: 60px; height: 60px; }
+    .dh-call-actions { gap: 36px; }
+}
+        `;
+        document.head.appendChild(style);
     }
 }
 
@@ -222,8 +513,12 @@ function _onDragUp() {
     if (!_dragState.hasMoved) {
         // 点击处理
         if (_engine) {
-            // 移除复杂的飞入动画，直接打开引擎面板
-            _engine.toggle();
+            // 如果有监听就绪状态，优先打开监听界面
+            if (window.TTS_EavesdropReady) {
+                _engine.showScene('eavesdrop');
+            } else {
+                _engine.toggle();
+            }
         }
     } else {
         // 恢复悬浮浮动
@@ -236,6 +531,274 @@ function _onDragUp() {
     }
 }
 
+// ==================== 专属死亡圣器来电 UI ====================
+
+// 死亡圣器 SVG 水印
+ const _HALLOWS_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="50,10 92,82 8,82" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="50" cy="57" r="25" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="50" y1="10" x2="50" y2="82" stroke="currentColor" stroke-width="1.5"/>
+</svg>`;
+
+// 等待分隔符
+ const _DOT_SVG = `<svg viewBox="0 0 4 4"><circle cx="2" cy="2" r="2" fill="currentColor" opacity="0.6"/></svg>`;
+
+// 挂断/停止按鈕 SVG
+const _HANGUP_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+    <path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 012 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.42 19.42 0 013.07 8.18 2 2 0 015 6h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 13.9"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+</svg>`;
+
+// 接听/播放按鈕 SVG
+const _ANSWER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.18 2 2 0 015 6h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 13.9a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+</svg>`;
+const _PLAY_SVG = `<svg viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+    <polygon points="5 3 19 12 5 21 5 3"/>
+</svg>`;
+
+// 用户头像占位符 SVG
+const _USER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="52" height="52">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+</svg>`;
+
+function _buildCallScreen(id, themeClass, avatarHtml, name, bodyHtml) {
+    return $(`
+        <div id="${id}" class="${themeClass}">
+            <div class="dh-bg-hallows">${_HALLOWS_SVG}</div>
+            <div class="dh-call-content">
+                <div class="dh-call-avatar-wrap">
+                    <div class="dh-call-avatar-ring outer"></div>
+                    <div class="dh-call-avatar-ring"></div>
+                    <div class="dh-call-avatar-img">${avatarHtml}</div>
+                </div>
+                <p class="dh-call-name">${name}</p>
+                ${bodyHtml}
+            </div>
+        </div>
+    `);
+}
+
+function _renderCustomDeathlyHallowsCall(container, callData, ctx) {
+    container.empty();
+    $('#tts-dh-modal').hide();
+    $('#dh-true-fullscreen-call').remove();
+
+    const avatarHtml = callData.avatar_url 
+        ? `<img src="${callData.avatar_url}" alt="${callData.char_name}">` 
+        : `<div class="dh-call-avatar-placeholder">${_USER_SVG}</div>`;
+
+    const bodyHtml = `
+        <p class="dh-call-status">Incoming Transmission</p>
+        <div class="dh-call-actions">
+            <div class="dh-action-group">
+                <button class="dh-action-btn reject" id="dh-btn-reject">${_HANGUP_SVG}</button>
+                <span class="dh-action-label">拒绝</span>
+            </div>
+            <div class="dh-action-group">
+                <button class="dh-action-btn answer" id="dh-btn-answer">${_ANSWER_SVG}</button>
+                <span class="dh-action-label">接听</span>
+            </div>
+        </div>
+    `;
+
+    const $content = _buildCallScreen('dh-true-fullscreen-call', 'dh-theme-gold', avatarHtml, callData.char_name || '未知', bodyHtml);
+    $('body').append($content);
+
+    $content.find('#dh-btn-reject').click(function () {
+        $content.remove();
+        delete window.TTS_IncomingCall;
+        $('#tts-dh-modal').show();
+        if (ctx.engine) ctx.engine.showScene('home');
+    });
+
+    $content.find('#dh-btn-answer').click(async function () {
+        try {
+            await ChatInjector.appendToLastAIMessage({
+                type: 'phone_call',
+                segments: callData.segments || [],
+                callerName: callData.char_name,
+                callId: callData.call_id,
+                audioUrl: callData.audio_url
+            });
+        } catch (error) {
+            console.error('[DeathlyHallows] 注入聊天失败:', error);
+        }
+        $content.remove();
+        _showCustomInCallUI(container, callData, ctx);
+    });
+}
+
+// ==================== 专属窃听等待 UI (Mysterious Purple) ====================
+function _renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
+    container.empty();
+    $('#tts-dh-modal').hide();
+    $('#dh-true-fullscreen-call').remove();
+
+    const avatarHtml = callData.avatar_url 
+        ? `<img src="${callData.avatar_url}" alt="${callData.speakers.join(', ')}">` 
+        : `<div class="dh-call-avatar-placeholder">${_USER_SVG}</div>`;
+
+    const bodyHtml = `
+        <p class="dh-call-status">Whispers Detected</p>
+        <div class="dh-call-actions">
+            <div class="dh-action-group">
+                <button class="dh-action-btn reject" id="dh-btn-reject">${_HANGUP_SVG}</button>
+                <span class="dh-action-label">无视</span>
+            </div>
+            <div class="dh-action-group">
+                <button class="dh-action-btn answer" id="dh-btn-answer">${_ANSWER_SVG}</button>
+                <span class="dh-action-label">探知</span>
+            </div>
+        </div>
+    `;
+
+    const $content = _buildCallScreen('dh-true-fullscreen-call', 'dh-theme-purple', avatarHtml, callData.speakers ? callData.speakers.join(' & ') : '未知目标', bodyHtml);
+    $('body').append($content);
+
+    $content.find('#dh-btn-reject').click(function () {
+        $content.remove();
+        delete window.TTS_EavesdropReady;
+        $('#tts-mobile-trigger').removeClass('whisper-sensing');
+        $('#tts-dh-modal').show();
+        if (ctx.engine) ctx.engine.showScene('home');
+    });
+
+    $content.find('#dh-btn-answer').click(function () {
+        $content.remove();
+        _showCustomEavesdropUI(container, callData, ctx);
+    });
+}
+
+// ==================== 专属窃听播放 UI (Mysterious Purple) ====================
+function _showCustomEavesdropUI(container, callData, ctx) {
+    container.empty();
+    $('#tts-dh-modal').hide();
+    $('#dh-true-fullscreen-call').remove();
+
+    const avatarHtml = callData.avatar_url 
+        ? `<img src="${callData.avatar_url}" alt="${callData.speakers.join(', ')}">` 
+        : `<div class="dh-call-avatar-placeholder">${_USER_SVG}</div>`;
+
+    const bodyHtml = `
+        <div class="dh-waveform">
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div>
+        </div>
+        <div class="dh-subtitle"><span class="subtitle-text">聆听中...</span></div>
+        <div class="dh-call-actions">
+            <div class="dh-action-group">
+                <button class="dh-action-btn hangup" id="dh-btn-hangup">${_HANGUP_SVG}</button>
+                <span class="dh-action-label">挂断</span>
+            </div>
+        </div>
+    `;
+    const $content = _buildCallScreen('dh-true-fullscreen-call', 'dh-theme-purple', avatarHtml, callData.speakers ? callData.speakers.join(' & ') : '未知目标', bodyHtml);
+    $('body').append($content);
+
+    const player = new AudioPlayer({
+        $container: $content,
+        segments: callData.segments || [],
+        showSpeaker: false,
+        onEnd: () => {
+            console.log('[DeathlyHallows] 窃听结束');
+            endCall();
+        },
+        onError: (err) => {
+            console.error('[DeathlyHallows] 播放错误:', err);
+            endCall();
+        }
+    });
+
+    setGlobalPlayer(player);
+
+    $content.find('#dh-btn-hangup').click(function () {
+        player.stop();
+        endCall();
+    });
+
+    if (callData.audio_url) {
+        player.play(callData.audio_url);
+    } else {
+        endCall();
+    }
+
+    function endCall() {
+        $content.remove();
+        delete window.TTS_EavesdropReady;
+        cleanupGlobalPlayer();
+        $('#tts-dh-modal').show();
+        if (ctx.engine) ctx.engine.showScene('home');
+    }
+}
+
+function _showCustomInCallUI(container, callData, ctx) {
+    container.empty();
+    $('#tts-dh-modal').hide();
+    $('#dh-true-fullscreen-call').remove();
+
+    const avatarHtml = callData.avatar_url 
+        ? `<img src="${callData.avatar_url}" alt="${callData.char_name}">` 
+        : `<div class="dh-call-avatar-placeholder">${_USER_SVG}</div>`;
+
+    const bodyHtml = `
+        <div class="dh-waveform">
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div><div class="dh-waveform-bar"></div>
+            <div class="dh-waveform-bar"></div>
+        </div>
+        <div class="dh-subtitle"><span class="subtitle-text">聆听中...</span></div>
+        <div class="dh-call-actions">
+            <div class="dh-action-group">
+                <button class="dh-action-btn hangup" id="dh-btn-hangup">${_HANGUP_SVG}</button>
+                <span class="dh-action-label">挂断</span>
+            </div>
+        </div>
+    `;
+    const $content = _buildCallScreen('dh-true-fullscreen-call', 'dh-theme-gold', avatarHtml, callData.char_name || '未知', bodyHtml);
+    $('body').append($content);
+
+    const player = new AudioPlayer({
+        $container: $content,
+        segments: callData.segments || [],
+        showSpeaker: false,
+        onEnd: () => {
+            console.log('[DeathlyHallows] 通话结束');
+            endCall();
+        },
+        onError: (err) => {
+            console.error('[DeathlyHallows] 播放错误:', err);
+            endCall();
+        }
+    });
+
+    setGlobalPlayer(player);
+
+    $content.find('#dh-btn-hangup').click(function () {
+        player.stop();
+        endCall();
+    });
+
+    if (callData.audio_url) {
+        player.play(callData.audio_url);
+    } else {
+        endCall();
+    }
+
+    function endCall() {
+        $content.remove();
+        delete window.TTS_IncomingCall;
+        cleanupGlobalPlayer();
+        $('#tts-dh-modal').show();
+        if (ctx.engine) ctx.engine.showScene('home');
+    }
+}
 
 // ==================== 主题定义 ====================
 
@@ -419,22 +982,39 @@ const DeathlyHallowsTheme = {
 
         incoming_call: {
             render($container, ctx) {
-                const $appContainer = $(`<div style="width:100%; height:100%; display:flex; flex-direction:column; background:var(--proto-bg-dark); color:var(--proto-text-color);"></div>`);
-                IncomingCallApp.render($appContainer, _createNavbarForApps);
-                $container.empty().append($appContainer);
+                const callData = window.TTS_IncomingCall;
+                if (!callData) {
+                    // 如果没有来电，回退调用默认来电历史记录 UI
+                    const $appContainer = $(`<div style="width:100%; height:100%; display:flex; flex-direction:column; background:var(--proto-bg-dark); color:var(--proto-text-color);"></div>`);
+                    IncomingCallApp.render($appContainer, _createNavbarForApps);
+                    $container.empty().append($appContainer);
+                    return;
+                }
+                
+                // 有来电时，渲染自定义死亡圣器主题界面
+                _renderCustomDeathlyHallowsCall($container, callData, ctx);
             },
             cleanup() {
                 if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
+                cleanupGlobalPlayer();
             }
         },
         eavesdrop: {
             render($container, ctx) {
-                const $appContainer = $(`<div style="width:100%; height:100%; display:flex; flex-direction:column; background:var(--proto-bg-dark); color:var(--proto-text-color);"></div>`);
-                EavesdropApp.render($appContainer, _createNavbarForApps);
-                $container.empty().append($appContainer);
+                const data = window.TTS_EavesdropReady;
+                if (!data) {
+                    const $appContainer = $(`<div style="width:100%; height:100%; display:flex; flex-direction:column; background:var(--proto-bg-dark); color:var(--proto-text-color);"></div>`);
+                    EavesdropApp.render($appContainer, _createNavbarForApps);
+                    $container.empty().append($appContainer);
+                    return;
+                }
+                
+                // 有窃听就绪状态时，渲染紫色的窃听等待界面
+                _renderCustomDeathlyHallowsEavesdrop($container, data, ctx);
             },
             cleanup() {
                 if (EavesdropApp.cleanup) EavesdropApp.cleanup();
+                cleanupGlobalPlayer();
             }
         },
         favorites: {
@@ -482,6 +1062,7 @@ const DeathlyHallowsTheme = {
                 if (window.toastr) {
                     window.toastr.info(`🎧 远方传来低语: ${(data.speakers || []).join(' 和 ')}`);
                 }
+                window.TTS_EavesdropReady = data;
                 return true;
 
             case 'call_ended':
