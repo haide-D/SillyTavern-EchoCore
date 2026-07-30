@@ -22,6 +22,7 @@ import { LLM_Client } from './frontend/js/llm_client.js';
 import { TTS_Mobile } from './frontend/js/mobile_ui.js';
 import { WebSocketManager } from './frontend/js/websocket_manager.js';
 import { ChatEventListener } from './frontend/js/chat_event_listener.js';
+import { initSettingsUI } from './frontend/js/settings_ui.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
@@ -414,5 +415,11 @@ setTimeout(() => {
         console.warn("⚠️ [Loader] ChatEventListener 模块未找到");
     }
 }, 2000);
+
+// 初始化原生设置面板
+eventSource.on(event_types.APP_READY, () => {
+    console.log("🛠️ [Loader] APP_READY: 正在挂载原生设置面板...");
+    initSettingsUI();
+});
 
 console.log("✅ [TTS] 插件初始化完成");
