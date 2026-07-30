@@ -623,7 +623,7 @@ export function renderTriggerDOM() {
     </div>
     
     <!-- 内部的场景路由容器，复用 mobile 设计或者悬浮弹窗 -->
-    <div id="tts-dh-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:360px; height:600px; background:transparent; z-index:10000; overflow:visible;">
+    <div id="tts-dh-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:360px; max-width:92vw; height:600px; background:transparent; z-index:10000; overflow:visible;">
         <!-- 神秘侧的SVG背景边框 -->
         <svg style="position:absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); z-index: -1; pointer-events: none;" viewBox="0 0 400 640" preserveAspectRatio="none">
             <defs>
@@ -666,11 +666,29 @@ export function renderTriggerDOM() {
     `;
     $('body').append(canvasHtml + triggerHtml);
     
-    // 设置触发器初始显示位置 (靠右)，并显式设置为 flex 显示
+    // 设置触发器初始显示位置
     const $trigger = $('#tts-dh-trigger');
+    const winW = window.innerWidth || $(window).width();
+    const winH = window.innerHeight || $(window).height();
+    
+    let initialLeft, initialTop;
+    if (winW < 768) {
+        // 手机端：水平居中靠下
+        initialLeft = (winW - 72) / 2;
+        initialTop = winH - 72 - 80;
+    } else {
+        // 桌面端：垂直居中靠右
+        initialLeft = winW - 72 - 24;
+        initialTop = (winH - 72) / 2;
+    }
+    
+    // 安全边界
+    initialLeft = Math.max(0, Math.min(winW - 72, initialLeft));
+    initialTop = Math.max(0, Math.min(winH - 72, initialTop));
+
     $trigger.css({
-        left: ($(window).width() * 0.78 - 36) + 'px',
-        top: ($(window).height() * 0.50 - 36) + 'px',
+        left: initialLeft + 'px',
+        top: initialTop + 'px',
         display: 'flex'
     });
 }

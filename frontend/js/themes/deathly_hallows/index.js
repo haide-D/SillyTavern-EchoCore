@@ -136,7 +136,24 @@ const DeathlyHallowsTheme = {
     },
 
     onOpen(engine) {
-        $('#tts-dh-modal').fadeIn(200);
+        const $modal = $('#tts-dh-modal');
+        
+        // 手机端修正：用真实可见高度计算，避免地址栏占用导致上方截断
+        const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const modalW = Math.min(360, vw * 0.92);
+        const modalH = Math.min(600, vh - 40);
+        const top = (window.visualViewport ? window.visualViewport.pageTop : 0) + Math.max(20, (vh - modalH) / 2);
+        const left = (window.visualViewport ? window.visualViewport.pageLeft : 0) + (vw - modalW) / 2;
+        
+        $modal.css({
+            top: top + 'px',
+            left: left + 'px',
+            width: modalW + 'px',
+            height: modalH + 'px',
+            transform: 'none',
+        });
+        $modal.fadeIn(200);
     },
 
     onClose(engine) {
