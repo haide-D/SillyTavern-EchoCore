@@ -1,4 +1,4 @@
-﻿// 文件: ui_templates.js
+// 文件: ui_templates.js
 
 export function getFloatingButtonHTML() {
     return `<div id="tts-manager-btn">🔊 TTS配置</div>`;
@@ -46,7 +46,23 @@ export function getDashboardHTML(data) {
 
                     <div class="tts-card">
                         <div class="tts-card-title">🎨 视觉体验</div>
-                        <label class="tts-switch-row">
+
+                        <div class="tts-input-row" style="margin-bottom: 5px; padding-bottom: 10px;">
+                            <span class="tts-input-label">系统主题</span>
+                            <div class="tts-custom-select" id="theme-dropdown" style="margin-top:5px; z-index: 20;">
+                                <div class="select-trigger" data-value="default">
+                                    <span class="theme-current-text">默认主题</span>
+                                    <i class="arrow-icon">▼</i>
+                                </div>
+                                <div class="select-options" id="theme-select-options">
+                                    <div class="option-item theme-option" data-value="default">默认主题 (Default)</div>
+                                    <div class="option-item theme-option" data-value="deathly_hallows">死亡圣器 (Deathly Hallows)</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="theme-selector" value="default">
+                        </div>
+
+                        <label class="tts-switch-row" style="border-top: 1px dashed rgba(128,128,128,0.2); padding-top: 10px;">
                             <span class="tts-switch-label">美化卡专用模式，非前端美化卡请勿勾选</span>
                             <input type="checkbox" id="tts-iframe-switch" class="tts-toggle" ${settings.iframe_mode ? 'checked' : ''}>
                         </label>
@@ -59,18 +75,18 @@ export function getDashboardHTML(data) {
                                     <i class="arrow-icon">▼</i>
                                 </div>
                                 <div class="select-options">
-                                    <div class="option-item" data-value="default">🌿 森野·极简</div>
-                                    <div class="option-item" data-value="cyberpunk">⚡赛博·霓虹</div>
-                                    <div class="option-item" data-value="ink">✒️ 水墨·烟雨</div>
-                                    <div class="option-item" data-value="kawaii">💎 幻彩·琉璃</div>
-                                    <div class="option-item" data-value="bloom">🌸 花信·初绽</div>
-                                    <div class="option-item" data-value="rouge">💋 魅影·微醺</div>
-                                    <div class="option-item" data-value="holo">🛸 星舰·光环</div>
-                                    <div class="option-item" data-value="scroll">📜 羊皮·史诗</div>
-                                    <div class="option-item" data-value="steampunk">⚙️ 蒸汽·机械</div>
-                                    <div class="option-item" data-value="tactical">🎯 战术·指令</div>
-                                    <div class="option-item" data-value="obsidian">🌑 黑曜石·极夜</div>
-                                    <div class="option-item" data-value="classic">📼 旧日·回溯</div>
+                                    <div class="option-item style-option" data-value="default">🌿 森野·极简</div>
+                                    <div class="option-item style-option" data-value="cyberpunk">⚡赛博·霓虹</div>
+                                    <div class="option-item style-option" data-value="ink">✒️ 水墨·烟雨</div>
+                                    <div class="option-item style-option" data-value="kawaii">💎 幻彩·琉璃</div>
+                                    <div class="option-item style-option" data-value="bloom">🌸 花信·初绽</div>
+                                    <div class="option-item style-option" data-value="rouge">💋 魅影·微醺</div>
+                                    <div class="option-item style-option" data-value="holo">🛸 星舰·光环</div>
+                                    <div class="option-item style-option" data-value="scroll">📜 羊皮·史诗</div>
+                                    <div class="option-item style-option" data-value="steampunk">⚙️ 蒸汽·机械</div>
+                                    <div class="option-item style-option" data-value="tactical">🎯 战术·指令</div>
+                                    <div class="option-item style-option" data-value="obsidian">🌑 黑曜石·极夜</div>
+                                    <div class="option-item style-option" data-value="classic">📼 旧日·回溯</div>
                                 </div>
                             </div>
                             <input type="hidden" id="style-selector" value="default">

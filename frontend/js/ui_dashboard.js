@@ -1,4 +1,4 @@
-﻿// 文件: ui_dashboard.js
+// 文件: ui_dashboard.js
 if (!window.TTS_UI) {
     window.TTS_UI = {};
 }
@@ -124,12 +124,13 @@ export const TTS_UI = window.TTS_UI;
         });
 
         // 下拉菜单交互逻辑
-        $('#style-dropdown .select-trigger').off('click').on('click', function (e) {
+        $('#style-dropdown .select-trigger, #theme-dropdown .select-trigger').off('click').on('click', function (e) {
             e.stopPropagation();
             $(this).parent().toggleClass('open');
         });
 
-        $('.option-item').off('click').on('click', async function (e) {
+        // ==================== 气泡风格切换 ====================
+        $('.style-option').off('click').on('click', async function (e) {
             e.stopPropagation();
             const val = $(this).attr('data-value');
             const txt = $(this).text();
@@ -161,6 +162,39 @@ export const TTS_UI = window.TTS_UI;
             } catch (err) {
                 console.error("样式保存失败", err);
                 // 就算后端失败了，至少本地变了，用户体验不会卡顿
+            }
+        });
+
+        // ==================== 主题切换 ====================
+        // 初始化当前主题的下拉显示
+        if (window.TTS_ThemeEngine) {
+            const curTheme = window.TTS_ThemeEngine.getCurrentThemeId() || 'default';
+            const $tOption = $(`.theme-option[data-value="${curTheme}"]`);
+            if ($tOption.length > 0) {
+                $('#theme-dropdown .select-trigger .theme-current-text').text($tOption.text());
+                $('#theme-dropdown .select-trigger').attr('data-value', curTheme);
+                $('#theme-selector').val(curTheme);
+            }
+        }
+
+        $('.theme-option').off('click').on('click', async function (e) {
+            e.stopPropagation();
+            const val = $(this).attr('data-value');
+            const txt = $(this).text();
+            const $container = $(this).closest('.tts-custom-select');
+
+            // 1. UI 立即反馈：更新文字显示
+            $container.find('.select-trigger .theme-current-text').text(txt);
+            $container.find('.select-trigger').attr('data-value', val);
+            $('#theme-selector').val(val);
+            $container.removeClass('open');
+
+            // 2. 调用主题引擎切换主题
+            if (window.TTS_ThemeEngine) {
+                await window.TTS_ThemeEngine.switchTheme(val);
+                alert(`已切换至: ${txt}`);
+            } else {
+                alert('主题引擎未就绪');
             }
         });
 

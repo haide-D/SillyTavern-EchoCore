@@ -14,7 +14,7 @@
 
 import { ThemeEngine } from './theme_engine.js';
 import DefaultTheme from './themes/default/theme.js';
-import DeathlyHallowsTheme from './themes/deathly_hallows.js';
+import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
 
 // ==================== 注册默认主题 ====================
 ThemeEngine.registerTheme(DefaultTheme);
