@@ -222,14 +222,8 @@ function _onDragUp() {
     if (!_dragState.hasMoved) {
         // 点击处理
         if (_engine) {
-            // 检查是否是来电状态
-            if (window.TTS_IncomingCall) {
-                _playAwakeningAnimation().then(() => {
-                    _engine.toggle();
-                });
-            } else {
-                _engine.toggle();
-            }
+            // 移除复杂的飞入动画，直接打开引擎面板
+            _engine.toggle();
         }
     } else {
         // 恢复悬浮浮动
@@ -241,50 +235,6 @@ function _onDragUp() {
         }
     }
 }
-
-// 播放原型机风格的接听飞入居中动画
-function _playAwakeningAnimation() {
-    return new Promise((resolve) => {
-        const $trigger = $('#tts-dh-trigger');
-        if (!$trigger.length) return resolve();
-
-        // 1. 发射光波与暗化（omen）
-        $trigger.addClass('omen');
-        const cx = $(window).width() / 2;
-        const cy = $(window).height() / 2;
-        
-        // （省略创建满屏 shockwave 的繁琐操作，直接执行向中心移动并放大的效果）
-        const targetSize = Math.min($(window).width(), $(window).height()) * 0.55;
-
-        // 绑定 transition 执行变大和居中
-        $trigger.css({
-            'transition': 'all 1s cubic-bezier(0.22, 1, 0.36, 1)',
-            'left': (cx - targetSize / 2) + 'px',
-            'top': (cy - targetSize / 2) + 'px',
-            'width': targetSize + 'px',
-            'height': targetSize + 'px',
-            'z-index': 10002 // 确保盖在所有东西上面
-        });
-        
-        // 调整内部粒子的关联
-        if (_particleEngine) {
-            _particleEngine.elX = cx;
-            _particleEngine.elY = cy;
-            _particleEngine.config.baseX = 0.5;
-            _particleEngine.config.baseY = 0.5;
-        }
-
-        // 2. 等待移动动画后进入分离状态（separated/accepted 表现）
-        setTimeout(() => {
-            $trigger.removeClass('omen').addClass('separated accepted');
-            // 最后完成解析并打开引擎面板
-            setTimeout(() => {
-                resolve();
-            }, 500);
-        }, 1000);
-    });
-}
-
 
 
 // ==================== 主题定义 ====================
@@ -420,40 +370,6 @@ const DeathlyHallowsTheme = {
     onClose(engine) {
         if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
         $('#tts-dh-modal').fadeOut(200);
-
-        // 如果正处于来电状态分离变大后，需要触发收回动画
-        const $trigger = $('#tts-dh-trigger');
-        if ($trigger.hasClass('separated') || $trigger.hasClass('accepted') || $trigger.hasClass('omen')) {
-            $trigger.removeClass('separated accepted omen').addClass('dispersing');
-
-            // 回复拖拽计算保存的上一次位置，如果没拖过则取默认
-            let origX = _dragState.winW * 0.78 - 36;
-            let origY = _dragState.winH * 0.50 - 36;
-            if (_dragState.startX > 0 || _dragState.startY > 0) {
-               // 这里因为 dragup 保存的坐标由 $trigger 的当前 css left 决定
-               // _dragState并没有一直存位置, 所以安全起见回到最初配置
-            }
-
-            $trigger.css({
-                'transition': 'all 1.5s cubic-bezier(0.22, 1, 0.36, 1)',
-                'left': origX + 'px',
-                'top': origY + 'px',
-                'width': '72px',
-                'height': '72px'
-            });
-
-            // 等待恢复后重置 transition 并调整粒子引擎原点
-             setTimeout(() => {
-                $trigger.css('transition', 'filter 0.3s ease'); // 将 transition 恢复原状
-                $trigger.removeClass('dispersing');
-                if (_particleEngine) {
-                    _particleEngine.elX = origX + 36;
-                    _particleEngine.elY = origY + 36;
-                    _particleEngine.config.baseX = (origX + 36) / $(window).width();
-                    _particleEngine.config.baseY = (origY + 36) / $(window).height();
-                }
-            }, 1500);
-        }
     },
 
     getSceneContainer() {
