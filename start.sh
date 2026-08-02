@@ -53,8 +53,14 @@ echo "[INFO] If \"Uvicorn running...\" appears, the startup is successful."
 echo "[INFO] Admin UI will open automatically in your browser..."
 echo "---------------------------------------------------"
 
+# 获取配置的端口
+MANAGER_PORT=$(grep '"manager_port"' system_settings.json 2>/dev/null | grep -o '[0-9]\+')
+if [ -z "$MANAGER_PORT" ]; then
+    MANAGER_PORT="3000"
+fi
+
 # 后台启动一个延迟任务,5秒后自动打开浏览器
-(sleep 5 && open "http://localhost:3000/admin" 2>/dev/null || xdg-open "http://localhost:3000/admin" 2>/dev/null) &
+(sleep 5 && open "http://localhost:${MANAGER_PORT}/admin" 2>/dev/null || xdg-open "http://localhost:${MANAGER_PORT}/admin" 2>/dev/null) &
 
 $PYTHON_CMD manager.py
 

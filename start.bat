@@ -64,8 +64,13 @@ echo [INFO] If "Uvicorn running..." appears, the startup is successful.
 echo [INFO] Admin UI will open automatically in your browser...
 echo ---------------------------------------------------
 
+:: 获取配置的端口
+set "MANAGER_PORT=3000"
+for /f "tokens=2 delims=:, " %%I in ('findstr /i "manager_port" system_settings.json 2^>nul') do set "MANAGER_PORT=%%~I"
+if not defined MANAGER_PORT set "MANAGER_PORT=3000"
+
 :: 后台启动一个延迟任务,5秒后自动打开浏览器
-start /b cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:3000/admin"
+start /b cmd /c "timeout /t 5 /nobreak >nul && start http://localhost:!MANAGER_PORT!/admin"
 
 "%PYTHON_CMD%" manager.py
 

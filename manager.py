@@ -166,13 +166,15 @@ def auto_start_sovits():
         
         # 检查是否已配置安装路径
         if not config.install_path:
-            print("[GPT-SoVITS] ⚠️  未配置安装路径，请访问 http://localhost:3000/admin 进行配置")
+            manager_port = get_manager_port()
+            print(f"[GPT-SoVITS] ⚠️  未配置安装路径，请访问 http://localhost:{manager_port}/admin 进行配置")
             return
         
         install_path = Path(config.install_path)
         if not install_path.exists():
+            manager_port = get_manager_port()
             print(f"[GPT-SoVITS] ⚠️  安装路径不存在: {install_path}")
-            print("[GPT-SoVITS] ⚠️  请访问 http://localhost:3000/admin 重新配置")
+            print(f"[GPT-SoVITS] ⚠️  请访问 http://localhost:{manager_port}/admin 重新配置")
             return
         
         # 检查端口是否已被占用（可能已经在运行）
@@ -223,8 +225,9 @@ def auto_start_sovits():
         print("[GPT-SoVITS] ✅ 服务已在新窗口中启动")
         
     except Exception as e:
+        manager_port = get_manager_port()
         print(f"[GPT-SoVITS] ❌ 自动启动失败: {e}")
-        print("[GPT-SoVITS] ⚠️  请手动启动或访问 http://localhost:3000/admin 配置")
+        print(f"[GPT-SoVITS] ⚠️  请手动启动或访问 http://localhost:{manager_port}/admin 配置")
 
 
 if __name__ == "__main__":
@@ -233,6 +236,7 @@ if __name__ == "__main__":
     
     port = get_manager_port()
     print(f"[Manager] 🚀 启动后端 API 服务 (端口: {port})...")
+
     # 必须是 0.0.0.0，否则局域网无法访问
     # access_log=False 禁用默认访问日志,使用自定义日志中间件
     uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
