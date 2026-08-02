@@ -25,8 +25,9 @@ import { ChatEventListener } from './frontend/js/chat_event_listener.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
-let remoteConfig = lsConfig ? JSON.parse(lsConfig) : { useRemote: false, ip: "" };
+let remoteConfig = lsConfig ? JSON.parse(lsConfig) : { useRemote: false, ip: "", port: 3000 };
 let apiHost = "127.0.0.1";
+let apiPort = remoteConfig.port || 3000;
 
 if (remoteConfig.useRemote && remoteConfig.ip) {
     apiHost = remoteConfig.ip;
@@ -49,7 +50,7 @@ if (apiHost.includes(':') && !apiHost.startsWith('[')) {
     apiHost = `[${apiHost}]`;
 }
 
-const MANAGER_API = `http://${apiHost}:3000`;
+const MANAGER_API = `http://${apiHost}:${apiPort}`;
 
 // ================= 暴露模块到 window 对象 (向后兼容) =================
 // 由于部分模块内部仍使用 window.TTS_* 引用,需要暴露到全局
@@ -352,9 +353,11 @@ function showEmergencyConfig(currentApi) {
             max-width: 250px;
         ">
             <div style="font-weight:bold; color:#ff7675; margin-bottom:8px;">⚠️ 无法连接插件后端，请检查是否开启插件后端</div>
-            <div style="font-size:12px; color:#aaa; margin-bottom:8px;">尝试连接: ${currentApi} 失败。<br>请手动输入电脑 IP：</div>
+            <div style="font-size:12px; color:#aaa; margin-bottom:8px;">尝试连接: ${currentApi} 失败。<br>请手动输入电脑 IP 和端口：</div>
 
             <input type="text" id="tts-emergency-ip" placeholder="例如: 192.168.1.5"
+                style="width:100%; box-sizing:border-box; padding:5px; margin-bottom:6px; border-radius:4px; border:none;">
+            <input type="number" id="tts-emergency-port" placeholder="端口号 (默认 3000)" value="${apiPort}"
                 style="width:100%; box-sizing:border-box; padding:5px; margin-bottom:8px; border-radius:4px; border:none;">
 
             <button id="tts-emergency-save" style="
@@ -375,6 +378,7 @@ function showEmergencyConfig(currentApi) {
         try {
             const p = JSON.parse(saved);
             if (p.ip) $('#tts-emergency-ip').val(p.ip);
+            if (p.port) $('#tts-emergency-port').val(p.port);
         } catch (e) { }
     }
 
@@ -384,14 +388,16 @@ function showEmergencyConfig(currentApi) {
 
     $('#tts-emergency-save').on('click', function () {
         const ip = $('#tts-emergency-ip').val().trim();
+        const portVal = parseInt($('#tts-emergency-port').val()) || 3000;
         if (!ip) return alert("请输入 IP");
 
         localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
             useRemote: true,
-            ip: ip
+            ip: ip,
+            port: portVal
         }));
 
-        alert(`设置已保存: ${ip}\n页面即将刷新...`);
+        alert(`设置已保存: ${ip}:${portVal}\n页面即将刷新...`);
         location.reload();
     });
 }

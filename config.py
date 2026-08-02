@@ -15,6 +15,7 @@ DEFAULT_BASE_DIR = os.path.join(PLUGIN_ROOT, "MyCharacters")
 DEFAULT_CACHE_DIR = os.path.join(PLUGIN_ROOT, "Cache")
 MAX_CACHE_SIZE_MB = 500
 SOVITS_HOST = "http://127.0.0.1:9880"
+DEFAULT_MANAGER_PORT = 3000
 
 # ================= 配置加载逻辑 =================
 def load_json(filename):
@@ -75,7 +76,8 @@ def init_settings():
         "default_lang": "Chinese",
         "iframe_mode": False,
         "bubble_style": "default",
-        "sovits_host": SOVITS_HOST
+        "sovits_host": SOVITS_HOST,
+        "manager_port": DEFAULT_MANAGER_PORT
     }
 
     for key, val in defaults.items():
@@ -243,6 +245,15 @@ def get_sovits_host():
     """获取配置的 GPT-SoVITS 服务地址"""
     s = init_settings()
     return s.get("sovits_host", SOVITS_HOST)
+
+
+def get_manager_port():
+    """获取配置的后台服务端口 (Manager Port)"""
+    s = init_settings()
+    try:
+        return int(s.get("manager_port", DEFAULT_MANAGER_PORT))
+    except (ValueError, TypeError):
+        return DEFAULT_MANAGER_PORT
 
 
 def get_character_mappings():

@@ -560,6 +560,7 @@ async function loadSettings() {
         document.getElementById('setting-base-dir').value = settings.base_dir || '';
         document.getElementById('setting-cache-dir').value = settings.cache_dir || '';
         document.getElementById('setting-sovits-host').value = settings.sovits_host || 'http://127.0.0.1:9880';
+        document.getElementById('setting-manager-port').value = settings.manager_port || 3000;
         document.getElementById('setting-default-lang').value = settings.default_lang || 'Chinese';
 
         // ========== 分析引擎配置 ==========
@@ -655,6 +656,7 @@ async function saveSettings() {
         base_dir: document.getElementById('setting-base-dir').value.trim(),
         cache_dir: document.getElementById('setting-cache-dir').value.trim(),
         sovits_host: document.getElementById('setting-sovits-host').value.trim(),
+        manager_port: parseInt(document.getElementById('setting-manager-port').value) || 3000,
         default_lang: document.getElementById('setting-default-lang').value,
 
         // 分析引擎配置

@@ -7,9 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 # 导入配置和路由
-from config import FRONTEND_DIR, init_settings
-from routers import data, tts, system
-from config import FRONTEND_DIR
+from config import FRONTEND_DIR, init_settings, get_manager_port
 from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer
 
 # 导入自定义日志中间件
@@ -233,6 +231,8 @@ if __name__ == "__main__":
     # 自动启动 GPT-SoVITS
     auto_start_sovits()
     
+    port = get_manager_port()
+    print(f"[Manager] 🚀 启动后端 API 服务 (端口: {port})...")
     # 必须是 0.0.0.0，否则局域网无法访问
     # access_log=False 禁用默认访问日志,使用自定义日志中间件
-    uvicorn.run(app, host="0.0.0.0", port=3000, access_log=False)
+    uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
