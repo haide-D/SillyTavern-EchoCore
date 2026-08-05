@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from config import FRONTEND_DIR, init_settings
 from routers import data, tts, system
 from config import FRONTEND_DIR
-from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer
+from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer, themes
 
 # 导入自定义日志中间件
 from middleware.logging_middleware import LoggingMiddleware
@@ -68,6 +68,10 @@ else:
 
 os.makedirs("data/favorites_audio", exist_ok=True)
 app.mount("/favorites", StaticFiles(directory="data/favorites_audio"), name="favorites")
+
+# 挂载主题资源目录
+os.makedirs("data/themes", exist_ok=True)
+app.mount("/api/themes/assets", StaticFiles(directory="data/themes"), name="themes_assets")
 
 # 挂载主动电话音频目录 - 使用自定义路由处理中文路径
 from config import init_settings
@@ -148,6 +152,7 @@ app.include_router(speakers.router, prefix="/api", tags=["Speakers Management"])
 app.include_router(eavesdrop.router, prefix="/api/eavesdrop", tags=["Eavesdrop Tracking"])
 app.include_router(continuous_analysis.router, prefix="/api", tags=["Continuous Analysis"])
 app.include_router(sovits_installer.router, tags=["GPT-SoVITS Installation"])
+app.include_router(themes.router, prefix="/api/themes", tags=["Themes Management"])
 
 
 # GPT-SoVITS 自动启动检查

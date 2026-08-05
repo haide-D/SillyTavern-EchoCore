@@ -75,7 +75,8 @@ def init_settings():
         "default_lang": "Chinese",
         "iframe_mode": False,
         "bubble_style": "default",
-        "sovits_host": SOVITS_HOST
+        "sovits_host": SOVITS_HOST,
+        "developer_mode": False
     }
 
     for key, val in defaults.items():

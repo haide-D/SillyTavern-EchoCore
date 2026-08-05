@@ -27,6 +27,7 @@ def update(req: SettingsRequest):
     if req.default_lang is not None: s["default_lang"] = req.default_lang
     if req.iframe_mode is not None: s["iframe_mode"] = req.iframe_mode
     if req.bubble_style is not None: s["bubble_style"] = req.bubble_style
+    if req.developer_mode is not None: s["developer_mode"] = req.developer_mode
     save_json(SETTINGS_FILE, s)
     # 强制刷新一次，确保目录被创建
     init_settings()

@@ -34,7 +34,10 @@ function renderCustomDeathlyHallowsCall(container, callData, ctx) {
         $content.remove();
         delete window.TTS_IncomingCall;
         $('#tts-dh-modal').show();
-        if (ctx.engine) ctx.engine.showScene('home');
+        if (ctx.engine) {
+            ctx.engine.notify('call_ended', {});
+            ctx.engine.showScene('home');
+        }
     });
 
     $content.find('#dh-btn-answer').click(async function () {
@@ -119,7 +122,10 @@ function showCustomInCallUI(container, callData, ctx) {
         delete window.TTS_IncomingCall;
         cleanupGlobalPlayer();
         $('#tts-dh-modal').show();
-        if (ctx.engine) ctx.engine.showScene('home');
+        if (ctx.engine) {
+            ctx.engine.notify('call_ended', {});
+            ctx.engine.showScene('home');
+        }
     }
 }
 

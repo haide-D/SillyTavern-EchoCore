@@ -23,6 +23,7 @@ import { TTS_Mobile } from './frontend/js/mobile_ui.js';
 import { ThemeEngine } from './frontend/js/theme_engine.js';
 import { WebSocketManager } from './frontend/js/websocket_manager.js';
 import { ChatEventListener } from './frontend/js/chat_event_listener.js';
+import { ThemeTesterUI } from './frontend/js/theme_tester_ui.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
@@ -206,6 +207,9 @@ function initPlugin() {
             if (CACHE.settings.enabled !== false && CACHE.settings.auto_generate) {
                 Scheduler.scanAndSchedule();
             }
+
+            // 开发者模式主题测试器
+            ThemeTesterUI.init(CACHE.settings);
         } catch (e) {
             console.error("🔴 [TTS Backend Error]:", e);
             console.log("🔴 [Debug] 准备弹出救援配置界面...");

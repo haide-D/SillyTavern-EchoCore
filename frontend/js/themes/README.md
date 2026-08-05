@@ -150,3 +150,64 @@ onOpen(engine) {
 如果使用 JS 初始化悬浮按钮的位置，**不要**单纯依赖百分比（如 `left: winW * 0.78`）。由于手机端屏幕较窄，`78%` 的坐标加上元素自身宽度，极易超出右侧边界导致“半截”现象。
 **预防方案**：必须计算出明确的像素坐标，并加上安全边界限制：
 `initialLeft = Math.max(0, Math.min(winW - btnWidth, initialLeft));`
+
+## 7. AI 辅助开发指南 (AI Generation)
+
+对于希望使用大型语言模型（如 ChatGPT, Claude）生成主题代码的开发者，建议直接采用**纯文本代码生成模式**。
+
+在主题工坊的 UI 中已经集成了“导入 AI 代码”功能，你只需将下述格式粘贴给 AI 并要求它保持这种多文件 Markdown 格式进行回答：
+
+### 推荐的 AI 提示词规范 (Prompt Template)
+
+```text
+你是一个经验丰富的前端开发专家，现在需要为 SillyTavern TTS 插件编写一个自定义主题。
+请严格遵循以下规范开发：
+
+# 架构与输出格式规范
+1. 主题由纯文本代码组成，必须包含 `manifest.json`, `index.js` 和 `style.css` 等核心文件。
+2. 请使用 Markdown 格式分别输出每个文件。每个文件的代码块上方必须使用三级标题（###）精确标注文件名。格式必须如下：
+
+### manifest.json
+\```json
+{
+  "id": "你的主题ID(要求纯英文小写下划线)",
+  "name": "主题名称",
+  "version": "1.0.0",
+  "entry_js": "index.js",
+  "entry_css": "style.css"
+}
+\```
+
+### index.js
+\```javascript
+export default {
+    id: '与manifest一致',
+    name: '主题名称',
+    init(engine) { ... },
+    destroy() { ... },
+    scenes: { home: { render($container, ctx) { ... } } }
+}
+\```
+
+### style.css
+\```css
+.your-theme-id-container { ... }
+\```
+
+# 移动端适配与最佳实践
+1. 严禁使用纯 CSS 的 `top: 50%; transform: translate(-50%, -50%)` 来居中定高的模态框。若需居中，请在 JS 钩子中使用 `window.visualViewport` 获取精确视口，并基于其动态计算出安全的 `top` 和 `left` 像素坐标赋予模态框。
+2. 资源建议使用内置图标库 (如 FontAwesome `<i class="fa-solid fa-house"></i>`) 或使用行内 SVG (导出至单独的 `assets.js` 并在 index.js 中引用)。
+3. 在定制通话和监听界面时，善用透明毛玻璃效果 (`backdrop-filter`)。
+4. 生命周期与显隐闭环：
+   - 模态框容器默认应该是隐藏的（`display: none`）。
+   - 在你的悬浮按钮 (FAB) 点击事件中，不仅要执行 `engine.showScene('home')`，还必须显式调用你模态框容器的 `.show()` 或 `.fadeIn()`，确保它显示出来。
+   - 在主界面的关闭按钮事件中，调用模态框容器的 `.hide()` 或 `.fadeOut()`。确保这套打开/关闭逻辑闭环无 bug。
+5. 拖拽支持 (Draggable) 必选：
+   - 悬浮按钮 (FAB) 必须是可随意拖拽的。请使用自己实现的一套 mouse/touch 拖拽逻辑，注意区分拖拽（Drag）和点击（Click），防止拖拽结束后误触打开界面。
+   - 主模态框面板 (Modal) 也必须是可拖拽的。如果你的环境支持 jQuery UI，请直接调用 `$container.draggable({ handle: '.你的Header类名' })`，让用户能按住标题栏拖拽整个窗口，或者自己手写拖拽逻辑。
+
+# 任务
+请根据我的需求描述，直接按照上述 Markdown 标题 + 代码块格式输出所有的主题文件代码。不要打包，直接输出纯文本代码。
+```
+
+当 AI 返回结果后，你只需要复制其整个包含 `### xxx.xx` 以及代码块的 Markdown 回复，到 `主题工坊` -> `导入 AI 代码` 处粘贴即可自动安装。不再需要任何手动 ZIP 打包的流程。

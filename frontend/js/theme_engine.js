@@ -32,6 +32,43 @@ if (!window.TTS_ThemeEngine) {
         isOpen: false,        // 面板是否打开
         initialized: false,   // 引擎是否已初始化
         apiHost: '',          // API 地址
+        apps: [],             // 已注册的应用列表
+    };
+
+    // ==================== App 注册表 ====================
+
+    /**
+     * 注册一个新的应用到全局注册表
+     * @param {Object} appConfig - { id, defaultName, defaultIcon, sceneId, hidden }
+     */
+    engine.registerApp = function (appConfig) {
+        if (!appConfig || !appConfig.id) {
+            console.error('[ThemeEngine] 注册 App 失败: 缺少 id');
+            return;
+        }
+        
+        // 检查是否已存在
+        const existingIndex = _state.apps.findIndex(a => a.id === appConfig.id);
+        if (existingIndex >= 0) {
+            _state.apps[existingIndex] = { ..._state.apps[existingIndex], ...appConfig };
+        } else {
+            _state.apps.push({
+                id: appConfig.id,
+                defaultName: appConfig.defaultName || appConfig.id,
+                defaultIcon: appConfig.defaultIcon || '⚙️',
+                sceneId: appConfig.sceneId || appConfig.id,
+                hidden: !!appConfig.hidden
+            });
+        }
+        console.log(`[ThemeEngine] ✅ App 已注册: ${appConfig.id}`);
+    };
+
+    /**
+     * 获取所有已注册的应用列表
+     * @returns {Array} 
+     */
+    engine.getRegisteredApps = function () {
+        return _state.apps;
     };
 
     // ==================== 主题管理 ====================
@@ -60,7 +97,14 @@ if (!window.TTS_ThemeEngine) {
         }
 
         _state.themes[themeConfig.id] = themeConfig;
-        console.log(`[ThemeEngine] ✅ 主题已注册: "${themeConfig.name}" (${themeConfig.id})`);
+    };
+
+    /**
+     * 获取所有已注册的主题
+     * @returns {Array} 主题配置对象数组
+     */
+    engine.getRegisteredThemes = function () {
+        return Object.values(_state.themes);
     };
 
     /**
@@ -97,6 +141,9 @@ if (!window.TTS_ThemeEngine) {
                 if (oldTheme.destroy) {
                     oldTheme.destroy();
                 }
+                // 移除旧主题的 CSS
+                $('#tts-theme-css-inject').remove();
+
                 console.log(`[ThemeEngine] 旧主题 "${_state.currentThemeId}" 已销毁`);
             } catch (e) {
                 console.error(`[ThemeEngine] 销毁旧主题失败:`, e);
@@ -109,13 +156,27 @@ if (!window.TTS_ThemeEngine) {
         const newTheme = _state.themes[themeId];
 
         try {
+            // 注入新主题 CSS (如果提供)
+            if (newTheme.cssUrl) {
+                if ($('#tts-theme-css-inject').length === 0) {
+                    const link = document.createElement('link');
+                    link.id = 'tts-theme-css-inject';
+                    link.rel = 'stylesheet';
+                    link.type = 'text/css';
+                    link.href = newTheme.cssUrl;
+                    document.head.appendChild(link);
+                } else {
+                    $('#tts-theme-css-inject').attr('href', newTheme.cssUrl);
+                }
+            }
+
             // 初始化主题
             if (newTheme.init) {
                 await newTheme.init(engine);
             }
             // 渲染触发器
             if (newTheme.renderTrigger) {
-                newTheme.renderTrigger();
+                newTheme.renderTrigger(engine);
             }
             console.log(`[ThemeEngine] ✅ 主题 "${themeId}" 已激活`);
         } catch (e) {
@@ -200,12 +261,13 @@ if (!window.TTS_ThemeEngine) {
         }
         $container.empty();
 
-        // 构建场景上下文
-        const ctx = {
-            engine: engine,
-            data: data,
-            createNavbar: createNavbar,
+        // 构建场景上下文（兼容层：使 ctx 既是对象也是函数，兼容期望 createNavbar 的旧 App）
+        const ctx = function(...args) {
+            return createNavbar(...args);
         };
+        ctx.engine = engine;
+        ctx.data = data;
+        ctx.createNavbar = createNavbar;
 
         // 查找场景渲染器
         const sceneHandler = theme.scenes[sceneId];
@@ -213,6 +275,10 @@ if (!window.TTS_ThemeEngine) {
             console.log(`[ThemeEngine] 渲染场景: ${sceneId} (主题实现)`);
             _state.currentScene = sceneId;
             sceneHandler.render($container, ctx);
+        } else if (window.TTS_Apps && window.TTS_Apps[sceneId] && window.TTS_Apps[sceneId].render) {
+            console.log(`[ThemeEngine] 渲染场景: ${sceneId} (全局 App 实现)`);
+            _state.currentScene = sceneId;
+            window.TTS_Apps[sceneId].render($container, ctx);
         } else {
             // Fallback: 使用通用渲染器
             console.log(`[ThemeEngine] 渲染场景: ${sceneId} (Fallback)`);
@@ -446,6 +512,40 @@ if (!window.TTS_ThemeEngine) {
             console.log(`[ThemeEngine] 后端主题设置: ${savedThemeId}`);
         } catch (e) {
             console.warn('[ThemeEngine] 加载主题设置失败，使用默认主题');
+        }
+
+        // 加载外部扩展主题
+        try {
+            console.log('[ThemeEngine] 正在加载外部主题列表...');
+            const listRes = await fetch(`${apiHost}/api/themes/list`);
+            const externalThemes = await listRes.json();
+            
+            for (const themeMeta of externalThemes) {
+                try {
+                    const themeBaseUrl = `${apiHost}/api/themes/assets/${themeMeta.id}`;
+                    let cssUrl = null;
+                    
+                    if (themeMeta.entry_css) {
+                        cssUrl = `${themeBaseUrl}/${themeMeta.entry_css}`;
+                    }
+
+                    if (themeMeta.entry_js) {
+                        const moduleUrl = `${themeBaseUrl}/${themeMeta.entry_js}`;
+                        const module = await import(moduleUrl);
+                        
+                        if (module.default) {
+                            const config = { ...themeMeta, ...module.default };
+                            config.type = 'external'; // 强制标记为外部主题
+                            if (cssUrl) config.cssUrl = cssUrl; // 将 CSS 路径附加到配置上
+                            engine.registerTheme(config);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`[ThemeEngine] 动态加载主题 ${themeMeta.id} 失败:`, err);
+                }
+            }
+        } catch (e) {
+            console.warn('[ThemeEngine] 加载外部主题列表失败:', e);
         }
 
         // 激活保存的主题（不重复持久化）

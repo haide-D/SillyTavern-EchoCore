@@ -2,16 +2,13 @@ import { createNavbar } from '../../theme_utils.js';
 import { ThemeState } from '../state.js';
 import { HALLOWS_SVG, ICON_INCOMING_CALL, ICON_SETTINGS, ICON_FAVORITES, ICON_EAVESDROP, ICON_LLM, ICON_PHONE } from '../assets.js';
 
-// 应用配置可复用
-export const APPS = {
-    'incoming_call': { name: '双面镜通讯', desc: '跨越空间的呼唤', icon: ICON_INCOMING_CALL, bg: '#667eea', sceneId: 'incoming_call' },
-    'eavesdrop': { name: '伸缩耳探听', desc: '倾听暗处的低语', icon: ICON_EAVESDROP, bg: '#22c55e', sceneId: 'eavesdrop' },
-    'favorites': { name: '冥想盆记忆', desc: '沉淀过往的思绪', icon: ICON_FAVORITES, bg: 'var(--s-ready-bg, #e11d48)', sceneId: 'favorites' },
-    'settings': { name: '有求必应屋', desc: '满足一切的需求', icon: ICON_SETTINGS, bg: '#333', sceneId: 'settings' },
-    
-    // 测试专用，不需要做UI (无 name 属性则在主页隐藏)
-    'llm_test': { icon: ICON_LLM, bg: '#8b5cf6', sceneId: 'llm_test' },
-    'phone_call': { icon: ICON_PHONE, bg: '#10b981', sceneId: 'phone_call' }
+// 本地主题专属图标映射
+export const THEME_ICONS = {
+    'incoming_call': { desc: '跨越空间的呼唤', icon: ICON_INCOMING_CALL },
+    'eavesdrop': { desc: '倾听暗处的低语', icon: ICON_EAVESDROP },
+    'favorites': { desc: '沉淀过往的思绪', icon: ICON_FAVORITES },
+    'settings': { desc: '满足一切的需求', icon: ICON_SETTINGS },
+    'theme_store': { desc: '编织梦幻的画卷' },
 };
 
 export function createNavbarForApps(title) {

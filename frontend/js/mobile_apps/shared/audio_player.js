@@ -259,3 +259,13 @@ export function cleanupGlobalPlayer() {
         globalAudioPlayer = null;
     }
 }
+
+// 挂载到全局，供外部动态加载的主题使用，避免相对路径导入导致的 404 错误
+if (typeof window !== 'undefined') {
+    window.TTS_Audio = {
+        AudioPlayer,
+        setGlobalPlayer,
+        getGlobalPlayer,
+        cleanupGlobalPlayer
+    };
+}

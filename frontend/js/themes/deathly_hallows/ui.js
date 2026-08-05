@@ -2,23 +2,6 @@ import { ThemeState, DRAG_THRESHOLD } from './state.js';
 
 // ==================== CSS 及 DOM 注入 ====================
 export function ensureCSS() {
-    if ($('link[href*="deathly_hallows.css"]').length === 0) {
-        console.log('[DeathlyHallowsTheme] 尝试加载 deathly_hallows.css');
-        let cssPath = '';
-        if (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.API_URL) {
-            cssPath = '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/deathly_hallows.css';
-        } else {
-            // 回退到默认常见路径 
-            cssPath = '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/deathly_hallows.css';
-        }
-        
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = cssPath;
-        document.head.appendChild(link);
-    }
-
     if ($('#dh-custom-call-css').length === 0) {
         const style = document.createElement('style');
         style.id = 'dh-custom-call-css';
@@ -694,7 +677,7 @@ export function renderTriggerDOM() {
 }
 
 export function destroyDOM() {
-    $('#tts-dh-trigger, #dhParticleCanvas, #tts-dh-modal').remove();
+    $('#tts-dh-trigger, #dhParticleCanvas, #tts-dh-modal, #dh-custom-call-css').remove();
 }
 
 export function bindDragAndClick() {
@@ -782,12 +765,7 @@ function onDragUp() {
     if (!ThemeState.dragState.hasMoved) {
         // 点击处理
         if (ThemeState.engine) {
-            // 如果有监听就绪状态，优先打开监听界面
-            if (window.TTS_EavesdropReady) {
-                ThemeState.engine.showScene('eavesdrop');
-            } else {
-                ThemeState.engine.toggle();
-            }
+            ThemeState.engine.toggle();
         }
     } else {
         // 恢复悬浮浮动

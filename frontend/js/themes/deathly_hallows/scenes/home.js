@@ -1,4 +1,4 @@
-import { APPS } from './shared.js';
+import { THEME_ICONS } from './shared.js';
 import * as IncomingCallApp from '../../../mobile_apps/incoming_call_app.js';
 
 export const homeScene = {
@@ -42,16 +42,23 @@ export const homeScene = {
 
         const $menu = $(`<div style="display:flex; flex-direction:column; gap:40px; width: 100%; max-width: 280px; position:relative; z-index: 1;"></div>`);
 
+        const apps = ctx.engine ? ctx.engine.getRegisteredApps() : [];
         let validIndex = 0;
-        Object.keys(APPS).forEach((key) => {
-            const app = APPS[key];
-            if (!app.name) return; // 隐藏无名称应用 (测试专用)
+        
+        apps.forEach((app) => {
+            if (app.hidden) return; // 隐藏无名称应用 (测试专用)
+            
+            // 合并主题自带的自定义属性
+            const themeProps = THEME_ICONS[app.id] || {};
+            const finalIcon = themeProps.icon || `<span style="font-size:32px;">${app.defaultIcon}</span>`;
+            const finalName = app.defaultName;
+            const finalDesc = themeProps.desc || '';
             
             const isLeft = validIndex % 2 === 0;
             const animDelay = validIndex * 0.4;
             
             const itemHtml = `
-            <div class="dh-app-icon dh-magic-item" data-app="${key}" style="
+            <div class="dh-app-icon dh-magic-item" data-app="${app.id}" style="
                 display: flex; 
                 flex-direction: ${isLeft ? 'row' : 'row-reverse'}; 
                 align-items: center; 
@@ -70,15 +77,15 @@ export const homeScene = {
                     filter: drop-shadow(0 0 8px rgba(196, 155, 79, 0.4));
                     flex-shrink: 0;
                 ">
-                    ${app.icon}
+                    ${finalIcon}
                 </div>
                 <div style="
                     display: flex; flex-direction: column;
                     align-items: ${isLeft ? 'flex-start' : 'flex-end'};
                     text-align: ${isLeft ? 'left' : 'right'};
                 ">
-                    <span style="font-size: 16px; font-weight: 300; letter-spacing: 2px; color: rgb(220, 200, 150); text-shadow: 0 0 8px rgba(196, 155, 79, 0.4); margin-bottom: 4px;">${app.name}</span>
-                    <span style="font-size: 11px; color: rgba(196, 155, 79, 0.6); letter-spacing: 1px;">${app.desc || ''}</span>
+                    <span style="font-size: 16px; font-weight: 300; letter-spacing: 2px; color: rgb(220, 200, 150); text-shadow: 0 0 8px rgba(196, 155, 79, 0.4); margin-bottom: 4px;">${finalName}</span>
+                    <span style="font-size: 11px; color: rgba(196, 155, 79, 0.6); letter-spacing: 1px;">${finalDesc}</span>
                 </div>
             </div>
             `;
@@ -90,9 +97,8 @@ export const homeScene = {
 
         $menu.on('click', '.dh-app-icon', function () {
             const key = $(this).data('app');
-            const app = APPS[key];
-            if (app && app.sceneId && ctx.engine) {
-                ctx.engine.showScene(app.sceneId);
+            if (key && ctx.engine) {
+                ctx.engine.showScene(key);
             }
         });
 

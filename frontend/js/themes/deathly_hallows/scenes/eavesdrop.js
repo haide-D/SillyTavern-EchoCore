@@ -32,9 +32,12 @@ function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
     $content.find('#dh-btn-reject').click(function () {
         $content.remove();
         delete window.TTS_EavesdropReady;
-        $('#tts-mobile-trigger').removeClass('whisper-sensing');
+        delete window.TTS_EavesdropData;
         $('#tts-dh-modal').show();
-        if (ctx.engine) ctx.engine.showScene('home');
+        if (ctx.engine) {
+            ctx.engine.notify('call_ended', {});
+            ctx.engine.showScene('home');
+        }
     });
 
     $content.find('#dh-btn-answer').click(function () {
@@ -106,9 +109,13 @@ function showCustomEavesdropUI(container, callData, ctx) {
     function endCall() {
         $content.remove();
         delete window.TTS_EavesdropReady;
+        delete window.TTS_EavesdropData;
         cleanupGlobalPlayer();
         $('#tts-dh-modal').show();
-        if (ctx.engine) ctx.engine.showScene('home');
+        if (ctx.engine) {
+            ctx.engine.notify('call_ended', {});
+            ctx.engine.showScene('home');
+        }
     }
 }
 

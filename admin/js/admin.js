@@ -561,6 +561,7 @@ async function loadSettings() {
         document.getElementById('setting-cache-dir').value = settings.cache_dir || '';
         document.getElementById('setting-sovits-host').value = settings.sovits_host || 'http://127.0.0.1:9880';
         document.getElementById('setting-default-lang').value = settings.default_lang || 'Chinese';
+        document.getElementById('setting-developer-mode').value = String(settings.developer_mode === true);
 
         // ========== 分析引擎配置 ==========
         const analysis = settings.analysis_engine || {};
@@ -656,6 +657,7 @@ async function saveSettings() {
         cache_dir: document.getElementById('setting-cache-dir').value.trim(),
         sovits_host: document.getElementById('setting-sovits-host').value.trim(),
         default_lang: document.getElementById('setting-default-lang').value,
+        developer_mode: document.getElementById('setting-developer-mode').value === 'true',
 
         // 分析引擎配置
         analysis_engine: {

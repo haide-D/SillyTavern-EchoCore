@@ -16,6 +16,44 @@ import { ThemeEngine } from './theme_engine.js';
 import DefaultTheme from './themes/default/index.js';
 import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
 
+// ==================== 全局 SDK 挂载 ====================
+// 引入共享库
+import { ParticleEngine } from './themes/particle_engine.js';
+import * as theme_utils from './themes/theme_utils.js';
+
+window.TTS_Libs = {
+    ParticleEngine,
+    theme_utils,
+};
+
+// 引入原生 App 模块
+import * as SettingsApp from './mobile_apps/settings_app.js';
+import * as FavoritesApp from './mobile_apps/favorites_app.js';
+import * as LlmTestApp from './mobile_apps/llm_test_app.js';
+import * as PhoneCallApp from './mobile_apps/phone_call_app.js';
+import * as EavesdropApp from './mobile_apps/eavesdrop_app.js';
+import * as IncomingCallApp from './mobile_apps/incoming_call_app.js';
+import * as ThemeStoreApp from './mobile_apps/theme_store_app.js';
+
+window.TTS_Apps = {
+    settings: SettingsApp,
+    favorites: FavoritesApp,
+    llm_test: LlmTestApp,
+    phone_call: PhoneCallApp,
+    eavesdrop: EavesdropApp,
+    incoming_call: IncomingCallApp,
+    theme_store: ThemeStoreApp,
+};
+
+// ==================== 注册全局应用 ====================
+ThemeEngine.registerApp({ id: 'incoming_call', defaultName: '来电', defaultIcon: '📞', sceneId: 'incoming_call' });
+ThemeEngine.registerApp({ id: 'eavesdrop', defaultName: '对话追踪', defaultIcon: '🎧', sceneId: 'eavesdrop' });
+ThemeEngine.registerApp({ id: 'favorites', defaultName: '收藏夹', defaultIcon: '❤️', sceneId: 'favorites' });
+ThemeEngine.registerApp({ id: 'settings', defaultName: '系统设置', defaultIcon: '⚙️', sceneId: 'settings' });
+ThemeEngine.registerApp({ id: 'theme_store', defaultName: '主题工坊', defaultIcon: '🎨', sceneId: 'theme_store' });
+ThemeEngine.registerApp({ id: 'phone_call', defaultName: '主动拨号', defaultIcon: '📞', sceneId: 'phone_call', hidden: true });
+ThemeEngine.registerApp({ id: 'llm_test', defaultName: 'LLM测试', defaultIcon: '🤖', sceneId: 'llm_test', hidden: true });
+
 // ==================== 注册默认主题 ====================
 ThemeEngine.registerTheme(DefaultTheme);
 ThemeEngine.registerTheme(DeathlyHallowsTheme);
