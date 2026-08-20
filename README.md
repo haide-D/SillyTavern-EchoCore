@@ -4,7 +4,6 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple)
 
-赞助我，支持插件继续开发更多功能：https://afdian.com/a/2742159495abc
 
 这是一个为 **SillyTavern (酒馆)** 量身打造的 **GPT-SoVITS** 深度集成插件。
 
