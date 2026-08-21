@@ -880,6 +880,32 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
+
+    def get_latest_summary_context(self, chat_branch: str = None, fingerprints: List[str] = None) -> Dict[str, str]:
+        """
+        获取最新的剧情总结和场景摘要文本
+        
+        Returns:
+            {"summary": str, "scene_summary": str, "formatted": str}
+        """
+        latest = self.get_latest_analysis(chat_branch=chat_branch, fingerprints=fingerprints)
+        if not latest:
+            return {"summary": "", "scene_summary": "", "formatted": ""}
+        
+        summary = (latest.get("summary") or "").strip()
+        scene_summary = (latest.get("scene_summary") or "").strip()
+        
+        parts = []
+        if summary:
+            parts.append(f"【前情剧情总结】: {summary}")
+        if scene_summary:
+            parts.append(f"【当前场景背景】: {scene_summary}")
+            
+        return {
+            "summary": summary,
+            "scene_summary": scene_summary,
+            "formatted": "\n".join(parts)
+        }
     
     def get_character_history(self, character_name: str, limit: int = 20, 
                               chat_branch: str = None, fingerprints: List[str] = None) -> List[Dict[str, Any]]:

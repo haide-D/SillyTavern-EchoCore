@@ -4,6 +4,7 @@ import * as FavoritesApp from '../../mobile_apps/favorites_app.js';
 import * as LlmTestApp from '../../mobile_apps/llm_test_app.js';
 import * as PhoneCallApp from '../../mobile_apps/phone_call_app.js';
 import * as EavesdropApp from '../../mobile_apps/eavesdrop_app.js';
+import * as WorkshopApp from '../../mobile_apps/workshop_app.js';
 import { createNavbar } from '../theme_utils.js';
 import { state } from './state.js';
 
@@ -33,7 +34,9 @@ export const scenes = {
                     'incoming_call': '#667eea',
                     'settings': '#333',
                     'favorites': 'var(--s-ready-bg, #e11d48)',
-                    'eavesdrop': '#22c55e'
+                    'eavesdrop': '#22c55e',
+                    'workshop': '#d97706',
+                    'theme_store': '#8b5cf6'
                 };
                 
                 const item = `
@@ -117,4 +120,16 @@ export const scenes = {
             $container.append($appContainer);
         }
     },
+
+    workshop: {
+        render($container, ctx) {
+            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#181524; color:#fff;"></div>`);
+            WorkshopApp.render($appContainer, createNavbarForApps);
+            $container.append($appContainer);
+        },
+        cleanup() {
+            if (WorkshopApp.cleanup) WorkshopApp.cleanup();
+        }
+    },
 };
+

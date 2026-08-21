@@ -15,12 +15,14 @@ from phone_call_utils.models import MultiSpeakerSegment, EavesdropResult
 from phone_call_utils.tts_service import TTSService
 from phone_call_utils.audio_merger import AudioMerger
 from utils import scan_audio_files
+from database import DatabaseManager
 
 
 class EavesdropService:
     """对话追踪服务 - 生成多人私下对话"""
     
     def __init__(self):
+        self.db = DatabaseManager()
         self.llm_service = LLMService()
         self.emotion_service = EmotionService()
         self.prompt_builder = PromptBuilder()
@@ -36,10 +38,20 @@ class EavesdropService:
         text_lang: str = "zh",
         max_context_messages: int = 20,
         scene_description: str = None,
-        eavesdrop_config: Dict = None  # 分析 LLM 提供的对话主题和框架
+        eavesdrop_config: Dict = None,  # 分析 LLM 提供的对话主题和框架
+        preset_id: Optional[str] = None,
+        prompt_template: Optional[str] = None,
+        target: Optional[str] = None,
+        theme: Optional[str] = None,
+        call_reason: Optional[str] = None,
+        call_tone: Optional[str] = None,
+        character_persona: Optional[str] = None,
+        world_info: Optional[str] = None,
+        story_summary: Optional[str] = None,
+        chat_branch: Optional[str] = None
     ) -> Dict:
         """
-        构建对话追踪 Prompt
+        构建对话追踪 Prompt (支持定向窃听与自定义主题)
         
         Args:
             context: 对话上下文
@@ -49,11 +61,20 @@ class EavesdropService:
             max_context_messages: 最大上下文消息数
             scene_description: 场景描述（可选）
             eavesdrop_config: 分析 LLM 提供的对话主题、框架等配置
+            preset_id: 指定预设 ID (可选)
+            prompt_template: 直接指定的 Prompt 模板 (可选)
+            target: 目标被议论人 (默认 user_name)
+            theme: 对话主题
+            call_reason: 剧情起因/动机
+            call_tone: 氛围张力
+            character_persona: 人设补充
+            world_info: 世界书/世界观设定
             
         Returns:
             包含 prompt、speakers_emotions 等信息的字典
         """
-        print(f"[EavesdropService] 构建 Prompt: speakers={speakers}, text_lang={text_lang}")
+        effective_target = (target or user_name or "用户").strip()
+        print(f"[EavesdropService] 构建 Prompt: speakers={speakers}, 目标={effective_target}, text_lang={text_lang}, 指定预设={preset_id}")
         
         if eavesdrop_config:
             print(f"[EavesdropService] 🎭 使用分析 LLM 提供的配置:")
@@ -67,35 +88,79 @@ class EavesdropService:
         for speaker in speakers:
             try:
                 emotions = self.emotion_service.get_available_emotions(speaker)
+                if not emotions:
+                    emotions = ["default", "neutral"]
                 speakers_emotions[speaker] = emotions
                 valid_speakers.append(speaker)
                 print(f"[EavesdropService] {speaker} 可用情绪: {emotions}")
             except Exception as e:
-                print(f"[EavesdropService] ⚠️ 跳过角色 {speaker}: {e}")
+                print(f"[EavesdropService] ⚠️ 角色 {speaker} 未绑定模型，采用默认情绪: {e}")
+                speakers_emotions[speaker] = ["default", "neutral", "whisper"]
+                valid_speakers.append(speaker)
         
         if len(valid_speakers) < 2:
             raise ValueError(f"需要至少2个有效角色进行对话追踪,当前只有 {len(valid_speakers)} 个")
         
-        # 创作者工坊预设对接
-        from services.preset_service import PresetService
+        # 预设模板自适应 (显式指定 > 显式preset_id > 智能分析匹配生效池)
+        custom_template = prompt_template
         settings = load_json(SETTINGS_FILE)
         phone_call_config = settings.get("phone_call", {})
-        active_preset_id = phone_call_config.get("active_eavesdrop_preset_id") or phone_call_config.get("eavesdrop_preset_id") or "standard_eavesdrop"
-        custom_template = None
-        preset = PresetService.get_preset("eavesdrop", active_preset_id)
-        if preset and preset.get("prompt_template"):
-            custom_template = preset["prompt_template"]
-            print(f"[EavesdropService] 🎨 成功加载创作者工坊窃听预设: {preset.get('name')} ({active_preset_id})")
 
-        # 构建 Prompt（使用分析 LLM 提供的配置）
+        if not custom_template:
+            from services.preset_service import PresetService
+            if preset_id:
+                preset = PresetService.get_preset("eavesdrop", preset_id)
+            else:
+                active_ids = phone_call_config.get("active_eavesdrop_preset_ids")
+                if not active_ids or not isinstance(active_ids, list):
+                    single = phone_call_config.get("active_eavesdrop_preset_id") or phone_call_config.get("eavesdrop_preset_id") or "standard_eavesdrop"
+                    active_ids = [single]
+                effective_theme = theme or (eavesdrop_config.get('conversation_theme') if eavesdrop_config else None)
+                preset = PresetService.match_best_preset("eavesdrop", active_ids, context=context, trigger_reason=effective_theme, call_tone=call_tone)
+
+            if preset and preset.get("prompt_template"):
+                custom_template = preset["prompt_template"]
+                print(f"[EavesdropService] 🎨 采用窃听剧本模板: 「{preset.get('name', '未命名')}」 (id={preset.get('id')})")
+
+
+        # 尝试从数据库补充前情剧情总结 (三级梯队：指纹 -> 分支ID -> 角色最近记录)
+        effective_summary = story_summary or ""
+        if not effective_summary:
+            fingerprints = [c.get("fingerprint") or c.get("fp") for c in context if isinstance(c, dict) and (c.get("fingerprint") or c.get("fp"))]
+            if fingerprints:
+                sum_ctx = self.db.get_latest_summary_context(fingerprints=fingerprints)
+                effective_summary = sum_ctx.get("formatted", "")
+            if not effective_summary and chat_branch:
+                sum_ctx = self.db.get_latest_summary_context(chat_branch=chat_branch)
+                effective_summary = sum_ctx.get("formatted", "")
+            if not effective_summary and valid_speakers:
+                for spk in valid_speakers:
+                    history = self.db.get_character_history(character_name=spk, limit=1)
+                    if history:
+                        s = history[0].get("summary", "")
+                        sc = history[0].get("scene_summary", "")
+                        parts = []
+                        if s: parts.append(f"【前情剧情总结】: {s}")
+                        if sc: parts.append(f"【当前场景背景】: {sc}")
+                        effective_summary = "\n".join(parts)
+                        break
+
+        # 构建 Prompt（使用分析 LLM 提供的配置与自定义定向参数）
         prompt = self.prompt_builder.build_eavesdrop_prompt(
             context=context,
             speakers_emotions=speakers_emotions,
-            user_name=user_name,
+            user_name=effective_target,
             text_lang=text_lang,
             max_context_messages=max_context_messages,
-            eavesdrop_config=eavesdrop_config,  # ✅ 传递对话主题和框架
-            template=custom_template
+            eavesdrop_config=eavesdrop_config,
+            template=custom_template,
+            target=effective_target,
+            theme=theme,
+            call_reason=call_reason,
+            call_tone=call_tone,
+            character_persona=character_persona,
+            world_info=world_info,
+            story_summary=effective_summary
         )
         
         # 读取 LLM 配置
@@ -262,57 +327,6 @@ class EavesdropService:
         }
     
     def _select_ref_audio(self, char_name: str, emotion: str) -> Optional[Dict]:
-        """根据情绪选择参考音频"""
-        mappings = load_json(os.path.join(os.path.dirname(SETTINGS_FILE), "character_mappings.json"))
-        
-        if char_name not in mappings:
-            print(f"[EavesdropService] 错误: 角色 {char_name} 未绑定模型")
-            return None
-        
-        model_folder = mappings[char_name]
-        base_dir, _ = get_current_dirs()
-        
-        # 从 tts_config.prompt_lang 读取语言设置并转换为目录名
-        settings = load_json(SETTINGS_FILE)
-        prompt_lang = settings.get("phone_call", {}).get("tts_config", {}).get("prompt_lang", "zh")
-        
-        # 语言代码转目录名映射
-        lang_map = {
-            "zh": "Chinese",
-            "en": "English",
-            "ja": "Japanese",
-            "all_zh": "Chinese",
-            "all_ja": "Japanese"
-        }
-        lang_dir = lang_map.get(prompt_lang, "Chinese")
-        
-        # 使用配置的语言目录 + emotions 子目录
-        ref_dir = os.path.join(base_dir, model_folder, "reference_audios", lang_dir, "emotions")
-        
-        if not os.path.exists(ref_dir):
-            print(f"[EavesdropService] 错误: 参考音频目录不存在: {ref_dir}")
-            return None
-        
-        audio_files = scan_audio_files(ref_dir)
-        matching_audios = [a for a in audio_files if a["emotion"] == emotion]
-        
-        if not matching_audios:
-            # 尝试使用 default 作为后备
-            matching_audios = [a for a in audio_files if a["emotion"] == "default"]
-        
-        if not matching_audios:
-            # 如果还没有，随机选一个
-            if audio_files:
-                print(f"[EavesdropService] 警告: 未找到情绪 '{emotion}'，使用随机参考音频")
-                matching_audios = audio_files
-        
-        if not matching_audios:
-            print(f"[EavesdropService] 警告: 未找到情绪 '{emotion}' 的参考音频")
-            return None
-        
-        selected = random.choice(matching_audios)
-        return {
-            "path": selected["path"],
-            "text": selected["text"]
-        }
+        """根据情绪选择参考音频 (统一复用 EmotionService)"""
+        return EmotionService.select_ref_audio(char_name, emotion)
 

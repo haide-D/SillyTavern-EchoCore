@@ -139,10 +139,12 @@ async def complete_continuous_analysis(req: ContinuousAnalysisCompleteRequest):
         
         # ==================== 根据分析结果分流 ====================
         trigger_result = None
+        selected_preset = result.get("selected_preset")
+        preset_reason = result.get("preset_reason", "")
         
         if suggested_action == "phone_call" and caller:
                 # 触发主动电话
-                print(f"[ContinuousAnalysis] 📞 触发主动电话: caller={caller}, ws_target={req.char_name}")
+                print(f"[ContinuousAnalysis] 📞 触发主动电话: caller={caller}, ws_target={req.char_name}, 剧本={selected_preset or '自动匹配'}")
                 scheduler = AutoCallScheduler()
                 call_id = await scheduler.schedule_auto_call(
                     chat_branch=req.chat_branch,
@@ -153,19 +155,22 @@ async def complete_continuous_analysis(req: ContinuousAnalysisCompleteRequest):
                     user_name=req.user_name,
                     char_name=req.char_name,  # ✅ 修复: 使用主角色卡名称进行 WebSocket 路由
                     call_reason=call_reason,  # 传递电话原因
-                    call_tone=call_tone  # 传递通话氛围
+                    call_tone=call_tone,  # 传递通话氛围
+                    preset_id=selected_preset  # ✅ 注入 AI 剧情总导演选中的剧本 ID
                 )
                 trigger_result = {
                     "action": "phone_call",
                     "call_id": call_id,
                     "character": caller,
                     "call_reason": call_reason,
-                    "call_tone": call_tone
+                    "call_tone": call_tone,
+                    "selected_preset": selected_preset,
+                    "preset_reason": preset_reason
                 }
             
         elif suggested_action == "eavesdrop":
             # 触发对话追踪
-            print(f"[ContinuousAnalysis] 🎧 触发对话追踪")
+            print(f"[ContinuousAnalysis] 🎧 触发对话追踪, 剧本={selected_preset or '自动匹配'}")
             
             # 提取离场角色
             character_left = result.get("character_left")
@@ -190,6 +195,8 @@ async def complete_continuous_analysis(req: ContinuousAnalysisCompleteRequest):
             else:
                 # 提取 eavesdrop 配置（分析 LLM 提供的对话主题和框架）
                 eavesdrop_config = result.get("eavesdrop_config", {})
+                if selected_preset:
+                    eavesdrop_config["preset_id"] = selected_preset
                 
                 print(f"[ContinuousAnalysis] 📍 在场角色: {present_characters} -> 有效角色: {valid_speakers}")
                 if eavesdrop_config:
@@ -205,12 +212,15 @@ async def complete_continuous_analysis(req: ContinuousAnalysisCompleteRequest):
                     user_name=req.user_name,
                     char_name=req.char_name,  # 使用主角色卡名称进行 WebSocket 路由
                     scene_description=trigger_reason,
-                    eavesdrop_config=eavesdrop_config  # ✅ 传递对话主题和框架
+                    eavesdrop_config=eavesdrop_config  # ✅ 传递对话主题、框架与选定剧本
                 )
                 trigger_result = {
                     "action": "eavesdrop",
-                    "record_id": record_id
+                    "record_id": record_id,
+                    "selected_preset": selected_preset,
+                    "preset_reason": preset_reason
                 }
+
         
         # 通知前端分析完成 (使用主角色卡名称作为 WebSocket 路由目标)
         ws_target = req.char_name if req.char_name else (req.speakers[0] if req.speakers else "unknown")

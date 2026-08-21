@@ -5,12 +5,121 @@ import json
 import logging
 
 from services.preset_service import PresetService
+from config import load_json, save_json, SETTINGS_FILE
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 # ==================== 1. 精确静态路由 (必须在动态路径参数前定义) ====================
+
+@router.get("/presets/active")
+async def get_active_presets():
+    """获取当前生效的预设列表 (支持多选批量生效)"""
+    try:
+        settings = load_json(SETTINGS_FILE)
+        phone_call_cfg = settings.get("phone_call", {})
+        
+        # 兼容列表与单字符串
+        active_calls = phone_call_cfg.get("active_preset_ids")
+        if not active_calls or not isinstance(active_calls, list):
+            single = phone_call_cfg.get("active_preset_id") or phone_call_cfg.get("preset_id") or "standard_call"
+            active_calls = [single]
+            
+        active_eavesdrops = phone_call_cfg.get("active_eavesdrop_preset_ids")
+        if not active_eavesdrops or not isinstance(active_eavesdrops, list):
+            single_e = phone_call_cfg.get("active_eavesdrop_preset_id") or phone_call_cfg.get("eavesdrop_preset_id") or "standard_eavesdrop"
+            active_eavesdrops = [single_e]
+
+        return {
+            "success": True,
+            "active_presets": {
+                "phone_call": active_calls,
+                "eavesdrop": active_eavesdrops
+            },
+            "single_active": {
+                "phone_call": active_calls[0] if active_calls else "standard_call",
+                "eavesdrop": active_eavesdrops[0] if active_eavesdrops else "standard_eavesdrop"
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取当前生效预设失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取当前生效预设失败: {str(e)}")
+
+@router.post("/presets/active")
+async def set_active_preset(payload: Dict[str, Any] = Body(...)):
+    """
+    设置或批量设置当前生效预设列表
+    payload 格式支持:
+    1. 批量设置: {"category": "phone_call", "preset_ids": ["id1", "id2"]}
+    2. 单选覆盖: {"category": "phone_call", "preset_id": "id1"}
+    3. 单项切换: {"category": "phone_call", "toggle_preset_id": "id1"}
+    """
+    try:
+        category = payload.get("category")
+        if not category or category not in {"phone_call", "eavesdrop"}:
+            raise HTTPException(status_code=400, detail=f"无效的分类: {category}")
+
+        settings = load_json(SETTINGS_FILE)
+        if "phone_call" not in settings:
+            settings["phone_call"] = {}
+
+        key_list = "active_preset_ids" if category == "phone_call" else "active_eavesdrop_preset_ids"
+        key_single = "active_preset_id" if category == "phone_call" else "active_eavesdrop_preset_id"
+
+        current_list = settings["phone_call"].get(key_list)
+        if not current_list or not isinstance(current_list, list):
+            single = settings["phone_call"].get(key_single) or ("standard_call" if category == "phone_call" else "standard_eavesdrop")
+            current_list = [single]
+
+        # 模式 1: 批量直接传入 preset_ids
+        if "preset_ids" in payload and isinstance(payload["preset_ids"], list):
+            new_list = [str(pid).strip() for pid in payload["preset_ids"] if str(pid).strip()]
+            if not new_list:
+                default_id = "standard_call" if category == "phone_call" else "standard_eavesdrop"
+                new_list = [default_id]
+            current_list = new_list
+
+        # 模式 2: 单项切换 (toggle)
+        elif "toggle_preset_id" in payload:
+            toggle_id = str(payload["toggle_preset_id"]).strip()
+            if toggle_id in current_list:
+                if len(current_list) > 1:
+                    current_list.remove(toggle_id)
+                else:
+                    logger.info(f"至少保留一个生效剧本，禁止取消唯一的: {toggle_id}")
+            else:
+                current_list.append(toggle_id)
+
+        # 模式 3: 单项指定 (覆盖)
+        elif "preset_id" in payload:
+            pid = str(payload["preset_id"]).strip()
+            current_list = [pid]
+
+        settings["phone_call"][key_list] = current_list
+        settings["phone_call"][key_single] = current_list[0] if current_list else ""
+        if category == "phone_call":
+            settings["phone_call"]["preset_id"] = current_list[0] if current_list else ""
+        else:
+            settings["phone_call"]["eavesdrop_preset_id"] = current_list[0] if current_list else ""
+
+        save_json(SETTINGS_FILE, settings)
+        logger.info(f"✅ 成功更新 {category} 生效预设池: {current_list}")
+
+        return {
+            "success": True,
+            "message": f"生效剧本池已更新 ({len(current_list)} 个)",
+            "active_presets": {
+                "phone_call": settings["phone_call"].get("active_preset_ids", ["standard_call"]),
+                "eavesdrop": settings["phone_call"].get("active_eavesdrop_preset_ids", ["standard_eavesdrop"])
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"设置生效预设失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"设置生效预设失败: {str(e)}")
+
 
 @router.get("/presets")
 async def list_presets(category: Optional[str] = None):

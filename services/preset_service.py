@@ -201,3 +201,104 @@ class PresetService:
             raise ValueError("导入的预设缺少必要字段 (name 或 prompt_template)")
 
         return cls.save_preset(category, data)
+
+    @classmethod
+    def match_best_preset(
+        cls,
+        category: str,
+        active_ids: Optional[List[str]] = None,
+        context: Optional[List[Dict[str, Any]]] = None,
+        trigger_reason: Optional[str] = None,
+        call_tone: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        智能剧本匹配引擎 (Auto-Match Smart Routing):
+        当批量启用了多个生效剧本时，根据当前对话历史、触发原因与情绪氛围自动挑选最契合的剧本
+        """
+        cls.ensure_dirs()
+        default_id = "standard_call" if category == "phone_call" else "standard_eavesdrop"
+        
+        # 整理生效池
+        valid_pool = []
+        if active_ids:
+            for pid in active_ids:
+                p = cls.get_preset(category, pid)
+                if p:
+                    valid_pool.append(p)
+        
+        if not valid_pool:
+            fallback = cls.get_preset(category, default_id)
+            return fallback or {"id": default_id, "name": default_id, "prompt_template": ""}
+
+        if len(valid_pool) == 1:
+            return valid_pool[0]
+
+        # 多剧本智能匹配打分
+        recent_text = ""
+        if context and isinstance(context, list):
+            recent_text = " ".join([str(m.get("mes", "")) for m in context[-8:]])
+        
+        combined_text = f"{recent_text} {trigger_reason or ''} {call_tone or ''}".lower()
+
+        # 关键词库加权
+        EMERGENCY_WORDS = {"救命", "危险", "快跑", "出事", "警察", "医院", "紧急", "受伤", "help", "danger", "crisis", "panic", "emergency"}
+        NIGHT_WORDS = {"深夜", "睡不着", "晚安", "想你", "失眠", "夜深", "窗外", "月光", "心事", "whisper", "night", "sleep", "soft"}
+        JEALOUSY_WORDS = {"吃醋", "吵架", "修罗场", "第三者", "背叛", "生气", "傲娇", "争执", "不满", "jealous", "angry", "fight"}
+        SECRET_WORDS = {"秘密", "计划", "密谋", "隐瞒", "不可告人", "暗杀", "情报", "瞒着", "机密", "secret", "plan", "conspiracy"}
+
+        best_preset = valid_pool[0]
+        max_score = -1
+
+        import datetime
+        current_hour = datetime.datetime.now().hour
+        is_night_time = (current_hour >= 22 or current_hour <= 5)
+
+        for p in valid_pool:
+            pid = p.get("id", "").lower()
+            name = p.get("name", "").lower()
+            desc = p.get("description", "").lower()
+            tags = [t.lower() for t in p.get("tags", [])]
+            score = 1  # 基础分
+
+            # 1. 紧急求援类 (判定: emergency / 紧急 / 求助 / 突发)
+            if "emergency" in pid or "紧急" in name or "求助" in name or "突发" in name:
+                hit_count = sum(1 for w in EMERGENCY_WORDS if w in combined_text)
+                if hit_count > 0:
+                    score += hit_count * 20
+
+            # 2. 深夜心语类 (判定: midnight / whisper / 深夜 / 私语 / 心语)
+            elif "midnight" in pid or "whisper" in pid or "深夜" in name or "私语" in name:
+                hit_count = sum(1 for w in NIGHT_WORDS if w in combined_text)
+                if hit_count > 0:
+                    score += hit_count * 15
+                if is_night_time:
+                    score += 10
+
+            # 3. 修罗场/吃醋类 (判定: jealousy / gossip / 修罗场 / 吃醋 / 对质)
+            elif "jealousy" in pid or "gossip" in pid or "修罗场" in name or "吃醋" in name or "对质" in name:
+                hit_count = sum(1 for w in JEALOUSY_WORDS if w in combined_text)
+                if hit_count > 0:
+                    score += hit_count * 18
+
+            # 4. 密谋商议类 (判定: secret / conspiracy / 密谋 / 机密 / 商议)
+            elif "secret" in pid or "conspiracy" in pid or "密谋" in name or "机密" in name or "商议" in name:
+                hit_count = sum(1 for w in SECRET_WORDS if w in combined_text)
+                if hit_count > 0:
+                    score += hit_count * 18
+
+            # 5. 日常兜底类
+            elif "standard" in pid or "日常" in name or "闲聊" in name or "闲谈" in name:
+                score += 2
+
+            # 6. 自定义剧本标签与关键词模糊加权
+            for tag in tags:
+                if tag and tag in combined_text:
+                    score += 5
+
+            if score > max_score:
+                max_score = score
+                best_preset = p
+
+        logger.info(f"[PresetMatcher] 🧠 智能分析情境 -> 自动命中最佳剧本: 「{best_preset.get('name')}」 (匹配池大小: {len(valid_pool)}, 得分: {max_score})")
+        return best_preset
+

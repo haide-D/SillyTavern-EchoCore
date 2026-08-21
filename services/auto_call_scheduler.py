@@ -17,7 +17,7 @@ class AutoCallScheduler:
         # 正在执行的任务集合 (char_name, floor)
         self._running_tasks = set()
     
-    async def schedule_auto_call(self, chat_branch: str, speakers: List[str], trigger_floor: int, context: List[Dict], context_fingerprint: str, user_name: str = None, char_name: str = None, call_reason: str = "", call_tone: str = "") -> Optional[int]:
+    async def schedule_auto_call(self, chat_branch: str, speakers: List[str], trigger_floor: int, context: List[Dict], context_fingerprint: str, user_name: str = None, char_name: str = None, call_reason: str = "", call_tone: str = "", preset_id: Optional[str] = None) -> Optional[int]:
         """
         调度自动电话生成任务
         
@@ -31,6 +31,7 @@ class AutoCallScheduler:
             char_name: 主角色卡名称，用于 WebSocket 推送路由
             call_reason: 打电话的原因（由 LLM 分析得出）
             call_tone: 通话氛围（如轻松闲聊、深情倾诉等）
+            preset_id: 剧本工坊预设 ID (由 AI 剧情总导演选拔)
             
         Returns:
             任务ID,如果已存在或正在执行则返回 None
@@ -88,14 +89,14 @@ class AutoCallScheduler:
         
         print(f"[AutoCallScheduler] ✅ 创建任务: ID={call_id}, speakers={speakers} @ 楼层{trigger_floor}, 指纹={context_fingerprint[:8]}")
         if call_reason:
-            print(f"[AutoCallScheduler] 📞 电话详情: reason={call_reason}, tone={call_tone}")
+            print(f"[AutoCallScheduler] 📞 电话详情: reason={call_reason}, tone={call_tone}, 选定剧本={preset_id or '自动匹配'}")
         
-        # 异步执行生成任务 (传递所有说话人、用户名、主角色名和电话详情)
-        asyncio.create_task(self._execute_generation(call_id, chat_branch, speakers, trigger_floor, context, user_name, char_name, call_reason, call_tone))
+        # 异步执行生成任务 (传递所有说话人、用户名、主角色名、电话详情与剧本ID)
+        asyncio.create_task(self._execute_generation(call_id, chat_branch, speakers, trigger_floor, context, user_name, char_name, call_reason, call_tone, preset_id))
         
         return call_id
     
-    async def _execute_generation(self, call_id: int, chat_branch: str, speakers: List[str], trigger_floor: int, context: List[Dict], user_name: str = None, char_name: str = None, call_reason: str = "", call_tone: str = ""):
+    async def _execute_generation(self, call_id: int, chat_branch: str, speakers: List[str], trigger_floor: int, context: List[Dict], user_name: str = None, char_name: str = None, call_reason: str = "", call_tone: str = "", preset_id: Optional[str] = None):
         """
         执行生成任务(异步) - 新架构
         
@@ -104,23 +105,12 @@ class AutoCallScheduler:
         2. 通过WebSocket通知前端调用LLM
         3. 前端调用LLM后,通过API将结果发回
         4. 解析并生成音频
-        
-        Args:
-            call_id: 任务ID
-            chat_branch: 对话分支ID
-            speakers: 说话人列表
-            trigger_floor: 触发楼层
-            context: 对话上下文
-            user_name: 用户名称
-            char_name: 主角色卡名称
-            call_reason: 打电话的原因
-            call_tone: 通话氛围
         """
         task_key = trigger_floor
         self._running_tasks.add(task_key)
         
         try:
-            print(f"[AutoCallScheduler] 开始生成: ID={call_id}, speakers={speakers} @ 楼层{trigger_floor}")
+            print(f"[AutoCallScheduler] 开始生成: ID={call_id}, speakers={speakers} @ 楼层{trigger_floor}, 剧本={preset_id}")
             
             # 更新状态为 generating
             self.db.update_auto_call_status(call_id, "generating")
@@ -132,17 +122,15 @@ class AutoCallScheduler:
                 last_call_info = call_history[0]
                 print(f"[AutoCallScheduler] 📞 检测到上次通话: {last_call_info.get('char_name')}")
             
-            # 第一阶段: 构建prompt
-            result = await self.phone_call_service.generate(
-                chat_branch=chat_branch,
-                speakers=speakers,
+            # 第一阶段: 构建prompt (传入 preset_id)
+            target_char = speakers[0] if speakers else (char_name or "未知")
+            result = await self.phone_call_service.build_prompt(
+                char_name=target_char,
                 context=context,
-                generate_audio=False,
                 user_name=user_name,
-                last_call_info=last_call_info,
-                call_reason=call_reason,  # 传递电话原因
-                call_tone=call_tone  # 传递通话氛围
+                preset_id=preset_id
             )
+
             
             prompt = result.get("prompt")
             llm_config = result.get("llm_config")

@@ -153,7 +153,9 @@ app.include_router(eavesdrop.router, prefix="/api/eavesdrop", tags=["Eavesdrop T
 app.include_router(continuous_analysis.router, prefix="/api", tags=["Continuous Analysis"])
 app.include_router(sovits_installer.router, tags=["GPT-SoVITS Installation"])
 app.include_router(themes.router, prefix="/api/themes", tags=["Themes Management"])
+app.include_router(workshop.router, prefix="/api", tags=["Presets Workshop"])
 app.include_router(workshop.router, prefix="/api/workshop", tags=["Creative Workshop"])
+
 
 
 # GPT-SoVITS 自动启动检查

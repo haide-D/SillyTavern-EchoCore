@@ -1,12 +1,12 @@
 {
   "id": "emergency_call",
-  "name": "紧急求助与突发异动",
+  "name": "紧急求助",
   "category": "phone_call",
-  "author": "ST-Direct-TTS 官方",
-  "version": "1.0.0",
-  "description": "角色突遇紧急危机、意外险情或重大突发事件，呼吸急促地向主角紧急致电求援或示警",
+  "author": "官方",
+  "version": "1.1.0",
+  "description": "突遇意外险情或紧急状况，呼吸急促地来电求援示警。",
   "tags": ["突发", "紧张", "求助", "官方出厂"],
-  "prompt_template": "你是一个戏剧冲突编剧。角色在离开后突然遇到了突发事件、险情或极度紧急的状况，正呼吸急促地向 {{user_name}} 打来紧急求救/示警电话！\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**创作要求:**\n1. 开门见山，语气急促、紧张、慌张或充满危机感（panicked / breathless / serious）。\n2. 迅速告知主角自己遇到了什么意外，或者警告主角注意危险。\n3. 对话片段短促，断句急，语速稍快。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"speaker_name\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.3,\n      \"speed\": 1.1,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n**⚠️ 纯语音规范**:\ntext 字段禁止包含任何动作、括号心理描述（如 `（大口喘气）`）。生成 10-15 个短促紧凑的片段。",
+  "prompt_template": "你是一个戏剧冲突编剧。角色 {{caller}} 在突发紧急状况、险情或危机下，正急促慌乱地拨打电话给 {{target}}！\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 紧急事由: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**创作要求:**\n1. 开门见山，语气急促、紧张、慌张或充满危机感，迅速告知主角自己遇到了什么意外，或警示 {{target}} 注意危险。\n2. 断句急促，语速稍快，体现急迫感。\n3. speaker 字段必须为 {{caller}}。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述与括号心理（如 `（大口喘气）`、`（四处张望）`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.3,\n      \"speed\": 1.1,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个短促紧凑的片段。",
   "recommended_params": {
     "temperature": 0.8,
     "speed": 1.1

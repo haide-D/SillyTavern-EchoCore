@@ -33,6 +33,23 @@ class BuildEavesdropPromptRequest(BaseModel):
     user_name: str = "用户"
     text_lang: str = "zh"
     max_context_messages: int = 20
+    preset_id: Optional[str] = None
+    prompt_template: Optional[str] = None
+    target: Optional[str] = None
+    theme: Optional[str] = None
+    call_reason: Optional[str] = None
+    call_tone: Optional[str] = None
+    character_persona: Optional[str] = None
+    world_info: Optional[str] = None
+    story_summary: Optional[str] = None
+    chat_branch: Optional[str] = None
+
+
+class ParseEavesdropRequest(BaseModel):
+    """解析并生成对话追踪音频请求 (工坊测试用)"""
+    llm_response: str
+    speakers: List[str]
+    text_lang: Optional[str] = "zh"
 
 
 class CompleteEavesdropRequest(BaseModel):
@@ -78,11 +95,50 @@ async def build_eavesdrop_prompt(req: BuildEavesdropPromptRequest):
             speakers=req.speakers,
             user_name=req.user_name,
             text_lang=req.text_lang,
-            max_context_messages=req.max_context_messages
+            max_context_messages=req.max_context_messages,
+            preset_id=req.preset_id,
+            prompt_template=req.prompt_template,
+            target=req.target,
+            theme=req.theme,
+            call_reason=req.call_reason,
+            call_tone=req.call_tone,
+            character_persona=req.character_persona,
+            world_info=req.world_info,
+            story_summary=req.story_summary,
+            chat_branch=req.chat_branch
         )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/parse_and_generate")
+async def parse_and_generate_eavesdrop(req: ParseEavesdropRequest):
+    """
+    解析 LLM 响应并即时生成对话追踪多角色音频 (剧本工坊即时测试用)
+    """
+    try:
+        from services.emotion_service import EmotionService
+        emotion_service = EmotionService()
+        speakers_emotions = {}
+        for speaker in req.speakers:
+            try:
+                emotions = emotion_service.get_available_emotions(speaker)
+                speakers_emotions[speaker] = emotions
+            except Exception as e:
+                speakers_emotions[speaker] = ["default", "neutral"]
+
+        result = await eavesdrop_service.complete_generation(
+            llm_response=req.llm_response,
+            speakers_emotions=speakers_emotions,
+            text_lang=req.text_lang or "zh"
+        )
+        return {
+            "status": "success",
+            **result
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

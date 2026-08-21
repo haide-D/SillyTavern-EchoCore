@@ -1,6 +1,6 @@
 import { createNavbar } from '../../theme_utils.js';
 import { ThemeState } from '../state.js';
-import { HALLOWS_SVG, ICON_INCOMING_CALL, ICON_SETTINGS, ICON_FAVORITES, ICON_EAVESDROP, ICON_LLM, ICON_PHONE, ICON_THEME_STORE } from '../assets.js';
+import { HALLOWS_SVG, ICON_INCOMING_CALL, ICON_SETTINGS, ICON_FAVORITES, ICON_EAVESDROP, ICON_LLM, ICON_PHONE, ICON_THEME_STORE, ICON_WORKSHOP } from '../assets.js';
 
 // 本地主题专属图标与专属名称映射
 export const THEME_ICONS = {
@@ -9,6 +9,7 @@ export const THEME_ICONS = {
     'favorites': { name: '冥想盆记忆', desc: '沉淀过往的思绪', icon: ICON_FAVORITES },
     'settings': { name: '有求必应屋', desc: '满足一切的需求', icon: ICON_SETTINGS },
     'theme_store': { name: '变幻工坊', desc: '编织梦幻的画卷', icon: ICON_THEME_STORE },
+    'workshop': { name: '变幻秘典', desc: '编织过往与未知的对话', icon: ICON_WORKSHOP },
     'llm_test': { name: '占卜预言', desc: '探询未知的启示', icon: ICON_LLM },
     'phone_call': { name: '呼神护卫', desc: '召唤远方的守卫', icon: ICON_PHONE }
 };
@@ -25,7 +26,9 @@ export function createNavbarForApps(title) {
         '播放历史通话': '魔法传讯 (回溯)',
         '播放对话追踪': '探知低语 (回溯)',
         '主题工坊': '变幻工坊 (主题)',
-        '变幻工坊': '变幻工坊 (主题)'
+        '变幻工坊': '变幻工坊 (主题)',
+        '剧本工坊': '变幻秘典 (剧本)',
+        '变幻秘典': '变幻秘典 (剧本)'
     };
     const finalTitle = magicTitles[title] || title;
     

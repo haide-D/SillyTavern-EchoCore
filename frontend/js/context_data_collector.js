@@ -11,6 +11,7 @@
 
 import { SpeakerManager } from './speaker_manager.js';
 import { PhoneCallAPIClient } from './phone_call_api_client.js';
+import { WorldInfoExtractor } from './world_info_extractor.js';
 
 export class ContextDataCollector {
     // 防重复：记录最后发送的指纹和时间
@@ -222,18 +223,23 @@ export class ContextDataCollector {
             // 计算楼层
             const currentFloor = this.calculateCurrentFloor(chat);
 
-            // 提取上下文消息
+            // 提取上下文消息 (最近 10 条)
             const contextMessages = this.extractContextMessages(chat, 10);
 
             // 生成指纹
             const contextFingerprint = this.generateContextFingerprint(currentFloor);
 
-            console.log('[ContextDataCollector] 📊 数据采集完成:');
+            // 提取角色人设与世界书设定
+            const characterPersona = WorldInfoExtractor.getCharacterPersona(charInfo.charName);
+            const worldInfo = WorldInfoExtractor.getWorldInfo();
+
+            console.log('[ContextDataCollector] 📊 数据采集完成 (含世界书与人设):');
             console.log('  - chat_branch:', chatBranch);
             console.log('  - current_floor:', currentFloor);
             console.log('  - speakers:', speakers);
             console.log('  - context_messages:', contextMessages.length);
-            console.log('  - fingerprint:', contextFingerprint);
+            console.log('  - persona_len:', characterPersona.length);
+            console.log('  - world_info_len:', worldInfo.length);
 
             return {
                 chat_branch: chatBranch,
@@ -242,7 +248,9 @@ export class ContextDataCollector {
                 context: contextMessages,
                 context_fingerprint: contextFingerprint,
                 user_name: charInfo.userName,
-                char_name: charInfo.charName
+                char_name: charInfo.charName,
+                character_persona: characterPersona,
+                world_info: worldInfo
             };
 
         } catch (error) {

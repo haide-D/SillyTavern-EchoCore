@@ -86,3 +86,12 @@ export const ICON_THEME_STORE = `<svg viewBox="0 0 24 24" fill="none" stroke="cu
     <path d="M19 3l.4 1.1 1.1.4-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z"/>
 </svg>`;
 
+// 变幻秘典 (剧本工坊: 魔法卷轴与羽毛笔编织)
+export const ICON_WORKSHOP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    <path d="M8 7h8M8 11h6"/>
+    <path d="M15 15l4-4 2 2-4 4-2.5.5.5-2.5z"/>
+</svg>`;
+
+

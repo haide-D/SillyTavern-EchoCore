@@ -407,27 +407,53 @@ export function extractSpeaker(messageText) {
 
 /**
  * 从消息列表中提取所有说话人 (去重)
+/**
+ * 从对话消息列表中全面提取所有说话人 (去重)
+ * 扫描范围:
+ * 1. 消息发送者字段 msg.name (非用户、非系统)
+ * 2. 语音标签 <voice name="...">
+ * 3. 正文中的多角色对话前缀 (如 【角色名】 或 角色名:)
+ * 
  * @param {Array} messages - 消息列表
  * @returns {Array<string>} 去重后的说话人列表
  */
 export function extractAllSpeakers(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return [];
     const speakers = new Set();
 
     for (const msg of messages) {
-        if (msg.is_system) continue;
+        if (!msg || msg.is_system) continue;
+
+        // 1. 提取非用户的消息发送者名称
+        if (!msg.is_user && msg.name && typeof msg.name === 'string') {
+            const trimmedName = msg.name.trim();
+            if (trimmedName && trimmedName !== 'System' && trimmedName !== 'User') {
+                speakers.add(trimmedName);
+            }
+        }
 
         const msgText = msg.mes || '';
         if (!msgText) continue;
 
-        // 重置正则表达式的 lastIndex
+        // 2. 扫描语音标签 <voice name="...">
         VOICE_TAG_REGEX.lastIndex = 0;
-
         let match;
         while ((match = VOICE_TAG_REGEX.exec(msgText)) !== null) {
-            const speaker = match[2];  // 说话人名称
-            if (speaker) {
-                speakers.add(speaker);
+            const speaker = match[2];
+            if (speaker && speaker.trim()) {
+                speakers.add(speaker.trim());
             }
+        }
+
+        // 3. 扫描常见的正文多角色对话格式: 【角色名】 或 角色名: / 角色名：
+        const dialogMatches = msgText.match(/(?:【([^】\n]{1,20})】|^([a-zA-Z0-9\u4e00-\u9fa5_]{2,20})[：:])/gm);
+        if (dialogMatches) {
+            dialogMatches.forEach(m => {
+                const cleanName = m.replace(/[【】:：\s]/g, '').trim();
+                if (cleanName && cleanName.length >= 2 && cleanName.length <= 20) {
+                    speakers.add(cleanName);
+                }
+            });
         }
     }
 

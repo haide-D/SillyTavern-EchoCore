@@ -1,12 +1,12 @@
 {
   "id": "standard_eavesdrop",
-  "name": "标准私下谈话",
+  "name": "私下闲谈",
   "category": "eavesdrop",
-  "author": "ST-Direct-TTS 官方",
-  "version": "1.0.0",
-  "description": "主角不在场时，角色们在私底下展开的日常交流、对近期事件的看法或相互闲聊",
+  "author": "官方",
+  "version": "1.2.0",
+  "description": "角色们在私底下的日常交流、吐槽或秘密对话。",
   "tags": ["日常", "闲聊", "多人互动", "官方出厂"],
-  "prompt_template": "你是一个创意编剧，正在编写一段角色之间的私下对话。\n\n**场景背景**:\n{{user_name}} 不在场，但可以\"偷听\"到以下角色的对话。\n\n**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**创作要求**:\n1. 生成自然的多人对话，角色之间互相交流\n2. 对话内容可以是：讨论 {{user_name}} 的行为或心思、角色之间的私人话题（关系、秘密、日常）、透露一些 {{user_name}} 不知道的信息\n3. 每个角色的说话风格要符合其性格\n4. 情绪要自然过渡\n5. **text 字段必须使用{{lang_display}}进行对话，这是强制要求，不可使用其他语言**\n6. **translation 字段必须填写中文翻译（即使 text 已经是中文也要复制过来）**\n\n**⚠️ 重要：纯语音内容规范**:\n这是一个 TTS 语音合成系统，text 字段只能包含**可朗读的纯对话文本**。\n**严禁**在 text 字段中包含括号内的动作描述、心理活动或场景描述。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"scene_description\": \"场景描述\",\n  \"segments\": [\n    {\n      \"speaker\": \"角色名\",\n      \"emotion\": \"情绪标签\",\n      \"text\": \"纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填！不能省略！如果text是中文就复制text内容)\",\n      \"pause_after\": 0.5\n    }\n  ]\n}\n```\n\n**规则**:\n- speaker 必须是上述角色之一\n- emotion 必须是该角色的可用情绪\n- text 字段只能是纯对话，禁止任何括号或动作描述\n- translation 字段必填，必须是中文\n- 生成 10-25 个对话片段，让角色交替说话",
+  "prompt_template": "你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。\n\n**剧情主题与基调**:\n- 讨论主题: {{theme}}\n- 剧情起因: {{call_reason}}\n- 氛围张力: {{call_tone}}\n\n**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**创作要求**:\n1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. **text 字段必须使用{{lang_display}}进行对话**。\n4. **translation 字段必须填写中文翻译**。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"scene_description\": \"场景描述\",\n  \"segments\": [\n    {\n      \"speaker\": \"角色名 (必须是参与角色之一)\",\n      \"emotion\": \"情绪标签\",\n      \"text\": \"纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.5\n    }\n  ]\n}\n```\n\n规则: 生成 10-25 个对话片段，让参与角色自然交替说话。",
   "recommended_params": {
     "temperature": 0.7
   },
