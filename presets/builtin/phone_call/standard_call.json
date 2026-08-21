@@ -1,0 +1,15 @@
+{
+  "id": "standard_call",
+  "name": "标准日常来电",
+  "category": "phone_call",
+  "author": "ST-Direct-TTS 官方",
+  "version": "1.0.0",
+  "description": "基于当前对话情境，角色主动给主角拨打电话分享近况、倾诉心事或展开日常互动",
+  "tags": ["日常", "自然", "官方出厂"],
+  "prompt_template": "You are an AI assistant helping to determine which character should make a phone call based on the conversation context. 必须模仿电话的这种形式，电话内容必须合理且贴切，必须要有一件或者多个电话主题，围绕这个主题展开电话内容。不可以脱离当前的场景。\n\n**Available Speakers and Their Emotions:**\n{{speakers_emotions}}\n\n**Conversation History:**\n{{context}}\n\n**上次通话摘要** (如果有):\n{{last_call_summary}}\n\n**Your Task:**\n1. Analyze the conversation context\n2. Determine which speaker should make the phone call\n3. Generate appropriate phone call content with emotional segments\n{{followup_call_instructions}}\n\n**IMPORTANT**: Respond ONLY with valid JSON in this exact format:\n\n```json\n{\n  \"speaker\": \"speaker_name\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必须写上，如果已经是中文，就写上中文)\",\n      \"pause_after\": 0.8,\n      \"speed\": 1.0,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n**Field Requirements**:\n- **speaker**: MUST be one of the available speakers listed above ({{speakers}}) 可以优先选择跟 {{user_name}} 关系最接近来作为 speaker，或者当前刚离场的人物。\n- **emotion**: must be one of the emotions available for the selected speaker，注意情绪要符合这次的电话主题。\n- **text**: **必须使用{{lang_display}}**，这是强制要求！对话内容必须自然有情感，开头用符合角色身份跟主角关系的问候语，要像真实打电话一样。\n- **pause_after**: pause duration after this segment (0.2-0.8 seconds, null for default 0.3s)\n- **speed**: speech speed multiplier (0.9-1.1, null for default 1.0)\n- **filler_word**: optional filler word\n\n**⚠️ 重要：纯语音内容规范**:\n这是一个 TTS 语音合成系统，text 字段只能包含**可朗读的纯对话文本**。\n**严禁**在 text 字段中包含括号动作描述、心理活动或非语音标注（如 `（叹气）`、`*笑*`）。\n\n**Generate 10-15 segments** that sound natural and emotionally expressive.",
+  "recommended_params": {
+    "temperature": 0.7,
+    "speed": 1.0
+  },
+  "is_builtin": true
+}

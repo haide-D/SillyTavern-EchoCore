@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from config import FRONTEND_DIR, init_settings
 from routers import data, tts, system
 from config import FRONTEND_DIR
-from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer, themes
+from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer, themes, workshop
 
 # 导入自定义日志中间件
 from middleware.logging_middleware import LoggingMiddleware
@@ -37,13 +37,13 @@ app.add_middleware(
 # 添加验证错误处理器
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    print(f"\n[ValidationError] ❌ 请求验证失败:")
-    print(f"  - URL: {request.url}")
-    print(f"  - Method: {request.method}")
-    print(f"  - 错误详情: {exc.errors()}")
     try:
+        print(f"\n[ValidationError] 请求验证失败:")
+        print(f"  - URL: {request.url}")
+        print(f"  - Method: {request.method}")
+        print(f"  - 错误详情: {exc.errors()}")
         body = await request.body()
-        print(f"  - 请求体: {body.decode('utf-8')}")
+        print(f"  - 请求体: {body.decode('utf-8', errors='replace')}")
     except:
         pass
     
@@ -153,6 +153,7 @@ app.include_router(eavesdrop.router, prefix="/api/eavesdrop", tags=["Eavesdrop T
 app.include_router(continuous_analysis.router, prefix="/api", tags=["Continuous Analysis"])
 app.include_router(sovits_installer.router, tags=["GPT-SoVITS Installation"])
 app.include_router(themes.router, prefix="/api/themes", tags=["Themes Management"])
+app.include_router(workshop.router, prefix="/api/workshop", tags=["Creative Workshop"])
 
 
 # GPT-SoVITS 自动启动检查

@@ -31,6 +31,10 @@
                     <span class="icon">🎵</span>
                     <span>音频管理</span>
                 </a>
+                <a href="#workshop" class="nav-item" data-page="workshop">
+                    <span class="icon">🎨</span>
+                    <span>创作者工坊</span>
+                </a>
                 <a href="#settings" class="nav-item" data-page="settings">
                     <span class="icon">⚙️</span>
                     <span>系统配置</span>
@@ -297,6 +301,45 @@
 
                 <div class="audios-container" id="audios-list">
                     <p class="placeholder">请先选择一个模型</p>
+                </div>
+            </section>
+
+            <!-- 创作者工坊页面 -->
+            <section id="workshop" class="page">
+                <header class="page-header">
+                    <div>
+                        <h2>🎨 创作者工坊 (Creative Workshop)</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">自定义来电/窃听剧情场景、专属 Prompt 与变量生态，支持一键导出分享与导入</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="file" id="workshop-file-input" accept=".json" style="display: none;" onchange="handlePresetFileSelected(event)">
+                        <button class="btn btn-secondary" onclick="triggerImportPresetFile()">📥 导入预设 (.json)</button>
+                        <button class="btn btn-primary" onclick="openCreatePresetModal()">✨ 新建设想预设</button>
+                    </div>
+                </header>
+
+                <!-- 工坊工具栏 -->
+                <div class="toolbar-container">
+                    <div class="toolbar-left">
+                        <div class="filter-tabs-pills">
+                            <button class="pill-btn active" data-category="all" onclick="switchWorkshopFilter('all', this)">全部 (All)</button>
+                            <button class="pill-btn" data-category="phone_call" onclick="switchWorkshopFilter('phone_call', this)">📞 主动来电</button>
+                            <button class="pill-btn" data-category="eavesdrop" onclick="switchWorkshopFilter('eavesdrop', this)">👂 私下窃听</button>
+                        </div>
+                        <div class="search-input-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="workshop-search-input" placeholder="搜索预设名称 / 标签 / 作者..." oninput="filterWorkshopPresets()">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <span class="badge-count" id="workshop-total-badge">0 个预设</span>
+                        <button class="btn btn-secondary btn-sm" onclick="loadWorkshopPresets()">🔄 刷新</button>
+                    </div>
+                </div>
+
+                <!-- 预设卡片列表 -->
+                <div class="presets-container" id="presets-list">
+                    <p class="loading">加载预设中...</p>
                 </div>
             </section>
 
@@ -852,10 +895,111 @@
         </div>
     </div>
 
+    <!-- 创作者工坊预设编辑器模态框 -->
+    <div id="preset-editor-modal" class="dialog-overlay" style="display: none;">
+        <div class="dialog dialog-lg">
+            <div class="dialog-header">
+                <h3 id="preset-modal-title">✨ 新建场景预设</h3>
+                <button class="close-btn" onclick="closeDialog('preset-editor-modal')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <form id="preset-form" onsubmit="event.preventDefault(); savePresetForm();">
+                    <input type="hidden" id="preset-is-builtin" value="false">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>预设名称 <span class="required">*</span></label>
+                            <input type="text" id="preset-name" class="input" placeholder="例: 深夜私语 / 密谋商议" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>场景分类 <span class="required">*</span></label>
+                            <select id="preset-category" class="select" required>
+                                <option value="phone_call">📞 主动电话呼叫 (Phone Call)</option>
+                                <option value="eavesdrop">👂 私下窃听/旁听 (Eavesdrop)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>唯一标识符 (ID)</label>
+                            <input type="text" id="preset-id" class="input" placeholder="自动生成或填写英文ID，例: midnight_whisper">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>作者 (Author)</label>
+                            <input type="text" id="preset-author" class="input" placeholder="作者名，例: yuhang">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>预设描述 (Description)</label>
+                        <input type="text" id="preset-description" class="input" placeholder="简要描述本预设的剧情走向、角色动机与适用时机">
+                    </div>
+
+                    <div class="form-group">
+                        <label>标签 (Tags，多个用逗号隔开)</label>
+                        <input type="text" id="preset-tags" class="input" placeholder="例: 恋爱, 深夜, 治愈, 剧情反转">
+                    </div>
+
+                    <!-- Prompt 模板与快捷插槽 -->
+                    <div class="form-group">
+                        <div class="prompt-header-row">
+                            <label>提示词模板 (Prompt Template) <span class="required">*</span></label>
+                            <span class="prompt-tips">💡 点击下方插槽标签快速插入占位符</span>
+                        </div>
+                        <div class="variable-slots-bar" id="preset-variable-slots">
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{speaker}}')">+ {{speaker}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{user_name}}')">+ {{user_name}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{speakers_emotions}}')">+ {{speakers_emotions}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{context}}')">+ {{context}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{lang_display}}')">+ {{lang_display}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{last_call_summary}}')">+ {{last_call_summary}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{followup_call_instructions}}')">+ {{followup_call_instructions}}</button>
+                        </div>
+                        <textarea id="preset-prompt-template" class="textarea prompt-textarea" rows="12" placeholder="在此编写或粘贴系统提示词模板..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>推荐采样温度 (Temperature)</label>
+                            <input type="number" id="preset-temp" class="input" step="0.05" min="0.1" max="1.5" placeholder="0.7">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>推荐语速倍率 (Speed)</label>
+                            <input type="number" id="preset-speed" class="input" step="0.05" min="0.5" max="2.0" placeholder="1.0">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('preset-editor-modal')">取消</button>
+                <button class="btn btn-primary" id="save-preset-btn" onclick="savePresetForm()">💾 保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除预设确认对话框 -->
+    <div id="delete-preset-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>⚠️ 确认删除场景预设</h3>
+                <button class="close-btn" onclick="closeDialog('delete-preset-dialog')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <div class="danger-box">
+                    <strong>警告：</strong> 确定要删除预设 <code id="delete-preset-name-display"></code> 吗？此操作不可撤销。
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('delete-preset-dialog')">取消</button>
+                <button class="btn btn-danger" id="confirm-delete-preset-btn" onclick="executePresetDeletion()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 全局 Toast 容器 -->
     <div id="toast-container" class="toast-container"></div>
 
     <script src="js/admin.js"></script>
 </body>
 
-</html>
+</html>

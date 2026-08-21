@@ -58,7 +58,17 @@ class PhoneCallService:
         
         llm_config = phone_call_config.get("llm", {})
         extractors = phone_call_config.get("data_extractors", [])
-        prompt_template = phone_call_config.get("prompt_template", "")
+        
+        # 创作者工坊预设对接
+        from services.preset_service import PresetService
+        active_preset_id = phone_call_config.get("active_preset_id") or phone_call_config.get("preset_id") or "standard_call"
+        preset = PresetService.get_preset("phone_call", active_preset_id)
+        if preset and preset.get("prompt_template"):
+            prompt_template = preset["prompt_template"]
+            print(f"[PhoneCallService] 🎨 成功加载创作者工坊来电预设: {preset.get('name')} ({active_preset_id})")
+        else:
+            prompt_template = phone_call_config.get("prompt_template", "")
+            
         tts_config = phone_call_config.get("tts_config", {})
         text_lang = tts_config.get("text_lang", "zh")  # 读取语言配置,默认中文
         

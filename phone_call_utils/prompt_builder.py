@@ -1,4 +1,4 @@
-﻿from typing import List, Dict
+from typing import List, Dict
 from datetime import datetime
 from phone_call_utils.context_converter import ContextConverter
 from phone_call_utils.message_filter import MessageFilter
@@ -333,7 +333,7 @@ class PromptBuilder:
         lang_info = PromptBuilder.LANG_MAP.get(text_lang, PromptBuilder.LANG_MAP["zh"])
         lang_name = lang_info["name"]
         lang_display = lang_info["display"]
-        print(f"[PromptBuilder] 🌐 build: text_lang={text_lang} -> lang_name={lang_name}, lang_display={lang_display}")
+        print(f"[PromptBuilder] [Lang] build: text_lang={text_lang} -> lang_name={lang_name}, lang_display={lang_display}")
         
         # 处理上次通话摘要和二次电话指令
         last_call_summary = "无上次通话记录"
@@ -346,6 +346,9 @@ class PromptBuilder:
         # 替换模板变量
         prompt = template
         prompt = prompt.replace("{{char_name}}", char_name)
+        prompt = prompt.replace("{{speaker}}", char_name)
+        prompt = prompt.replace("{{user_name}}", user_name or "用户")
+        prompt = prompt.replace("{{user}}", user_name or "用户")
         prompt = prompt.replace("{{context}}", formatted_context)
         prompt = prompt.replace("{{extracted_data}}", formatted_data)
         prompt = prompt.replace("{{emotions}}", formatted_emotions)
@@ -375,7 +378,7 @@ class PromptBuilder:
                 call_context_parts.append(f"- 通话氛围: {call_tone}")
             call_context_parts.append("\n请根据以上背景生成自然的电话内容。\n")
             call_context_section = "\n".join(call_context_parts)
-            print(f"[PromptBuilder] 📞 电话背景: reason={call_reason}, tone={call_tone}")
+            print(f"[PromptBuilder] [CallContext] reason={call_reason}, tone={call_tone}")
         
         prompt = prompt.replace("{{call_context}}", call_context_section)
         # 如果模板中没有 {{call_context}} 占位符，在 {{context}} 后面插入
@@ -627,7 +630,8 @@ class PromptBuilder:
         user_name: str = "用户",
         text_lang: str = "zh",
         max_context_messages: int = 20,
-        eavesdrop_config: Dict = None  # 分析 LLM 提供的对话主题和框架
+        eavesdrop_config: Dict = None,  # 分析 LLM 提供的对话主题和框架
+        template: str = None  # 支持传入自定义预设模板
     ) -> str:
         """
         构建对话追踪 Prompt
@@ -639,6 +643,7 @@ class PromptBuilder:
             text_lang: 文本语言
             max_context_messages: 最大上下文消息数
             eavesdrop_config: 分析 LLM 提供的对话主题、框架等配置
+            template: 自定义 Prompt 模板 (工坊预设)
             
         Returns:
             格式化的对话追踪 Prompt
@@ -658,10 +663,13 @@ class PromptBuilder:
         # 获取语言显示
         lang_info = PromptBuilder.LANG_MAP.get(text_lang, PromptBuilder.LANG_MAP["zh"])
         lang_display = lang_info["display"]
-        print(f"[PromptBuilder] 🌐 build_eavesdrop_prompt: text_lang={text_lang} -> lang_display={lang_display}")
+        print(f"[PromptBuilder] [Lang] build_eavesdrop_prompt: text_lang={text_lang} -> lang_display={lang_display}")
         
-        # 根据是否有 eavesdrop_config 选择模板
-        if eavesdrop_config:
+        # 模板选择优先级：自定义传入 template > eavesdrop_config 增强版 > 基础版
+        if template:
+            prompt = template
+            print(f"[PromptBuilder] 使用工坊自定义 eavesdrop 预设模板")
+        elif eavesdrop_config:
             # 使用增强版模板（由分析 LLM 提供主题和框架）
             prompt = PromptBuilder.EAVESDROP_TEMPLATE_ENHANCED
             
@@ -706,7 +714,8 @@ class PromptBuilder:
         # 替换通用变量
         prompt = prompt.replace("{{context}}", context_text)
         prompt = prompt.replace("{{speakers_emotions}}", speakers_emotions_text.strip())
-        prompt = prompt.replace("{{user_name}}", user_name or "用户")  # 防止 None 导致 replace() 错误
+        prompt = prompt.replace("{{user_name}}", user_name or "用户")
+        prompt = prompt.replace("{{user}}", user_name or "用户")
         prompt = prompt.replace("{{lang_display}}", lang_display)
         
         return prompt

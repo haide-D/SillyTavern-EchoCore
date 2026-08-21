@@ -76,6 +76,17 @@ class EavesdropService:
         if len(valid_speakers) < 2:
             raise ValueError(f"需要至少2个有效角色进行对话追踪,当前只有 {len(valid_speakers)} 个")
         
+        # 创作者工坊预设对接
+        from services.preset_service import PresetService
+        settings = load_json(SETTINGS_FILE)
+        phone_call_config = settings.get("phone_call", {})
+        active_preset_id = phone_call_config.get("active_eavesdrop_preset_id") or phone_call_config.get("eavesdrop_preset_id") or "standard_eavesdrop"
+        custom_template = None
+        preset = PresetService.get_preset("eavesdrop", active_preset_id)
+        if preset and preset.get("prompt_template"):
+            custom_template = preset["prompt_template"]
+            print(f"[EavesdropService] 🎨 成功加载创作者工坊窃听预设: {preset.get('name')} ({active_preset_id})")
+
         # 构建 Prompt（使用分析 LLM 提供的配置）
         prompt = self.prompt_builder.build_eavesdrop_prompt(
             context=context,
@@ -83,12 +94,11 @@ class EavesdropService:
             user_name=user_name,
             text_lang=text_lang,
             max_context_messages=max_context_messages,
-            eavesdrop_config=eavesdrop_config  # ✅ 传递对话主题和框架
+            eavesdrop_config=eavesdrop_config,  # ✅ 传递对话主题和框架
+            template=custom_template
         )
         
         # 读取 LLM 配置
-        settings = load_json(SETTINGS_FILE)
-        phone_call_config = settings.get("phone_call", {})
         llm_config = phone_call_config.get("llm", {})
         
         print(f"[EavesdropService] ✅ Prompt 构建完成: {len(prompt)} 字符")

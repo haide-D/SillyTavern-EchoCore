@@ -13,11 +13,14 @@
 import os
 import glob
 import asyncio
+import logging
 import requests
 from typing import Optional, Dict
 from contextlib import asynccontextmanager
 
 from config import load_json, SETTINGS_FILE, get_current_dirs, get_sovits_host
+
+logger = logging.getLogger(__name__)
 
 
 class ModelWeightService:
@@ -51,7 +54,7 @@ class ModelWeightService:
         self._waiting_count = 0
         
         self._initialized = True
-        print("[ModelWeightService] ✅ 服务初始化完成 (含全局锁)")
+        logger.info("[ModelWeightService] 服务初始化完成 (含全局锁)")
     
     @property
     def current_gpt_path(self) -> Optional[str]:
