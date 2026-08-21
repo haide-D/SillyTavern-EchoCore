@@ -1,0 +1,48 @@
+<!-- frontend/settings.html -->
+<div id="st-direct-tts-settings" class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b>🔊 ST-Direct-TTS 供应商配置</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down"></div>
+    </div>
+
+    <div class="inline-drawer-content">
+        <!-- 供应商选择 -->
+        <div class="settings_section">
+            <label for="tts-provider-select"><b>当前 TTS 供应商:</b></label>
+            <select id="tts-provider-select" class="text_pole">
+                <option value="gpt_sovits">GPT-SoVITS (本地模型)</option>
+                <option value="minimax">MiniMax (云端 API)</option>
+                <option value="doubao">豆包 TTS (云端 API)</option>
+            </select>
+        </div>
+        
+        <hr class="sysHR" />
+
+        <!-- 针对 GPT-SoVITS 的面板 -->
+        <div id="tts-provider-panel-gpt_sovits" class="tts-provider-panel">
+            <div class="settings_section">
+                <p><i>当前正使用本地 GPT-SoVITS 服务。详细的模型绑定、路径配置和悬浮UI设置，请点击聊天界面右侧的「🔊 TTS配置」悬浮窗。</i></p>
+            </div>
+        </div>
+
+        <!-- 针对 MiniMax 的面板 -->
+        <div id="tts-provider-panel-minimax" class="tts-provider-panel" style="display:none;">
+            <div class="settings_section">
+                <label for="tts-minimax-api-key">API Key:</label>
+                <input type="password" id="tts-minimax-api-key" class="text_pole" placeholder="输入 MiniMax API Key">
+            </div>
+            <div class="settings_section">
+                <label for="tts-minimax-group-id">Group ID:</label>
+                <input type="text" id="tts-minimax-group-id" class="text_pole" placeholder="输入 Group ID">
+            </div>
+        </div>
+
+        <!-- 针对豆包的面板 -->
+        <div id="tts-provider-panel-doubao" class="tts-provider-panel" style="display:none;">
+            <div class="settings_section">
+                <label for="tts-doubao-api-key">API Key:</label>
+                <input type="password" id="tts-doubao-api-key" class="text_pole" placeholder="输入豆包 API Key">
+            </div>
+        </div>
+    </div>
+</div>
