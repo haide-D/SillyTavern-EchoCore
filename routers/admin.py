@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
-from typing import Optional
+from typing import Optional, List
 import os
 import shutil
 
@@ -69,6 +69,40 @@ async def create_model(
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error"))
     
+    return result
+
+@router.delete("/models/{model_name}")
+async def delete_model(model_name: str):
+    """删除指定模型目录并解除映射"""
+    settings = init_settings()
+    base_dir = settings.get("base_dir")
+    
+    if not base_dir:
+        raise HTTPException(status_code=400, detail="模型目录未配置")
+    
+    manager = ModelManager(base_dir)
+    result = manager.delete_model(model_name)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    
+    return result
+
+@router.post("/models/batch-delete")
+async def batch_delete_models(data: dict):
+    """批量删除模型列表"""
+    settings = init_settings()
+    base_dir = settings.get("base_dir")
+    
+    if not base_dir:
+        raise HTTPException(status_code=400, detail="模型目录未配置")
+    
+    model_names = data.get("models", [])
+    if not model_names:
+        raise HTTPException(status_code=400, detail="未指定要删除的模型列表")
+    
+    manager = ModelManager(base_dir)
+    result = manager.batch_delete_models(model_names)
     return result
 
 @router.get("/models/{model_name}/audios")
@@ -187,6 +221,119 @@ async def upload_audio(
             os.remove(target_path)
         raise HTTPException(status_code=500, detail=f"文件保存失败: {str(e)}")
 
+@router.post("/models/{model_name}/audios/batch-upload")
+async def batch_upload_audios(
+    model_name: str,
+    language: str = Form(...),
+    emotion: str = Form("default"),
+    files: List[UploadFile] = File(...)
+):
+    """批量上传参考音频"""
+    settings = init_settings()
+    base_dir = settings.get("base_dir")
+    
+    if not base_dir:
+        raise HTTPException(status_code=400, detail="模型目录未配置")
+    
+    model_path = os.path.join(base_dir, model_name)
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail=f"模型 '{model_name}' 不存在")
+    
+    if not files:
+        raise HTTPException(status_code=400, detail="未选择任何音频文件")
+    
+    if language in ["Chinese", "Japanese", "English"]:
+        target_dir = os.path.join(model_path, "reference_audios", language, "emotions")
+    else:
+        target_dir = os.path.join(model_path, "reference_audios")
+    
+    os.makedirs(target_dir, exist_ok=True)
+    
+    from utils import get_audio_duration, pad_audio_to_duration
+    
+    success_files = []
+    failed_files = []
+    
+    for file in files:
+        original_name = file.filename
+        if not original_name.lower().endswith(('.wav', '.mp3', '.ogg', '.flac')):
+            failed_files.append({
+                "filename": original_name,
+                "error": "不支持的格式(仅限 .wav, .mp3, .ogg, .flac)"
+            })
+            continue
+        
+        name_without_ext = os.path.splitext(original_name)[0]
+        
+        # 如果文件已自带情感前缀则保留，否则添加指定情感前缀
+        if not name_without_ext.startswith(f"{emotion}_"):
+            new_filename = f"{emotion}_{original_name}"
+        else:
+            new_filename = original_name
+        
+        target_path = os.path.join(target_dir, new_filename)
+        
+        try:
+            with open(target_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            duration = get_audio_duration(target_path)
+            if duration is None:
+                if os.path.exists(target_path):
+                    os.remove(target_path)
+                failed_files.append({
+                    "filename": original_name,
+                    "error": "无法读取音频时长"
+                })
+                continue
+            
+            if duration > 10.0:
+                if os.path.exists(target_path):
+                    os.remove(target_path)
+                failed_files.append({
+                    "filename": original_name,
+                    "error": f"时长过长 ({duration:.2f}s > 10s)"
+                })
+                continue
+            
+            auto_padded = False
+            if duration < 3.0:
+                success = pad_audio_to_duration(target_path, 3.0)
+                if not success:
+                    if os.path.exists(target_path):
+                        os.remove(target_path)
+                    failed_files.append({
+                        "filename": original_name,
+                        "error": f"时长过短 ({duration:.2f}s < 3s) 且自动补齐失败"
+                    })
+                    continue
+                auto_padded = True
+                duration = 3.0
+            
+            success_files.append({
+                "filename": new_filename,
+                "original_filename": original_name,
+                "duration": duration,
+                "auto_padded": auto_padded
+            })
+        except Exception as e:
+            if os.path.exists(target_path):
+                os.remove(target_path)
+            failed_files.append({
+                "filename": original_name,
+                "error": str(e)
+            })
+    
+    return {
+        "success": True,
+        "total": len(files),
+        "uploaded_count": len(success_files),
+        "failed_count": len(failed_files),
+        "success_files": success_files,
+        "failed_files": failed_files,
+        "message": f"成功上传 {len(success_files)} 个音频" + (f"，{len(failed_files)} 个失败" if failed_files else "")
+    }
+
 @router.delete("/models/{model_name}/audios")
 async def delete_audio(model_name: str, relative_path: str):
     """删除参考音频"""
@@ -232,6 +379,48 @@ async def batch_update_emotion(model_name: str, old_emotion: str, new_emotion: s
     
     manager = ModelManager(base_dir)
     result = manager.batch_update_emotion(model_name, old_emotion, new_emotion)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    
+    return result
+
+@router.post("/models/{model_name}/audios/batch-delete")
+async def batch_delete_audios(model_name: str, data: dict):
+    """批量删除指定模型的参考音频"""
+    settings = init_settings()
+    base_dir = settings.get("base_dir")
+    
+    if not base_dir:
+        raise HTTPException(status_code=400, detail="模型目录未配置")
+    
+    relative_paths = data.get("relative_paths", [])
+    if not relative_paths:
+        raise HTTPException(status_code=400, detail="未指定要删除的音频列表")
+    
+    manager = ModelManager(base_dir)
+    result = manager.batch_delete_audios(model_name, relative_paths)
+    return result
+
+@router.post("/models/{model_name}/audios/batch-selected-emotion")
+async def batch_update_selected_audios_emotion(model_name: str, data: dict):
+    """批量修改选中参考音频的情感前缀"""
+    settings = init_settings()
+    base_dir = settings.get("base_dir")
+    
+    if not base_dir:
+        raise HTTPException(status_code=400, detail="模型目录未配置")
+    
+    relative_paths = data.get("relative_paths", [])
+    new_emotion = data.get("new_emotion", "").strip()
+    
+    if not relative_paths:
+        raise HTTPException(status_code=400, detail="未选择音频文件")
+    if not new_emotion:
+        raise HTTPException(status_code=400, detail="新情感标签不能为空")
+    
+    manager = ModelManager(base_dir)
+    result = manager.batch_update_selected_audios_emotion(model_name, relative_paths, new_emotion)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error"))

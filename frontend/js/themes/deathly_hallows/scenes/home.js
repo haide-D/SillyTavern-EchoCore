@@ -24,23 +24,24 @@ export const homeScene = {
         }
 
         $container.css({
-            'padding': '0',
+            'padding': '16px 0',
             'color': 'var(--proto-text-color)',
             'height': '100%',
             'box-sizing': 'border-box',
             'position': 'relative',
-            'overflow': 'hidden',
+            'overflow-y': 'auto',
+            'overflow-x': 'hidden',
             'display': 'flex',
             'flex-direction': 'column',
             'align-items': 'center',
-            'justify-content': 'center'
+            'justifyContent': 'center'
         });
         
         // 中心神秘光束或连线
-        const $line = $('<div style="position:absolute; top: 10%; bottom: 10%; left: 50%; width: 1px; background: linear-gradient(to bottom, transparent, rgba(196,155,79,0.3) 20%, rgba(196,155,79,0.3) 80%, transparent); transform: translateX(-50%); z-index: 0;"></div>');
+        const $line = $('<div style="position:absolute; top: 10%; bottom: 10%; left: 50%; width: 1px; background: linear-gradient(to bottom, transparent, rgba(196,155,79,0.3) 20%, rgba(196,155,79,0.3) 80%, transparent); transform: translateX(-50%); z-index: 0; pointer-events:none;"></div>');
         $container.append($line);
 
-        const $menu = $(`<div style="display:flex; flex-direction:column; gap:40px; width: 100%; max-width: 280px; position:relative; z-index: 1;"></div>`);
+        const $menu = $(`<div style="display:flex; flex-direction:column; gap:32px; width: 100%; max-width: 280px; position:relative; z-index: 1; margin: auto 0; padding: 10px 0;"></div>`);
 
         const apps = ctx.engine ? ctx.engine.getRegisteredApps() : [];
         let validIndex = 0;
@@ -48,10 +49,10 @@ export const homeScene = {
         apps.forEach((app) => {
             if (app.hidden) return; // 隐藏无名称应用 (测试专用)
             
-            // 合并主题自带的自定义属性
+            // 合并主题自带的自定义属性与专属魔幻名称
             const themeProps = THEME_ICONS[app.id] || {};
             const finalIcon = themeProps.icon || `<span style="font-size:32px;">${app.defaultIcon}</span>`;
-            const finalName = app.defaultName;
+            const finalName = themeProps.name || (ctx.engine && typeof ctx.engine.getLabel === 'function' ? ctx.engine.getLabel(app.id, app.defaultName) : app.defaultName);
             const finalDesc = themeProps.desc || '';
             
             const isLeft = validIndex % 2 === 0;

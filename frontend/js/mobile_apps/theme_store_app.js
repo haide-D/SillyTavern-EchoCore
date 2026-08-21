@@ -76,13 +76,14 @@ function renderThemeItem(theme, engine, $container) {
     const isCurrent = engine.getCurrentTheme()?.id === theme.id;
     const isBuiltin = !theme.type || theme.type === 'builtin';
     const bg = hashColor(theme.id || 'default');
+    const defaultCoverSvg = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 3.58 8 8 8 1 0 1.5-.5 1.5-1.2 0-.4-.2-.8-.2-1.3 0-1.7 1.3-3 3-3h1.7c3.3 0 6-2.7 6-6 0-3.6-4.5-6.5-10-6.5z"/><circle cx="6.5" cy="8.5" r="1" fill="currentColor"/><circle cx="10" cy="5.5" r="1" fill="currentColor"/><circle cx="6.5" cy="13" r="1" fill="currentColor"/><path d="M16 16l5-5M19.5 9.5l1.5 1.5M14 18l1.5-1.5"/></svg>`;
     
     const $item = $(`
         <div class="ts-card ${isCurrent ? 'active-theme' : ''}">
             <div class="ts-card-cover" style="background: ${bg}">
                 ${isCurrent ? '<div class="ts-active-badge">Active</div>' : ''}
                 <div class="ts-builtin-badge">${isBuiltin ? '内置' : '外部导入'}</div>
-                <div class="ts-cover-icon">🎨</div>
+                <div class="ts-cover-icon">${theme.iconSvg || defaultCoverSvg}</div>
             </div>
             <div class="ts-card-body">
                 <h3 class="ts-card-title">
@@ -128,9 +129,22 @@ function renderThemeItem(theme, engine, $container) {
     $container.append($item);
 }
 
-export const render = function ($container, ctx) {
+export const render = function ($container, createNavbarOrCtx, possibleCtx) {
+    let navbarFn = createNavbar;
+    let ctx = possibleCtx || {};
+    if (typeof createNavbarOrCtx === 'function') {
+        navbarFn = createNavbarOrCtx;
+    } else if (createNavbarOrCtx && createNavbarOrCtx.createNavbar) {
+        navbarFn = createNavbarOrCtx.createNavbar;
+        ctx = createNavbarOrCtx;
+    } else if (createNavbarOrCtx && createNavbarOrCtx.engine) {
+        ctx = createNavbarOrCtx;
+    }
+    if (ctx.createNavbar) navbarFn = ctx.createNavbar;
+
     injectCSS();
-    const navbar = createNavbar('主题工坊', () => ctx.engine.showScene('home'));
+    const title = ctx.engine && typeof ctx.engine.getLabel === 'function' ? ctx.engine.getLabel('theme_store', '变幻工坊') : '变幻工坊';
+    const navbar = navbarFn(title, () => ctx.engine ? ctx.engine.showScene('home') : null);
     
     // AI Import Modal DOM
     const $importModal = $(`

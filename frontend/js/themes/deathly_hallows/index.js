@@ -9,6 +9,7 @@ import * as SettingsApp from '../../mobile_apps/settings_app.js';
 import * as FavoritesApp from '../../mobile_apps/favorites_app.js';
 import * as LlmTestApp from '../../mobile_apps/llm_test_app.js';
 import * as PhoneCallApp from '../../mobile_apps/phone_call_app.js';
+import * as ThemeStoreApp from '../../mobile_apps/theme_store_app.js';
 import { createNavbarForApps } from './scenes/shared.js';
 
 const DeathlyHallowsTheme = {
@@ -183,6 +184,16 @@ const DeathlyHallowsTheme = {
                 $container.empty().append($appContainer);
             }
         },
+        theme_store: {
+            render($container, ctx) {
+                const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
+                ThemeStoreApp.render($appContainer, {
+                    ...ctx,
+                    createNavbar: createNavbarForApps
+                });
+                $container.empty().append($appContainer);
+            }
+        },
         llm_test: {
             render($container, ctx) {
                 const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
@@ -232,8 +243,11 @@ const DeathlyHallowsTheme = {
             'eavesdrop': '伸缩耳探听',
             'favorites': '冥想盆记忆',
             'settings': '有求必应屋',
+            'theme_store': '变幻工坊',
             'call_history': '双面镜回溯',
             'eavesdrop_history': '探听记录',
+            'llm_test': '占卜预言',
+            'phone_call': '呼神护卫'
         };
         return labels[key] || null;
     }

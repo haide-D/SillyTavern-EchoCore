@@ -318,65 +318,208 @@ export function ensureCSS() {
     padding-bottom: 20px;
 }
 
-/* Settings Override */
+/* Settings Override (法阵修正/系统配置) */
 #tts-dh-modal .mobile-settings-content {
     background: transparent !important;
     color: rgba(220, 200, 150, 0.9) !important;
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
+    padding: 14px;
     padding-bottom: 40px;
 }
 /* 魔法风格滚动条 */
 #tts-dh-modal .mobile-settings-content::-webkit-scrollbar,
 #tts-dh-modal .call-history-content::-webkit-scrollbar,
-#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar {
+#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar,
+#tts-dh-modal .tts-compact-mapping-list::-webkit-scrollbar {
     width: 4px;
 }
 #tts-dh-modal .mobile-settings-content::-webkit-scrollbar-track,
 #tts-dh-modal .call-history-content::-webkit-scrollbar-track,
-#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-track {
+#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-track,
+#tts-dh-modal .tts-compact-mapping-list::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
 }
 #tts-dh-modal .mobile-settings-content::-webkit-scrollbar-thumb,
 #tts-dh-modal .call-history-content::-webkit-scrollbar-thumb,
-#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-thumb {
+#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-thumb,
+#tts-dh-modal .tts-compact-mapping-list::-webkit-scrollbar-thumb {
     background: rgba(196, 155, 79, 0.4);
     border-radius: 4px;
 }
 #tts-dh-modal .mobile-settings-content::-webkit-scrollbar-thumb:hover,
 #tts-dh-modal .call-history-content::-webkit-scrollbar-thumb:hover,
-#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-thumb:hover {
+#tts-dh-modal .eavesdrop-history-content::-webkit-scrollbar-thumb:hover,
+#tts-dh-modal .tts-compact-mapping-list::-webkit-scrollbar-thumb:hover {
     background: rgba(196, 155, 79, 0.7);
 }
-#tts-dh-modal .mobile-settings-content .tts-section-title {
-    color: rgba(196, 155, 79, 1) !important;
-    border-bottom: 1px solid rgba(196, 155, 79, 0.3) !important;
-}
-#tts-dh-modal .mobile-settings-content .tts-setting-row {
-    border-bottom: 1px dashed rgba(196, 155, 79, 0.15) !important;
-}
-#tts-dh-modal .mobile-settings-content select, 
-#tts-dh-modal .mobile-settings-content input {
-    background: rgba(14, 10, 20, 0.8) !important;
-    color: rgba(196, 155, 79, 0.9) !important;
-    border: 1px solid rgba(196, 155, 79, 0.4) !important;
-    border-radius: 4px;
-}
-#tts-dh-modal .mobile-settings-content .tts-btn-primary {
-    background: rgba(196, 155, 79, 0.2) !important;
-    border: 1px solid rgba(196, 155, 79, 0.6) !important;
-    color: rgba(196, 155, 79, 1) !important;
+
+/* 卡片容器：暗金半透明磨砂黑金质感 */
+#tts-dh-modal .mobile-settings-content .tts-card {
+    background: rgba(14, 10, 20, 0.78) !important;
+    border: 1px solid rgba(196, 155, 79, 0.28) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(8px);
+    margin-bottom: 14px !important;
+    padding: 14px !important;
     transition: all 0.3s ease;
 }
-#tts-dh-modal .mobile-settings-content .tts-btn-primary:hover {
-    background: rgba(196, 155, 79, 0.4) !important;
-    box-shadow: 0 0 12px rgba(196, 155, 79, 0.4);
+#tts-dh-modal .mobile-settings-content .tts-card:hover {
+    border-color: rgba(196, 155, 79, 0.55) !important;
+    box-shadow: 0 0 14px rgba(196, 155, 79, 0.25) !important;
 }
-#tts-dh-modal .mobile-settings-content .tts-btn-secondary {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: rgba(220, 200, 150, 0.7) !important;
+
+/* 卡片标题：金色发光字，告别任何突兀亮蓝色 */
+#tts-dh-modal .mobile-settings-content .tts-card-title {
+    color: rgba(196, 155, 79, 1) !important;
+    text-shadow: 0 0 8px rgba(196, 155, 79, 0.45) !important;
+    font-weight: 300 !important;
+    font-size: 15px !important;
+    letter-spacing: 1px !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 12px !important;
+}
+
+/* 开关行与文本 */
+#tts-dh-modal .mobile-settings-content .tts-switch-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    cursor: pointer;
+}
+#tts-dh-modal .mobile-settings-content .tts-switch-label,
+#tts-dh-modal .mobile-settings-content .tts-input-label {
+    color: rgba(220, 200, 150, 0.9) !important;
+    font-size: 13px !important;
+    font-weight: 300 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 魔法金光 Toggle 开关 */
+#tts-dh-modal .mobile-settings-content .tts-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(196, 155, 79, 0.4) !important;
+    border-radius: 20px;
+    position: relative;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+#tts-dh-modal .mobile-settings-content .tts-toggle:before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: rgba(196, 155, 79, 0.7);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#tts-dh-modal .mobile-settings-content .tts-toggle:checked {
+    background: rgba(196, 155, 79, 0.3) !important;
+    border-color: rgba(196, 155, 79, 0.9) !important;
+    box-shadow: 0 0 10px rgba(196, 155, 79, 0.4) !important;
+}
+#tts-dh-modal .mobile-settings-content .tts-toggle:checked:before {
+    left: 18px;
+    background: rgba(255, 230, 160, 1);
+    box-shadow: 0 0 8px rgba(196, 155, 79, 0.8);
+}
+
+/* 输入框与原生选择框 */
+#tts-dh-modal .mobile-settings-content input[type="text"],
+#tts-dh-modal .mobile-settings-content input[type="number"],
+#tts-dh-modal .mobile-settings-content select,
+#tts-dh-modal .mobile-settings-content .tts-modern-input {
+    background: rgba(8, 5, 12, 0.85) !important;
+    color: rgba(220, 200, 150, 0.95) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    border-radius: 5px !important;
+    padding: 7px 10px !important;
+    font-size: 13px !important;
+    outline: none !important;
+    transition: all 0.25s ease;
+    box-sizing: border-box !important;
+}
+#tts-dh-modal .mobile-settings-content select {
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23c49b4f' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+    padding-right: 26px !important;
+    cursor: pointer;
+}
+#tts-dh-modal .mobile-settings-content select option {
+    background: rgba(14, 10, 20, 0.98) !important;
+    color: rgba(220, 200, 150, 0.95) !important;
+    padding: 6px 10px;
+}
+#tts-dh-modal .mobile-settings-content select option:disabled {
+    color: rgba(196, 155, 79, 0.6) !important;
+}
+#tts-dh-modal .mobile-settings-content input:focus,
+#tts-dh-modal .mobile-settings-content select:focus,
+#tts-dh-modal .mobile-settings-content .tts-modern-input:focus {
+    border-color: rgba(196, 155, 79, 0.85) !important;
+    box-shadow: 0 0 10px rgba(196, 155, 79, 0.35) !important;
+}
+
+/* 按钮样式 */
+#tts-dh-modal .mobile-settings-content .btn-primary,
+#tts-dh-modal .mobile-settings-content #tts-btn-bind-new {
+    background: rgba(196, 155, 79, 0.22) !important;
+    border: 1px solid rgba(196, 155, 79, 0.65) !important;
+    color: rgba(255, 240, 200, 1) !important;
+    font-weight: 300 !important;
+    letter-spacing: 1px !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    transition: all 0.25s ease !important;
+    cursor: pointer;
+}
+#tts-dh-modal .mobile-settings-content .btn-primary:hover,
+#tts-dh-modal .mobile-settings-content #tts-btn-bind-new:hover {
+    background: rgba(196, 155, 79, 0.45) !important;
+    box-shadow: 0 0 14px rgba(196, 155, 79, 0.45) !important;
+    transform: translateY(-1px);
+}
+#tts-dh-modal .mobile-settings-content .btn-secondary,
+#tts-dh-modal .mobile-settings-content #tts-btn-fill-current-char,
+#tts-dh-modal .mobile-settings-content #tts-btn-select-all {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(196, 155, 79, 0.3) !important;
+    color: rgba(220, 200, 150, 0.85) !important;
+    border-radius: 5px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+#tts-dh-modal .mobile-settings-content .btn-secondary:hover,
+#tts-dh-modal .mobile-settings-content #tts-btn-fill-current-char:hover,
+#tts-dh-modal .mobile-settings-content #tts-btn-select-all:hover {
+    background: rgba(196, 155, 79, 0.2) !important;
+    border-color: rgba(196, 155, 79, 0.6) !important;
+    color: rgba(255, 240, 200, 1) !important;
+}
+
+/* 紧凑角色绑定卡片流 */
+#tts-dh-modal .mobile-settings-content .tts-compact-item {
+    background: rgba(14, 10, 20, 0.85) !important;
+    border: 1px solid rgba(196, 155, 79, 0.22) !important;
+    transition: all 0.2s ease;
+}
+#tts-dh-modal .mobile-settings-content .tts-compact-item:hover {
+    border-color: rgba(196, 155, 79, 0.55) !important;
+    box-shadow: 0 0 8px rgba(196, 155, 79, 0.2) !important;
+}
+#tts-dh-modal .mobile-settings-content .tts-mapping-check {
+    accent-color: rgba(196, 155, 79, 1);
 }
 
 /* Custom Select Dropdowns */
@@ -385,11 +528,11 @@ export function ensureCSS() {
     z-index: 10;
 }
 #tts-dh-modal .mobile-settings-content .select-trigger {
-    background: rgba(14, 10, 20, 0.8);
+    background: rgba(8, 5, 12, 0.85);
     border: 1px solid rgba(196, 155, 79, 0.4);
-    color: rgba(196, 155, 79, 0.9);
+    color: rgba(220, 200, 150, 0.95);
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -539,6 +682,228 @@ export function ensureCSS() {
     background: rgba(167, 110, 255, 0.1) !important;
     border: 1px solid rgba(167, 110, 255, 0.4) !important;
     color: rgba(167, 110, 255, 1) !important;
+}
+
+/* ========================================
+   DH THEME STORE (变幻工坊) OVERRIDES
+   ======================================== */
+#tts-dh-modal .theme-store-container {
+    background: transparent !important;
+    color: rgba(220, 200, 150, 0.9) !important;
+    padding: 14px;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 30px;
+}
+#tts-dh-modal .theme-store-container::-webkit-scrollbar {
+    width: 4px;
+}
+#tts-dh-modal .theme-store-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+#tts-dh-modal .theme-store-container::-webkit-scrollbar-thumb {
+    background: rgba(196, 155, 79, 0.4);
+    border-radius: 4px;
+}
+#tts-dh-modal .theme-store-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(196, 155, 79, 0.7);
+}
+
+/* 顶部操作按钮（暗金微光魔法风格） */
+#tts-dh-modal .ts-header-actions {
+    gap: 8px;
+    margin-bottom: 18px;
+}
+#tts-dh-modal .ts-btn {
+    background: rgba(14, 10, 20, 0.7) !important;
+    border: 1px solid rgba(196, 155, 79, 0.4) !important;
+    color: rgba(220, 200, 150, 0.95) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    font-weight: 300 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.5px !important;
+    border-radius: 6px !important;
+    transition: all 0.25s ease !important;
+    padding: 10px 6px !important;
+}
+#tts-dh-modal .ts-btn:hover {
+    background: rgba(196, 155, 79, 0.25) !important;
+    border-color: rgba(196, 155, 79, 0.85) !important;
+    color: rgba(255, 240, 200, 1) !important;
+    box-shadow: 0 0 12px rgba(196, 155, 79, 0.4) !important;
+    transform: translateY(-2px);
+}
+#tts-dh-modal .ts-btn-upload {
+    background: rgba(196, 155, 79, 0.18) !important;
+    border-color: rgba(196, 155, 79, 0.55) !important;
+}
+#tts-dh-modal .ts-btn-import {
+    background: rgba(167, 110, 255, 0.18) !important;
+    border-color: rgba(167, 110, 255, 0.5) !important;
+    color: rgba(220, 190, 255, 0.95) !important;
+}
+#tts-dh-modal .ts-btn-import:hover {
+    background: rgba(167, 110, 255, 0.3) !important;
+    border-color: rgba(167, 110, 255, 0.9) !important;
+    box-shadow: 0 0 14px rgba(167, 110, 255, 0.4) !important;
+}
+#tts-dh-modal .ts-btn-prompt {
+    background: rgba(196, 155, 79, 0.12) !important;
+    border-color: rgba(196, 155, 79, 0.4) !important;
+}
+
+/* 主题网格与卡片 */
+#tts-dh-modal .ts-grid {
+    gap: 14px;
+    padding-bottom: 20px;
+}
+#tts-dh-modal .ts-card {
+    background: rgba(14, 10, 20, 0.78) !important;
+    border: 1px solid rgba(196, 155, 79, 0.28) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+#tts-dh-modal .ts-card:hover {
+    border-color: rgba(196, 155, 79, 0.65) !important;
+    box-shadow: 0 0 16px rgba(196, 155, 79, 0.35) !important;
+    transform: translateY(-3px);
+}
+#tts-dh-modal .ts-card.active-theme {
+    border-color: rgba(196, 155, 79, 0.95) !important;
+    box-shadow: 0 0 18px rgba(196, 155, 79, 0.4), inset 0 0 14px rgba(196, 155, 79, 0.15) !important;
+}
+#tts-dh-modal .ts-card-cover {
+    background: radial-gradient(circle at center, rgba(196, 155, 79, 0.2) 0%, rgba(14, 10, 20, 0.85) 100%) !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.2);
+    height: 85px;
+}
+#tts-dh-modal .ts-cover-icon {
+    color: rgba(196, 155, 79, 0.95);
+    filter: drop-shadow(0 0 10px rgba(196, 155, 79, 0.6));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#tts-dh-modal .ts-active-badge {
+    background: rgba(196, 155, 79, 0.25) !important;
+    border: 1px solid rgba(196, 155, 79, 0.85) !important;
+    color: rgba(255, 230, 160, 1) !important;
+    text-shadow: 0 0 6px rgba(196, 155, 79, 0.6);
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    padding: 3px 6px;
+}
+#tts-dh-modal .ts-builtin-badge {
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: rgba(220, 200, 150, 0.75) !important;
+    font-size: 10px;
+    border-radius: 4px;
+}
+#tts-dh-modal .ts-card-title {
+    color: rgba(220, 200, 150, 1) !important;
+    font-weight: 300;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+#tts-dh-modal .ts-card-version {
+    color: rgba(196, 155, 79, 0.6) !important;
+    font-size: 11px;
+}
+#tts-dh-modal .ts-card-desc {
+    color: rgba(220, 200, 150, 0.65) !important;
+    font-size: 12px;
+}
+#tts-dh-modal .ts-action-use {
+    background: rgba(196, 155, 79, 0.2) !important;
+    border: 1px solid rgba(196, 155, 79, 0.6) !important;
+    color: rgba(220, 200, 150, 1) !important;
+    font-weight: 300;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+}
+#tts-dh-modal .ts-action-use:hover {
+    background: rgba(196, 155, 79, 0.45) !important;
+    box-shadow: 0 0 10px rgba(196, 155, 79, 0.4);
+}
+#tts-dh-modal .ts-action-export {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: rgba(220, 200, 150, 0.8) !important;
+}
+#tts-dh-modal .ts-action-export:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(196, 155, 79, 0.4) !important;
+}
+#tts-dh-modal .ts-action-delete {
+    background: rgba(220, 53, 53, 0.15) !important;
+    border: 1px solid rgba(220, 53, 53, 0.3) !important;
+    color: rgba(255, 160, 160, 0.85) !important;
+}
+#tts-dh-modal .ts-action-delete:hover {
+    background: rgba(220, 53, 53, 0.35) !important;
+    color: #fff !important;
+    box-shadow: 0 0 10px rgba(220, 53, 53, 0.4);
+}
+
+/* 导入 AI 代码弹窗（羊皮纸黑金魔法弹窗） */
+.ts-modal {
+    background: rgba(14, 10, 20, 0.96) !important;
+    border: 1px solid rgba(196, 155, 79, 0.65) !important;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.85), 0 0 15px rgba(196, 155, 79, 0.3) !important;
+    color: rgba(220, 200, 150, 0.95) !important;
+    border-radius: 12px !important;
+}
+.ts-modal-header {
+    border-bottom: 1px solid rgba(196, 155, 79, 0.3) !important;
+    padding: 14px 18px !important;
+}
+.ts-modal-title {
+    color: rgba(196, 155, 79, 1) !important;
+    text-shadow: 0 0 8px rgba(196, 155, 79, 0.4);
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+.ts-modal-close {
+    color: rgba(196, 155, 79, 0.6) !important;
+}
+.ts-modal-close:hover {
+    color: rgba(196, 155, 79, 1) !important;
+}
+.ts-textarea {
+    background: rgba(8, 5, 12, 0.85) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: rgba(220, 200, 150, 0.9) !important;
+    border-radius: 6px !important;
+}
+.ts-textarea:focus {
+    border-color: rgba(196, 155, 79, 0.85) !important;
+    box-shadow: 0 0 10px rgba(196, 155, 79, 0.35) !important;
+}
+.ts-modal-footer {
+    border-top: 1px solid rgba(196, 155, 79, 0.25) !important;
+    padding: 14px 18px !important;
+}
+.ts-btn-cancel {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: rgba(220, 200, 150, 0.75) !important;
+    border-radius: 6px !important;
+}
+.ts-btn-confirm {
+    background: rgba(196, 155, 79, 0.25) !important;
+    border: 1px solid rgba(196, 155, 79, 0.75) !important;
+    color: rgba(255, 240, 200, 1) !important;
+    box-shadow: 0 0 10px rgba(196, 155, 79, 0.3);
+    border-radius: 6px !important;
+}
+.ts-btn-confirm:hover {
+    background: rgba(196, 155, 79, 0.5) !important;
+    box-shadow: 0 0 16px rgba(196, 155, 79, 0.6) !important;
 }
 
         `;

@@ -1,11 +1,20 @@
-// API 基础路径
+// ==========================================================================
+// ST-Direct-TTS Modern Admin Console Controller
+// Version: 3.0.0
+// ==========================================================================
+
 const API_BASE = '/api/admin';
 
-// 当前状态
+// ==================== 全局状态 ====================
 let currentModels = [];
 let currentSelectedModel = '';
+let currentAudios = [];
+let selectedModelNames = new Set();
+let selectedAudioPaths = new Set();
+let pendingDeleteModels = [];
+let pendingDeleteAudios = [];
 
-// ==================== 页面导航 ====================
+// ==================== 页面初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
     // 导航切换
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -21,35 +30,76 @@ document.addEventListener('DOMContentLoaded', () => {
     loadModels();
     loadSettings();
 
-    // 绑定获取 LLM 模型列表按钮
+    // 绑定 LLM 相关测试与选择
     bindFetchModelsButton();
-    // 绑定测试 LLM 连接按钮
     bindTestConnectionButton();
-    // 绑定分析引擎 LLM 按钮
     bindAnalysisLLMButtons();
-    // 绑定设置页 Tab 切换
     bindSettingsTabs();
 
+    // 加载 GPT-SoVITS 扩展配置
+    setTimeout(() => {
+        loadSovitsConfig();
+        loadSovitsStatus();
+    }, 500);
+
     // 显示通告弹窗
-    document.getElementById('notice-dialog').style.display = 'flex';
+    const noticeDialog = document.getElementById('notice-dialog');
+    if (noticeDialog) {
+        noticeDialog.style.display = 'flex';
+    }
 });
 
+// ==================== 页面导航 ====================
 function switchPage(pageName) {
-    // 更新导航状态
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    document.querySelector(`[data-page="${pageName}"]`).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    const targetNav = document.querySelector(`[data-page="${pageName}"]`);
+    if (targetNav) targetNav.classList.add('active');
 
-    // 更新页面显示
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-    document.getElementById(pageName).classList.add('active');
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+    const targetPage = document.getElementById(pageName);
+    if (targetPage) targetPage.classList.add('active');
 
-    // 页面特定加载
     if (pageName === 'audios') {
         populateModelSelect();
+    }
+}
+
+// ==================== 现代化 Toast 消息通知 ====================
+function showNotification(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    const toast = document.createElement('div');
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span style="font-size: 1.1rem; line-height: 1;">${icons[type] || 'ℹ️'}</span>
+        <span style="flex: 1;">${message}</span>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-hiding');
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 300);
+    }, duration);
+}
+
+// ==================== 对话框通用控制 ====================
+function closeDialog(dialogId) {
+    const dialog = document.getElementById(dialogId);
+    if (dialog) {
+        dialog.style.display = 'none';
     }
 }
 
@@ -59,19 +109,20 @@ async function loadDashboard() {
         const response = await fetch(`${API_BASE}/status`);
         const data = await response.json();
 
-        // GPT-SoVITS 服务
+        // GPT-SoVITS 服务检测
         if (data.sovits_service) {
             const sovits = data.sovits_service;
             const statusEl = document.getElementById('sovits-status');
+            const stateEl = document.getElementById('sovits-state');
 
             if (sovits.accessible) {
                 statusEl.textContent = '运行中';
                 statusEl.className = 'status-badge status-success';
-                document.getElementById('sovits-state').textContent = '可访问';
+                stateEl.textContent = '服务可访问 (OK)';
             } else {
                 statusEl.textContent = '未运行';
                 statusEl.className = 'status-badge status-error';
-                document.getElementById('sovits-state').textContent = sovits.error || '无法连接';
+                stateEl.textContent = sovits.error || '无法连接';
             }
             document.getElementById('sovits-url').textContent = sovits.url;
         }
@@ -80,86 +131,267 @@ async function loadDashboard() {
         checkVersion();
     } catch (error) {
         console.error('加载仪表盘失败:', error);
-        showNotification('加载仪表盘失败', 'error');
     }
 }
 
 function refreshStatus() {
-    showNotification('正在刷新...', 'info');
+    showNotification('正在刷新系统状态...', 'info');
     loadDashboard();
 }
 
-// ==================== 模型管理 ====================
+// ==========================================================================
+// 模块 3: 模型管理体系 (完整搜索、多选、批量安全删除与角色解绑)
+// ==========================================================================
+
 async function loadModels() {
     try {
         const response = await fetch(`${API_BASE}/models`);
         const data = await response.json();
 
         currentModels = data.models || [];
-        renderModels(currentModels);
+        // 清理已勾选但不存在的模型
+        const existingNames = new Set(currentModels.map(m => m.name));
+        selectedModelNames = new Set([...selectedModelNames].filter(name => existingNames.has(name)));
+        
+        filterModels();
     } catch (error) {
         console.error('加载模型失败:', error);
         document.getElementById('models-list').innerHTML =
-            '<p class="placeholder">加载失败,请检查后端服务</p>';
+            '<p class="placeholder">加载模型失败，请检查后端服务是否正常运行</p>';
     }
+}
+
+function filterModels() {
+    const searchInput = document.getElementById('model-search-input');
+    const keyword = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+    let filtered = currentModels;
+    if (keyword) {
+        filtered = currentModels.filter(m => m.name.toLowerCase().includes(keyword));
+    }
+
+    const totalBadge = document.getElementById('model-total-badge');
+    if (totalBadge) {
+        totalBadge.textContent = keyword 
+            ? `筛选: ${filtered.length} / 共 ${currentModels.length} 个模型`
+            : `共 ${currentModels.length} 个模型`;
+    }
+
+    renderModels(filtered);
+    updateModelBulkBar();
 }
 
 function renderModels(models) {
     const container = document.getElementById('models-list');
+    if (!container) return;
 
     if (models.length === 0) {
-        container.innerHTML = '<p class="placeholder">暂无模型,点击右上角创建新模型</p>';
+        container.innerHTML = '<p class="placeholder" style="grid-column: 1 / -1;">未找到符合条件的模型</p>';
         return;
     }
 
-    container.innerHTML = models.map(model => `
-        <div class="model-card ${model.valid ? '' : 'invalid'}">
-            <h3>${model.name}</h3>
+    container.innerHTML = models.map(model => {
+        const isSelected = selectedModelNames.has(model.name);
+        return `
+        <div class="model-card ${model.valid ? '' : 'invalid'} ${isSelected ? 'selected' : ''}" data-model-name="${model.name}">
+            <div class="model-card-header">
+                <div class="model-card-title-wrap">
+                    <input type="checkbox" class="model-card-checkbox" 
+                           ${isSelected ? 'checked' : ''} 
+                           onchange="toggleSelectModel('${model.name}', this.checked)">
+                    <span class="model-card-title" title="${model.name}">${model.name}</span>
+                </div>
+                <span class="status-badge ${model.valid ? 'status-success' : 'status-error'}">
+                    ${model.valid ? '● 完整可用' : '● 权重缺失'}
+                </span>
+            </div>
+
             <div class="model-files">
                 <div class="file-status ${model.files.gpt_weights ? 'valid' : 'invalid'}">
-                    GPT 权重 (*.ckpt)
+                    <span>GPT 权重 (.ckpt)</span>
+                    <span class="file-status-pill">${model.files.gpt_weights ? '已具备' : '缺失'}</span>
                 </div>
                 <div class="file-status ${model.files.sovits_weights ? 'valid' : 'invalid'}">
-                    SoVITS 权重 (*.pth)
+                    <span>SoVITS 权重 (.pth)</span>
+                    <span class="file-status-pill">${model.files.sovits_weights ? '已具备' : '缺失'}</span>
                 </div>
                 <div class="file-status ${model.files.reference_audios ? 'valid' : 'invalid'}">
-                    参考音频目录
+                    <span>参考音频目录</span>
+                    <span class="file-status-pill">${model.files.reference_audios ? '已具备' : '缺失'}</span>
                 </div>
             </div>
+
             <div class="model-stats">
                 <div class="stat-item">
                     <div class="stat-value">${model.audio_stats.total || 0}</div>
-                    <div class="stat-label">音频总数</div>
+                    <div class="stat-label">参考音频数</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-value">${Object.keys(model.audio_stats.by_emotion || {}).length}</div>
-                    <div class="stat-label">情感类型</div>
+                    <div class="stat-label">情感标签数</div>
                 </div>
             </div>
-            <div class="model-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                <button class="btn btn-secondary" onclick="goToAudioManagement('${model.name}')">
-                    🎵 管理音频 (${model.audio_stats.total || 0})
+
+            <div class="model-actions">
+                <button class="btn btn-secondary btn-sm" onclick="goToAudioManagement('${model.name}')" title="进入音频管理">
+                    🎵 音频 (${model.audio_stats.total || 0})
                 </button>
-                <button class="btn btn-primary" onclick="showBatchEmotionDialog('${model.name}')">
-                    🏷️ 批量修改情感
+                <button class="btn btn-secondary btn-sm" onclick="showBatchEmotionDialog('${model.name}')" title="批量替换情感前缀">
+                    🏷️ 情感
+                </button>
+                <button class="btn btn-danger-ghost btn-sm" onclick="showDeleteSingleModelDialog('${model.name}')" title="删除该模型">
+                    🗑️ 删除
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
+function toggleSelectModel(modelName, checked) {
+    if (checked) {
+        selectedModelNames.add(modelName);
+    } else {
+        selectedModelNames.delete(modelName);
+    }
+    updateModelBulkBar();
+    
+    // 更新卡片高亮类
+    const card = document.querySelector(`.model-card[data-model-name="${modelName}"]`);
+    if (card) {
+        card.classList.toggle('selected', checked);
+    }
+}
 
+function toggleSelectAllModels(checked) {
+    const searchInput = document.getElementById('model-search-input');
+    const keyword = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    const visibleModels = keyword 
+        ? currentModels.filter(m => m.name.toLowerCase().includes(keyword))
+        : currentModels;
+
+    visibleModels.forEach(m => {
+        if (checked) {
+            selectedModelNames.add(m.name);
+        } else {
+            selectedModelNames.delete(m.name);
+        }
+    });
+
+    filterModels();
+}
+
+function clearModelSelection() {
+    selectedModelNames.clear();
+    const selectAllCheckbox = document.getElementById('model-select-all');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    filterModels();
+}
+
+function updateModelBulkBar() {
+    const bulkBar = document.getElementById('model-bulk-bar');
+    const countEl = document.getElementById('model-selected-count');
+    const selectAllCheckbox = document.getElementById('model-select-all');
+
+    const count = selectedModelNames.size;
+    if (countEl) countEl.textContent = count;
+
+    if (bulkBar) {
+        if (count > 0) {
+            bulkBar.classList.add('active');
+        } else {
+            bulkBar.classList.remove('active');
+        }
+    }
+
+    if (selectAllCheckbox && currentModels.length > 0) {
+        selectAllCheckbox.checked = count > 0 && count === currentModels.length;
+    }
+}
+
+// 单个模型删除确认
+function showDeleteSingleModelDialog(modelName) {
+    pendingDeleteModels = [modelName];
+    const listEl = document.getElementById('delete-model-list');
+    listEl.innerHTML = `<div>• <strong>${modelName}</strong> (包含权重与参考音频)</div>`;
+    document.getElementById('delete-model-dialog').style.display = 'flex';
+}
+
+// 批量删除模型确认
+function showBatchDeleteModelsDialog() {
+    if (selectedModelNames.size === 0) {
+        showNotification('请先勾选要删除的模型', 'warning');
+        return;
+    }
+
+    pendingDeleteModels = Array.from(selectedModelNames);
+    const listEl = document.getElementById('delete-model-list');
+    listEl.innerHTML = pendingDeleteModels.map(name => `<div>• <strong>${name}</strong></div>`).join('');
+    document.getElementById('delete-model-dialog').style.display = 'flex';
+}
+
+// 执行模型删除
+async function executeModelDeletion() {
+    if (!pendingDeleteModels || pendingDeleteModels.length === 0) return;
+
+    const confirmBtn = document.getElementById('confirm-delete-model-btn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '正在安全删除...';
+
+    try {
+        let result;
+        if (pendingDeleteModels.length === 1) {
+            // 单个删除
+            const modelName = pendingDeleteModels[0];
+            const response = await fetch(`${API_BASE}/models/${encodeURIComponent(modelName)}`, {
+                method: 'DELETE'
+            });
+            result = await response.json();
+            if (!response.ok) throw new Error(result.detail || result.error || '删除失败');
+            
+            let msg = `模型 "${modelName}" 已安全删除`;
+            if (result.unbound_characters && result.unbound_characters.length > 0) {
+                msg += ` (已同步解除角色 [${result.unbound_characters.join(', ')}] 的音色绑定)`;
+            }
+            showNotification(msg, 'success', 5000);
+        } else {
+            // 批量删除
+            const response = await fetch(`${API_BASE}/models/batch-delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ models: pendingDeleteModels })
+            });
+            result = await response.json();
+            if (!response.ok) throw new Error(result.detail || result.error || '批量删除失败');
+
+            let msg = `已成功删除 ${result.total_deleted || result.deleted_models?.length || 0} 个模型`;
+            if (result.unbound_characters && result.unbound_characters.length > 0) {
+                msg += ` (已解除绑定: ${result.unbound_characters.join(', ')})`;
+            }
+            showNotification(msg, 'success', 5000);
+        }
+
+        closeDialog('delete-model-dialog');
+        selectedModelNames.clear();
+        await loadModels();
+        populateModelSelect();
+    } catch (error) {
+        console.error('删除模型失败:', error);
+        showNotification(`删除失败: ${error.message}`, 'error');
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确认永久删除';
+    }
+}
+
+// ==================== 创建模型 ====================
 function showCreateModelDialog() {
     document.getElementById('create-model-dialog').style.display = 'flex';
     document.getElementById('new-model-name').value = '';
-    // 清空文件选择
     clearModelFile('gpt');
     clearModelFile('sovits');
-    // 隐藏进度条
     document.getElementById('upload-progress-container').style.display = 'none';
 }
 
-// 文件预览功能
 function previewModelFile(type) {
     const fileInput = document.getElementById(`${type}-model-file`);
     const preview = document.getElementById(`${type}-file-preview`);
@@ -169,17 +401,15 @@ function previewModelFile(type) {
         const file = fileInput.files[0];
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
-        // 验证文件大小 (限制2GB)
         if (file.size > 2 * 1024 * 1024 * 1024) {
-            showNotification('文件大小超过2GB限制', 'error');
+            showNotification('文件大小超过 2GB 限制', 'error');
             fileInput.value = '';
             return;
         }
 
-        // 验证文件扩展名
         const expectedExt = type === 'gpt' ? '.ckpt' : '.pth';
         if (!file.name.toLowerCase().endsWith(expectedExt)) {
-            showNotification(`请选择${expectedExt}文件`, 'error');
+            showNotification(`请选择 ${expectedExt} 格式的文件`, 'error');
             fileInput.value = '';
             return;
         }
@@ -191,11 +421,9 @@ function previewModelFile(type) {
     }
 }
 
-// 清除文件选择
 function clearModelFile(type) {
     const fileInput = document.getElementById(`${type}-model-file`);
     const preview = document.getElementById(`${type}-file-preview`);
-
     fileInput.value = '';
     preview.style.display = 'none';
 }
@@ -215,11 +443,9 @@ async function createModel() {
         return;
     }
 
-    // 准备FormData
     const formData = new FormData();
     formData.append('model_name', name);
 
-    // 添加文件(如果有)
     if (gptFileInput.files.length > 0) {
         formData.append('gpt_file', gptFileInput.files[0]);
     }
@@ -228,218 +454,530 @@ async function createModel() {
     }
 
     try {
-        // 禁用创建按钮
         createBtn.disabled = true;
-
-        // 显示进度条
         progressContainer.style.display = 'block';
         progressBar.style.width = '0%';
         progressPercent.textContent = '0%';
         progressText.textContent = '正在创建模型...';
 
-        // 使用XMLHttpRequest以支持进度监控
         const xhr = new XMLHttpRequest();
-
-        // 进度监听
         xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
                 const percentComplete = Math.round((e.loaded / e.total) * 100);
                 progressBar.style.width = percentComplete + '%';
                 progressPercent.textContent = percentComplete + '%';
-
-                if (percentComplete < 100) {
-                    progressText.textContent = '正在上传文件...';
-                } else {
-                    progressText.textContent = '处理中...';
-                }
+                progressText.textContent = percentComplete < 100 ? '正在上传文件...' : '后端处理中...';
             }
         });
 
-        // 完成监听
         xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-                const data = JSON.parse(xhr.responseText);
-                showNotification(`模型 "${name}" 创建成功`, 'success');
+                showNotification(`模型 "${name}" 创建成功！`, 'success');
                 closeDialog('create-model-dialog');
                 loadModels();
+                populateModelSelect();
             } else {
-                const data = JSON.parse(xhr.responseText);
-                showNotification(data.detail || '创建失败', 'error');
+                let detail = '创建失败';
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    detail = data.detail || detail;
+                } catch (e) {}
+                showNotification(detail, 'error');
             }
-
-            // 重置UI
             createBtn.disabled = false;
             progressContainer.style.display = 'none';
         });
 
-        // 错误监听
         xhr.addEventListener('error', () => {
-            showNotification('创建失败,请检查后端服务', 'error');
+            showNotification('创建请求出错，请检查后端服务', 'error');
             createBtn.disabled = false;
             progressContainer.style.display = 'none';
         });
 
-        // 发送请求
         xhr.open('POST', `${API_BASE}/models/create`);
         xhr.send(formData);
-
     } catch (error) {
         console.error('创建模型失败:', error);
-        showNotification('创建失败,请检查后端服务', 'error');
+        showNotification('创建模型失败', 'error');
         createBtn.disabled = false;
         progressContainer.style.display = 'none';
     }
 }
 
-// ==================== 音频管理 ====================
+// ==========================================================================
+// 模块 4: 参考音频管理体系 (多选、批量删除、批量修改情感前缀)
+// ==========================================================================
+
 function populateModelSelect() {
     const select = document.getElementById('audio-model-select');
+    if (!select) return;
+
+    const previousVal = select.value || currentSelectedModel;
     select.innerHTML = '<option value="">选择模型...</option>' +
-        currentModels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+        currentModels.map(m => `<option value="${m.name}">${m.name} (${m.audio_stats.total || 0}条)</option>`).join('');
+
+    if (previousVal && currentModels.some(m => m.name === previousVal)) {
+        select.value = previousVal;
+    }
+}
+
+function goToAudioManagement(modelName) {
+    switchPage('audios');
+    const select = document.getElementById('audio-model-select');
+    if (select) {
+        select.value = modelName;
+        loadAudios();
+    }
 }
 
 async function loadAudios() {
     const modelName = document.getElementById('audio-model-select').value;
     const uploadBtn = document.getElementById('upload-btn');
     const batchEmotionBtn = document.getElementById('batch-emotion-btn');
+    const langFilter = document.getElementById('audio-lang-filter');
+    const searchInput = document.getElementById('audio-search-input');
+    const selectAllWrap = document.getElementById('audio-select-all-wrap');
     const container = document.getElementById('audios-list');
 
+    selectedAudioPaths.clear();
+    updateAudioBulkBar();
+
     if (!modelName) {
-        container.innerHTML = '<p class="placeholder">请先选择一个模型</p>';
+        container.innerHTML = '<p class="placeholder" style="grid-column: 1 / -1;">请先在上方选择一个模型</p>';
         uploadBtn.disabled = true;
         batchEmotionBtn.disabled = true;
+        langFilter.disabled = true;
+        searchInput.disabled = true;
+        if (selectAllWrap) selectAllWrap.style.display = 'none';
+        document.getElementById('audio-total-badge').textContent = '0 个音频';
         return;
     }
 
     currentSelectedModel = modelName;
     uploadBtn.disabled = false;
     batchEmotionBtn.disabled = false;
+    langFilter.disabled = false;
+    searchInput.disabled = false;
+    if (selectAllWrap) selectAllWrap.style.display = 'inline-flex';
 
     try {
         const response = await fetch(`${API_BASE}/models/${encodeURIComponent(modelName)}/audios`);
         const data = await response.json();
 
-        renderAudios(data.audios || []);
+        currentAudios = data.audios || [];
+        filterAudios();
     } catch (error) {
         console.error('加载音频失败:', error);
-        container.innerHTML = '<p class="placeholder">加载失败</p>';
+        container.innerHTML = '<p class="placeholder" style="grid-column: 1 / -1;">加载音频失败，请检查服务</p>';
     }
+}
+
+function filterAudios() {
+    const langFilter = document.getElementById('audio-lang-filter');
+    const searchInput = document.getElementById('audio-search-input');
+
+    const selectedLang = langFilter ? langFilter.value : 'all';
+    const keyword = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+    let filtered = currentAudios;
+
+    // 语言过滤
+    if (selectedLang && selectedLang !== 'all') {
+        filtered = filtered.filter(a => a.language === selectedLang);
+    }
+
+    // 搜索词过滤 (文件名或情感)
+    if (keyword) {
+        filtered = filtered.filter(a => 
+            a.filename.toLowerCase().includes(keyword) || 
+            (a.emotion && a.emotion.toLowerCase().includes(keyword))
+        );
+    }
+
+    const totalBadge = document.getElementById('audio-total-badge');
+    if (totalBadge) {
+        totalBadge.textContent = (selectedLang !== 'all' || keyword)
+            ? `筛选: ${filtered.length} / 共 ${currentAudios.length} 个音频`
+            : `共 ${currentAudios.length} 个音频`;
+    }
+
+    renderAudios(filtered);
+    updateAudioBulkBar();
 }
 
 function renderAudios(audios) {
     const container = document.getElementById('audios-list');
+    if (!container) return;
 
     if (audios.length === 0) {
-        container.innerHTML = '<p class="placeholder">该模型暂无参考音频</p>';
+        container.innerHTML = '<p class="placeholder" style="grid-column: 1 / -1;">暂无匹配的参考音频</p>';
         return;
     }
 
-    container.innerHTML = audios.map(audio => `
-        <div class="audio-card">
-            <div class="filename">${audio.filename}</div>
-            <div class="audio-tags">
-                <span class="tag">🌐 ${audio.language}</span>
-                <span class="tag">😊 ${audio.emotion}</span>
-                <span class="tag">📦 ${formatFileSize(audio.size)}</span>
+    container.innerHTML = audios.map(audio => {
+        const isSelected = selectedAudioPaths.has(audio.relative_path);
+        const encodedModel = encodeURIComponent(currentSelectedModel);
+        const encodedRelPath = encodeURIComponent(audio.relative_path);
+        const escapedRelPath = audio.relative_path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const escapedFilename = audio.filename.replace(/'/g, "\\'");
+
+        return `
+        <div class="audio-card ${isSelected ? 'selected' : ''}" data-audio-path="${audio.relative_path}">
+            <div class="audio-card-header">
+                <input type="checkbox" class="audio-card-checkbox" 
+                       ${isSelected ? 'checked' : ''} 
+                       onchange="toggleSelectAudio('${escapedRelPath}', this.checked)">
+                <div class="filename" title="${audio.filename}">${audio.filename}</div>
             </div>
-            <audio controls style="width: 100%; margin-top: 0.5rem;">
-                <source src="${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios/stream?relative_path=${encodeURIComponent(audio.relative_path)}" type="audio/wav">
-            </audio>
+
+            <div class="audio-tags">
+                <span class="tag-pill tag-lang">🌐 ${audio.language}</span>
+                <span class="tag-pill tag-emotion">😊 ${audio.emotion}</span>
+                <span class="tag-pill">📦 ${formatFileSize(audio.size)}</span>
+            </div>
+
+            <div class="audio-player-wrapper">
+                <audio controls preload="none">
+                    <source src="${API_BASE}/models/${encodedModel}/audios/stream?relative_path=${encodedRelPath}" type="audio/wav">
+                </audio>
+            </div>
+
             <div class="audio-controls">
-                <button class="btn btn-secondary" onclick="showRenameDialog('${currentSelectedModel}', '${audio.relative_path.replace(/\\/g, '\\\\')}', '${audio.filename}')">
+                <button class="btn btn-secondary btn-sm" onclick="showRenameDialog('${escapedRelPath}', '${escapedFilename}')">
                     ✏️ 重命名
                 </button>
-                <button class="btn btn-danger" onclick="deleteAudio('${audio.relative_path}')">
+                <button class="btn btn-danger-ghost btn-sm" onclick="showDeleteSingleAudioDialog('${escapedRelPath}', '${escapedFilename}')">
                     🗑️ 删除
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
-function showUploadDialog() {
-    if (!currentSelectedModel) {
-        showNotification('请先选择模型', 'warning');
+function toggleSelectAudio(relPath, checked) {
+    if (checked) {
+        selectedAudioPaths.add(relPath);
+    } else {
+        selectedAudioPaths.delete(relPath);
+    }
+    updateAudioBulkBar();
+
+    const card = document.querySelector(`.audio-card[data-audio-path="${relPath}"]`);
+    if (card) {
+        card.classList.toggle('selected', checked);
+    }
+}
+
+function toggleSelectAllAudios(checked) {
+    const langFilter = document.getElementById('audio-lang-filter');
+    const searchInput = document.getElementById('audio-search-input');
+    const selectedLang = langFilter ? langFilter.value : 'all';
+    const keyword = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+    let visibleAudios = currentAudios;
+    if (selectedLang !== 'all') visibleAudios = visibleAudios.filter(a => a.language === selectedLang);
+    if (keyword) visibleAudios = visibleAudios.filter(a => a.filename.toLowerCase().includes(keyword) || a.emotion.toLowerCase().includes(keyword));
+
+    visibleAudios.forEach(a => {
+        if (checked) {
+            selectedAudioPaths.add(a.relative_path);
+        } else {
+            selectedAudioPaths.delete(a.relative_path);
+        }
+    });
+
+    filterAudios();
+}
+
+function clearAudioSelection() {
+    selectedAudioPaths.clear();
+    const selectAllCheckbox = document.getElementById('audio-select-all');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    filterAudios();
+}
+
+function updateAudioBulkBar() {
+    const bulkBar = document.getElementById('audio-bulk-bar');
+    const countEl = document.getElementById('audio-selected-count');
+    const selectAllCheckbox = document.getElementById('audio-select-all');
+
+    const count = selectedAudioPaths.size;
+    if (countEl) countEl.textContent = count;
+
+    if (bulkBar) {
+        if (count > 0) {
+            bulkBar.classList.add('active');
+        } else {
+            bulkBar.classList.remove('active');
+        }
+    }
+
+    if (selectAllCheckbox && currentAudios.length > 0) {
+        selectAllCheckbox.checked = count > 0 && count === currentAudios.length;
+    }
+}
+
+// 单项音频删除确认
+function showDeleteSingleAudioDialog(relPath, filename) {
+    pendingDeleteAudios = [relPath];
+    document.getElementById('delete-audio-count').textContent = '1';
+    const listEl = document.getElementById('delete-audio-list');
+    listEl.innerHTML = `<div>• <strong>${filename}</strong> (${relPath})</div>`;
+    document.getElementById('delete-audio-dialog').style.display = 'flex';
+}
+
+// 批量音频删除确认
+function showBatchDeleteAudiosDialog() {
+    if (selectedAudioPaths.size === 0) {
+        showNotification('请先勾选要删除的音频文件', 'warning');
         return;
     }
+
+    pendingDeleteAudios = Array.from(selectedAudioPaths);
+    document.getElementById('delete-audio-count').textContent = pendingDeleteAudios.length;
+    const listEl = document.getElementById('delete-audio-list');
+    listEl.innerHTML = pendingDeleteAudios.map(p => `<div>• ${p}</div>`).join('');
+    document.getElementById('delete-audio-dialog').style.display = 'flex';
+}
+
+// 执行音频删除
+async function executeAudioDeletion() {
+    if (!pendingDeleteAudios || pendingDeleteAudios.length === 0) return;
+
+    const confirmBtn = document.getElementById('confirm-delete-audio-btn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '正在删除...';
+
+    try {
+        if (pendingDeleteAudios.length === 1) {
+            // 单个删除
+            const relPath = pendingDeleteAudios[0];
+            const response = await fetch(
+                `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios?relative_path=${encodeURIComponent(relPath)}`,
+                { method: 'DELETE' }
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || data.error || '删除失败');
+            showNotification('音频删除成功', 'success');
+        } else {
+            // 批量删除
+            const response = await fetch(
+                `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios/batch-delete`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ relative_paths: pendingDeleteAudios })
+                }
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || data.error || '批量删除失败');
+            showNotification(`已成功删除 ${data.deleted_count || pendingDeleteAudios.length} 个音频文件`, 'success');
+        }
+
+        closeDialog('delete-audio-dialog');
+        selectedAudioPaths.clear();
+        await loadAudios();
+        await loadModels(); // 刷新模型总音频数统计
+    } catch (error) {
+        console.error('删除音频失败:', error);
+        showNotification(`删除失败: ${error.message}`, 'error');
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确认删除';
+    }
+}
+
+// ==================== 批量修改选中音频的情感 ====================
+function showBatchSelectedEmotionDialog() {
+    if (selectedAudioPaths.size === 0) {
+        showNotification('请先勾选需要修改情感的音频', 'warning');
+        return;
+    }
+
+    document.getElementById('batch-selected-audio-count').textContent = selectedAudioPaths.size;
+    document.getElementById('batch-selected-new-emotion').value = '';
+    document.getElementById('batch-selected-emotion-dialog').style.display = 'flex';
+}
+
+async function confirmBatchSelectedEmotion() {
+    const newEmotion = document.getElementById('batch-selected-new-emotion').value.trim();
+    if (!newEmotion) {
+        showNotification('请输入新情感标签', 'warning');
+        return;
+    }
+
+    const relPaths = Array.from(selectedAudioPaths);
+
+    try {
+        const response = await fetch(
+            `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios/batch-selected-emotion`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    relative_paths: relPaths,
+                    new_emotion: newEmotion
+                })
+            }
+        );
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            showNotification(`成功修改 ${data.updated_count || relPaths.length} 个音频的情感为 "${newEmotion}"`, 'success');
+            closeDialog('batch-selected-emotion-dialog');
+            selectedAudioPaths.clear();
+            await loadAudios();
+            await loadModels();
+        } else {
+            showNotification(data.detail || data.error || '批量修改情感失败', 'error');
+        }
+    } catch (error) {
+        console.error('批量修改情感异常:', error);
+        showNotification('批量修改情感请求失败', 'error');
+    }
+}
+
+// ==================== 音频上传与批量上传 ====================
+function showUploadDialog() {
+    if (!currentSelectedModel) {
+        showNotification('请先选择一个模型', 'warning');
+        return;
+    }
+    clearUploadFiles();
     document.getElementById('upload-dialog').style.display = 'flex';
+}
+
+function previewUploadFiles() {
+    const fileInput = document.getElementById('upload-file');
+    const previewBox = document.getElementById('upload-files-preview-box');
+    const countEl = document.getElementById('upload-selected-count');
+    const sizeEl = document.getElementById('upload-selected-size');
+    const listEl = document.getElementById('upload-files-list');
+
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        if (previewBox) previewBox.style.display = 'none';
+        return;
+    }
+
+    const files = Array.from(fileInput.files);
+    let totalBytes = 0;
+
+    listEl.innerHTML = files.map(f => {
+        totalBytes += f.size;
+        return `
+            <div class="upload-file-item">
+                <span class="file-name" title="${f.name}">🎵 ${f.name}</span>
+                <span class="file-size">${formatFileSize(f.size)}</span>
+            </div>
+        `;
+    }).join('');
+
+    countEl.textContent = files.length;
+    sizeEl.textContent = formatFileSize(totalBytes);
+    previewBox.style.display = 'block';
+}
+
+function clearUploadFiles() {
+    const fileInput = document.getElementById('upload-file');
+    if (fileInput) fileInput.value = '';
+    const previewBox = document.getElementById('upload-files-preview-box');
+    if (previewBox) previewBox.style.display = 'none';
+    const progressContainer = document.getElementById('audio-upload-progress-container');
+    if (progressContainer) progressContainer.style.display = 'none';
 }
 
 async function uploadAudio() {
     const language = document.getElementById('upload-language').value;
     const emotion = document.getElementById('upload-emotion').value.trim() || 'default';
     const fileInput = document.getElementById('upload-file');
-    const file = fileInput.files[0];
+    const files = fileInput.files;
+    const confirmBtn = document.getElementById('confirm-upload-btn');
+    const progressContainer = document.getElementById('audio-upload-progress-container');
+    const progressBar = document.getElementById('audio-upload-progress-bar');
+    const progressText = document.getElementById('audio-upload-progress-text');
+    const progressPercent = document.getElementById('audio-upload-progress-percent');
 
-    if (!file) {
-        showNotification('请选择音频文件', 'warning');
+    if (!files || files.length === 0) {
+        showNotification('请选择至少一个音频文件', 'warning');
         return;
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('language', language);
+    formData.append('emotion', emotion);
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+    }
 
     try {
-        const response = await fetch(
-            `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios/upload?language=${language}&emotion=${emotion}`,
-            {
-                method: 'POST',
-                body: formData
+        confirmBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressText.textContent = `正在上传 ${files.length} 个音频文件...`;
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percentComplete + '%';
+                progressPercent.textContent = percentComplete + '%';
+                progressText.textContent = percentComplete < 100 ? `正在上传 (${percentComplete}%)...` : '音频时长校验与格式处理中...';
             }
-        );
+        });
 
-        const data = await response.json();
+        xhr.addEventListener('load', async () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                let result = {};
+                try {
+                    result = JSON.parse(xhr.responseText);
+                } catch (e) {}
 
-        if (response.ok) {
-            showNotification('上传成功', 'success');
-            closeDialog('upload-dialog');
-            loadAudios();
-        } else {
-            showNotification(data.detail || '上传失败', 'error');
-        }
+                if (result.failed_count && result.failed_count > 0) {
+                    const failedNames = (result.failed_files || []).map(f => `${f.filename}: ${f.error}`).join('\n');
+                    showNotification(`部分上传完成：成功 ${result.uploaded_count} 个，失败 ${result.failed_count} 个。\n${failedNames}`, 'warning', 6000);
+                } else {
+                    showNotification(result.message || `成功上传 ${result.uploaded_count || files.length} 个音频文件！`, 'success', 4000);
+                }
+
+                closeDialog('upload-dialog');
+                clearUploadFiles();
+                await loadAudios();
+                await loadModels();
+            } else {
+                let detail = '上传失败';
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    detail = data.detail || detail;
+                } catch (e) {}
+                showNotification(`上传出错: ${detail}`, 'error');
+            }
+            confirmBtn.disabled = false;
+            progressContainer.style.display = 'none';
+        });
+
+        xhr.addEventListener('error', () => {
+            showNotification('上传请求失败，请检查后端网络与服务状态', 'error');
+            confirmBtn.disabled = false;
+            progressContainer.style.display = 'none';
+        });
+
+        xhr.open('POST', `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios/batch-upload`);
+        xhr.send(formData);
     } catch (error) {
-        console.error('上传失败:', error);
-        showNotification('上传失败,请检查后端服务', 'error');
+        console.error('音频上传异常:', error);
+        showNotification(`上传异常: ${error.message}`, 'error');
+        confirmBtn.disabled = false;
+        progressContainer.style.display = 'none';
     }
 }
 
-async function deleteAudio(relativePath) {
-    if (!confirm('确定要删除这个音频文件吗?\n\n⚠️ 注意:删除后无法恢复!!')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(
-            `${API_BASE}/models/${encodeURIComponent(currentSelectedModel)}/audios?relative_path=${encodeURIComponent(relativePath)}`,
-            { method: 'DELETE' }
-        );
-
-        if (response.ok) {
-            showNotification('删除成功', 'success');
-            loadAudios();
-        } else {
-            const data = await response.json();
-            showNotification(data.detail || '删除失败', 'error');
-        }
-    } catch (error) {
-        console.error('删除失败:', error);
-        showNotification('删除失败', 'error');
-    }
-}
-
-// ==================== 页面跳转辅助函数 ====================
-function goToAudioManagement(modelName) {
-    switchPage('audios');
-    document.getElementById('audio-model-select').value = modelName;
-    loadAudios();
-}
-
-
-// ==================== 重命名音频 ====================
+// ==================== 音频重命名 ====================
 let currentRenameContext = null;
 
-function showRenameDialog(modelName, relativePath, currentFilename) {
-    currentRenameContext = { modelName, relativePath };
+function showRenameDialog(relativePath, currentFilename) {
+    currentRenameContext = { modelName: currentSelectedModel, relativePath };
     document.getElementById('rename-new-filename').value = currentFilename;
     document.getElementById('rename-audio-dialog').style.display = 'flex';
 }
@@ -448,7 +986,6 @@ async function confirmRename() {
     if (!currentRenameContext) return;
 
     const newFilename = document.getElementById('rename-new-filename').value.trim();
-
     if (!newFilename) {
         showNotification('请输入新文件名', 'warning');
         return;
@@ -463,21 +1000,20 @@ async function confirmRename() {
         const data = await response.json();
 
         if (response.ok) {
-            showNotification('重命名成功', 'success');
+            showNotification('音频重命名成功', 'success');
             closeDialog('rename-audio-dialog');
-            // 刷新音频列表
             await loadAudios();
-            await loadModels(); // 刷新模型列表统计
+            await loadModels();
         } else {
-            showNotification(data.detail || '重命名失败', 'error');
+            showNotification(data.detail || data.error || '重命名失败', 'error');
         }
     } catch (error) {
-        console.error('重命名失败:', error);
+        console.error('重命名音频失败:', error);
         showNotification('重命名失败', 'error');
     }
 }
 
-// ==================== 批量修改情感 ====================
+// ==================== 按旧情感批量替换 ====================
 let currentBatchEmotionModel = null;
 
 function showBatchEmotionDialog(modelName) {
@@ -487,7 +1023,6 @@ function showBatchEmotionDialog(modelName) {
     document.getElementById('batch-emotion-dialog').style.display = 'flex';
 }
 
-// 从音频管理页面调用的辅助函数
 function showBatchEmotionDialogFromAudios() {
     if (!currentSelectedModel) {
         showNotification('请先选择模型', 'warning');
@@ -516,17 +1051,15 @@ async function confirmBatchEmotion() {
         const data = await response.json();
 
         if (response.ok) {
-            const message = `成功修改 ${data.updated_count} 个文件`;
-            showNotification(message, 'success');
+            showNotification(`成功将 ${data.updated_count || 0} 个文件的 "${oldEmotion}" 替换为 "${newEmotion}"`, 'success');
             closeDialog('batch-emotion-dialog');
 
-            // 如果当前在音频管理页面且选中的是该模型,刷新音频列表
             if (currentSelectedModel === currentBatchEmotionModel) {
                 await loadAudios();
             }
-            await loadModels(); // 刷新模型列表统计
+            await loadModels();
         } else {
-            showNotification(data.detail || '批量修改失败', 'error');
+            showNotification(data.detail || data.error || '批量替换失败', 'error');
         }
     } catch (error) {
         console.error('批量修改失败:', error);
@@ -534,23 +1067,33 @@ async function confirmBatchEmotion() {
     }
 }
 
-// ==================== 设置页 Tab 切换 ====================
+// ==================== 工具函数 ====================
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// ==========================================================================
+// 系统设置与 LLM 测试模块
+// ==========================================================================
+
 function bindSettingsTabs() {
     document.querySelectorAll('.settings-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            // 移除所有 active
             document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
 
-            // 激活当前
             tab.classList.add('active');
             const tabId = 'settings-tab-' + tab.dataset.tab;
-            document.getElementById(tabId).classList.add('active');
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) targetContent.classList.add('active');
         });
     });
 }
 
-// ==================== 配置管理 ====================
 async function loadSettings() {
     try {
         const response = await fetch(`${API_BASE}/settings`);
@@ -563,28 +1106,20 @@ async function loadSettings() {
         document.getElementById('setting-default-lang').value = settings.default_lang || 'Chinese';
         document.getElementById('setting-developer-mode').value = String(settings.developer_mode === true);
 
-        // ========== 分析引擎配置 ==========
+        // 分析引擎配置
         const analysis = settings.analysis_engine || {};
         document.getElementById('setting-analysis-enabled').value = String(analysis.enabled !== false);
         document.getElementById('setting-analysis-interval').value = analysis.analysis_interval || 3;
         document.getElementById('setting-analysis-threshold').value = analysis.trigger_threshold || 60;
 
-        // 分析 LLM 配置
         const analysisLlm = analysis.llm || {};
         document.getElementById('setting-analysis-llm-api-url').value = analysisLlm.api_url || '';
         document.getElementById('setting-analysis-llm-api-key').value = analysisLlm.api_key || '';
 
-        // 处理分析引擎模型下拉框
         const analysisModelSelect = document.getElementById('setting-analysis-llm-model');
         const savedAnalysisModel = analysisLlm.model || '';
         if (savedAnalysisModel) {
-            let hasOpt = false;
-            for (let i = 0; i < analysisModelSelect.options.length; i++) {
-                if (analysisModelSelect.options[i].value === savedAnalysisModel) {
-                    hasOpt = true;
-                    break;
-                }
-            }
+            let hasOpt = Array.from(analysisModelSelect.options).some(o => o.value === savedAnalysisModel);
             if (!hasOpt) {
                 const opt = document.createElement('option');
                 opt.value = savedAnalysisModel;
@@ -596,58 +1131,40 @@ async function loadSettings() {
         document.getElementById('setting-analysis-llm-temperature').value = analysisLlm.temperature || 0.8;
         document.getElementById('setting-analysis-llm-max-tokens').value = analysisLlm.max_tokens || 5000;
 
-        // ========== 电话功能配置 ==========
-        const phoneCallEnabled = settings.phone_call?.enabled !== false;
-        document.getElementById('setting-phone-call-enabled').value = String(phoneCallEnabled);
+        // 电话功能配置
+        const phoneCall = settings.phone_call || {};
+        document.getElementById('setting-phone-call-enabled').value = String(phoneCall.enabled !== false);
 
-        // 电话 LLM 配置
-        const llm = settings.phone_call?.llm || {};
+        const llm = phoneCall.llm || {};
         document.getElementById('setting-llm-api-url').value = llm.api_url || 'http://127.0.0.1:7861/v1';
         document.getElementById('setting-llm-api-key').value = llm.api_key || '';
 
-        // 处理模型下拉框
         const modelSelect = document.getElementById('setting-llm-model');
         const savedModel = llm.model || 'gemini-2.5-flash';
-
-        // 如果下拉框中没有这个选项,添加它
-        let hasOption = false;
-        for (let i = 0; i < modelSelect.options.length; i++) {
-            if (modelSelect.options[i].value === savedModel) {
-                hasOption = true;
-                break;
-            }
-        }
-
+        let hasOption = Array.from(modelSelect.options).some(o => o.value === savedModel);
         if (!hasOption && savedModel) {
             const option = document.createElement('option');
             option.value = savedModel;
             option.textContent = savedModel;
             modelSelect.appendChild(option);
         }
-
         modelSelect.value = savedModel;
         document.getElementById('setting-llm-temperature').value = llm.temperature || 0.8;
         document.getElementById('setting-llm-max-tokens').value = llm.max_tokens || 5000;
 
         // TTS 配置
-        const tts = settings.phone_call?.tts_config || {};
+        const tts = phoneCall.tts_config || {};
         document.getElementById('setting-tts-text-lang').value = tts.text_lang || 'zh';
         document.getElementById('setting-tts-prompt-lang').value = tts.prompt_lang || 'zh';
         document.getElementById('setting-tts-text-split-method').value = tts.text_split_method || 'cut0';
         document.getElementById('setting-tts-use-aux-ref-audio').value = String(tts.use_aux_ref_audio || false);
 
-        // 消息处理配置（共享）
+        // 消息处理
         const msgProcessing = settings.message_processing || {};
         document.getElementById('setting-extract-tag').value = msgProcessing.extract_tag || '';
         document.getElementById('setting-filter-tags').value = msgProcessing.filter_tags || '';
-
-        // 自动生成配置 - 已废弃，现由分析引擎控制
-        // const autoGen = settings.phone_call?.auto_generation || {};
-        // document.getElementById('setting-auto-floor-interval').value = autoGen.floor_interval || 3;
-        // document.getElementById('setting-auto-start-floor').value = autoGen.start_floor || 3;
-        // document.getElementById('setting-auto-max-context-messages').value = autoGen.max_context_messages || 10;
     } catch (error) {
-        console.error('加载配置失败:', error);
+        console.error('加载系统配置失败:', error);
     }
 }
 
@@ -659,7 +1176,6 @@ async function saveSettings() {
         default_lang: document.getElementById('setting-default-lang').value,
         developer_mode: document.getElementById('setting-developer-mode').value === 'true',
 
-        // 分析引擎配置
         analysis_engine: {
             enabled: document.getElementById('setting-analysis-enabled').value === 'true',
             analysis_interval: parseInt(document.getElementById('setting-analysis-interval').value) || 3,
@@ -673,13 +1189,11 @@ async function saveSettings() {
             }
         },
 
-        // 消息处理配置（共享）
         message_processing: {
             extract_tag: document.getElementById('setting-extract-tag').value.trim(),
             filter_tags: document.getElementById('setting-filter-tags').value.trim()
         },
 
-        // 电话功能配置
         phone_call: {
             enabled: document.getElementById('setting-phone-call-enabled').value === 'true',
             llm: {
@@ -695,12 +1209,6 @@ async function saveSettings() {
                 text_split_method: document.getElementById('setting-tts-text-split-method').value,
                 use_aux_ref_audio: document.getElementById('setting-tts-use-aux-ref-audio').value === 'true'
             }
-            // auto_generation - 已废弃，现由分析引擎控制
-            // auto_generation: {
-            //     floor_interval: parseInt(document.getElementById('setting-auto-floor-interval').value) || 3,
-            //     start_floor: parseInt(document.getElementById('setting-auto-start-floor').value) || 3,
-            //     max_context_messages: parseInt(document.getElementById('setting-auto-max-context-messages').value) || 10
-            // }
         }
     };
 
@@ -712,21 +1220,19 @@ async function saveSettings() {
         });
 
         const data = await response.json();
-
         if (response.ok) {
-            showNotification('配置保存成功', 'success');
+            showNotification('系统配置保存成功！', 'success');
         } else {
             showNotification(data.detail || '保存失败', 'error');
         }
     } catch (error) {
         console.error('保存配置失败:', error);
-        showNotification('保存失败', 'error');
+        showNotification('保存失败，请检查服务连接', 'error');
     }
 }
 
 // 获取 LLM 模型列表
 async function fetchLLMModels(apiUrl, apiKey) {
-    // 从 API URL 中提取基础 URL
     const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
     const modelsUrl = baseUrl + '/models';
 
@@ -742,23 +1248,17 @@ async function fetchLLMModels(apiUrl, apiKey) {
     }
 
     const data = await response.json();
-
-    // 解析模型列表,兼容不同的响应格式
     let models = [];
     if (data.data && Array.isArray(data.data)) {
         models = data.data.map(m => m.id || m.name || m);
     } else if (Array.isArray(data)) {
-        models = data.map(m => typeof m === 'string' ? m : (m.id || m.name));
+        models = data.map(m => m.id || m.name || m);
+    } else if (data.models && Array.isArray(data.models)) {
+        models = data.models.map(m => m.id || m.name || m);
     }
-
-    if (models.length === 0) {
-        throw new Error('未找到可用模型');
-    }
-
     return models;
 }
 
-// 绑定获取模型列表按钮
 function bindFetchModelsButton() {
     const btn = document.getElementById('fetch-llm-models-btn');
     if (!btn) return;
@@ -766,58 +1266,45 @@ function bindFetchModelsButton() {
     btn.addEventListener('click', async () => {
         const apiUrl = document.getElementById('setting-llm-api-url').value.trim();
         const apiKey = document.getElementById('setting-llm-api-key').value.trim();
-        const modelSelect = document.getElementById('setting-llm-model');
 
-        if (!apiUrl || !apiKey) {
-            showNotification('请先填写 LLM API 地址和密钥', 'warning');
+        if (!apiUrl) {
+            showNotification('请先填写 LLM API 地址', 'warning');
             return;
         }
 
-        // 保存当前选中的值
-        const currentValue = modelSelect.value;
-
-        // 禁用按钮并显示加载状态
         btn.disabled = true;
-        btn.textContent = '获取中...';
+        btn.textContent = '🔄 获取中...';
 
         try {
-            console.log('[管理面板] 开始获取模型列表...', { apiUrl, apiKey: '***' });
             const models = await fetchLLMModels(apiUrl, apiKey);
-            console.log('[管理面板] 成功获取模型:', models);
+            const select = document.getElementById('setting-llm-model');
+            const currentVal = select.value;
 
-            // 对模型列表进行排序
-            models.sort((a, b) => a.localeCompare(b));
-
-            // 清空并重新填充下拉框
-            modelSelect.innerHTML = '<option value="">请选择模型...</option>';
+            select.innerHTML = '<option value="">请选择模型...</option>';
             models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                modelSelect.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = model;
+                opt.textContent = model;
+                select.appendChild(opt);
             });
 
-            // 如果之前的值在新列表中,恢复选中
-            if (currentValue && models.includes(currentValue)) {
-                modelSelect.value = currentValue;
+            if (currentVal && models.includes(currentVal)) {
+                select.value = currentVal;
             } else if (models.length > 0) {
-                // 否则选择第一个模型
-                modelSelect.value = models[0];
+                select.value = models[0];
             }
 
-            showNotification(`成功获取 ${models.length} 个模型`, 'success');
+            showNotification(`成功获取到 ${models.length} 个可用模型`, 'success');
         } catch (error) {
-            console.error('[管理面板] 获取模型失败:', error);
+            console.error('获取模型列表失败:', error);
             showNotification(`获取模型失败: ${error.message}`, 'error');
         } finally {
-            // 恢复按钮状态
             btn.disabled = false;
             btn.textContent = '🔄 获取模型列表';
         }
     });
 }
 
-// 绑定测试连接按钮
 function bindTestConnectionButton() {
     const btn = document.getElementById('test-llm-connection-btn');
     if (!btn) return;
@@ -826,81 +1313,86 @@ function bindTestConnectionButton() {
         const apiUrl = document.getElementById('setting-llm-api-url').value.trim();
         const apiKey = document.getElementById('setting-llm-api-key').value.trim();
         const model = document.getElementById('setting-llm-model').value.trim();
-        const temperature = parseFloat(document.getElementById('setting-llm-temperature').value) || 0.8;
 
-        if (!apiUrl || !apiKey) {
-            showNotification('请先填写 LLM API 地址和密钥', 'warning');
+        if (!apiUrl) {
+            showNotification('请先填写 API 地址', 'warning');
             return;
         }
 
-        if (!model) {
-            showNotification('请先选择或输入模型名称', 'warning');
-            return;
-        }
-
-        // 禁用按钮并显示加载状态
         btn.disabled = true;
-        btn.textContent = '测试中...';
+        btn.textContent = '🧪 测试中...';
 
         try {
-            console.log('[管理面板] 开始测试 LLM 连接...', { apiUrl, model, apiKey: '***' });
+            const endpoint = apiUrl.endsWith('/chat/completions') ? apiUrl : apiUrl + '/chat/completions';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model || 'gpt-3.5-turbo',
+                    messages: [{ role: 'user', content: 'Hi' }],
+                    max_tokens: 5
+                })
+            });
 
-            // 调用 LLM
-            const content = await testLLMConnection(apiUrl, apiKey, model, temperature);
-            console.log('[管理面板] LLM 测试成功:', content);
-
-            showNotification(`✅ 连接成功! LLM 响应: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`, 'success');
+            if (response.ok) {
+                showNotification('LLM 连接测试成功！', 'success');
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                showNotification(`连接失败: HTTP ${response.status} ${errData.error?.message || ''}`, 'error');
+            }
         } catch (error) {
-            console.error('[管理面板] LLM 测试失败:', error);
-            showNotification(`❌ 连接失败: ${error.message}`, 'error');
+            console.error('测试连接失败:', error);
+            showNotification(`连接失败: ${error.message}`, 'error');
         } finally {
-            // 恢复按钮状态
             btn.disabled = false;
             btn.textContent = '🧪 测试连接';
         }
     });
 }
 
-// 绑定分析引擎 LLM 按钮
 function bindAnalysisLLMButtons() {
-    // 获取模型列表按钮
     const fetchBtn = document.getElementById('fetch-analysis-models-btn');
+    const testBtn = document.getElementById('test-analysis-llm-btn');
+
     if (fetchBtn) {
         fetchBtn.addEventListener('click', async () => {
             const apiUrl = document.getElementById('setting-analysis-llm-api-url').value.trim();
             const apiKey = document.getElementById('setting-analysis-llm-api-key').value.trim();
-            const modelSelect = document.getElementById('setting-analysis-llm-model');
 
-            if (!apiUrl || !apiKey) {
-                showNotification('请先填写分析引擎 LLM API 地址和密钥', 'warning');
+            if (!apiUrl) {
+                showNotification('请先填写分析 LLM API 地址', 'warning');
                 return;
             }
 
-            const currentValue = modelSelect.value;
             fetchBtn.disabled = true;
-            fetchBtn.textContent = '获取中...';
+            fetchBtn.textContent = '🔄 获取中...';
 
             try {
                 const models = await fetchLLMModels(apiUrl, apiKey);
-                models.sort((a, b) => a.localeCompare(b));
+                const select = document.getElementById('setting-analysis-llm-model');
+                const currentVal = select.value;
 
-                modelSelect.innerHTML = '<option value="">请选择模型...</option>';
+                select.innerHTML = '<option value="">请选择模型...</option>';
                 models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model;
-                    option.textContent = model;
-                    modelSelect.appendChild(option);
+                    const opt = document.createElement('option');
+                    opt.value = model;
+                    opt.textContent = model;
+                    select.appendChild(opt);
                 });
 
-                if (currentValue && models.includes(currentValue)) {
-                    modelSelect.value = currentValue;
+                if (currentVal && models.includes(currentVal)) {
+                    select.value = currentVal;
                 } else if (models.length > 0) {
-                    modelSelect.value = models[0];
+                    select.value = models[0];
                 }
 
-                showNotification(`成功获取 ${models.length} 个模型`, 'success');
+                showNotification(`成功获取到 ${models.length} 个分析模型`, 'success');
             } catch (error) {
-                showNotification(`获取模型失败: ${error.message}`, 'error');
+                console.error('获取分析模型失败:', error);
+                showNotification(`获取失败: ${error.message}`, 'error');
             } finally {
                 fetchBtn.disabled = false;
                 fetchBtn.textContent = '🔄 获取模型列表';
@@ -908,33 +1400,44 @@ function bindAnalysisLLMButtons() {
         });
     }
 
-    // 测试连接按钮
-    const testBtn = document.getElementById('test-analysis-llm-btn');
     if (testBtn) {
         testBtn.addEventListener('click', async () => {
             const apiUrl = document.getElementById('setting-analysis-llm-api-url').value.trim();
             const apiKey = document.getElementById('setting-analysis-llm-api-key').value.trim();
             const model = document.getElementById('setting-analysis-llm-model').value.trim();
-            const temperature = parseFloat(document.getElementById('setting-analysis-llm-temperature').value) || 0.8;
 
-            if (!apiUrl || !apiKey) {
-                showNotification('请先填写分析引擎 LLM API 地址和密钥', 'warning');
-                return;
-            }
-
-            if (!model) {
-                showNotification('请先选择分析引擎模型', 'warning');
+            if (!apiUrl) {
+                showNotification('请先填写分析 API 地址', 'warning');
                 return;
             }
 
             testBtn.disabled = true;
-            testBtn.textContent = '测试中...';
+            testBtn.textContent = '🧪 测试中...';
 
             try {
-                const content = await testLLMConnection(apiUrl, apiKey, model, temperature);
-                showNotification(`✅ 连接成功! LLM 响应: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`, 'success');
+                const endpoint = apiUrl.endsWith('/chat/completions') ? apiUrl : apiUrl + '/chat/completions';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model || 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: 'Ping' }],
+                        max_tokens: 5
+                    })
+                });
+
+                if (response.ok) {
+                    showNotification('分析引擎 LLM 连接测试成功！', 'success');
+                } else {
+                    const errData = await response.json().catch(() => ({}));
+                    showNotification(`连接失败: HTTP ${response.status} ${errData.error?.message || ''}`, 'error');
+                }
             } catch (error) {
-                showNotification(`❌ 连接失败: ${error.message}`, 'error');
+                console.error('测试连接失败:', error);
+                showNotification(`测试连接失败: ${error.message}`, 'error');
             } finally {
                 testBtn.disabled = false;
                 testBtn.textContent = '🧪 测试连接';
@@ -943,311 +1446,85 @@ function bindAnalysisLLMButtons() {
     }
 }
 
-// 测试 LLM 连接
-async function testLLMConnection(apiUrl, apiKey, model, temperature) {
-    // 构建完整的 API URL
-    let llmUrl = apiUrl.trim();
-    if (!llmUrl.includes('/chat/completions')) {
-        llmUrl = llmUrl.replace(/\/$/, '') + '/chat/completions';
-    }
+// ==========================================================================
+// 版本更新与 GPT-SoVITS 推理端控制
+// ==========================================================================
 
-    const requestBody = {
-        model: model,
-        messages: [{ role: "user", content: "你好,请回复'测试成功'" }],
-        temperature: temperature,
-        max_tokens: 50,
-        stream: false
-    };
-
-    const response = await fetch(llmUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
-    }
-
-    const data = await response.json();
-    return parseLLMResponse(data);
-}
-
-// 解析 LLM 响应
-function parseLLMResponse(data) {
-    let content = null;
-
-    if (data.choices?.[0]?.message?.content) {
-        content = data.choices[0].message.content.trim();
-    }
-    else if (data.choices?.[0]?.message?.reasoning_content) {
-        content = data.choices[0].message.reasoning_content.trim();
-    }
-    else if (data.choices?.[0]?.text) {
-        content = data.choices[0].text.trim();
-    }
-    else if (data.content) {
-        content = data.content.trim();
-    }
-    else if (data.output) {
-        content = data.output.trim();
-    }
-    else if (data.response) {
-        content = data.response.trim();
-    }
-    else if (data.result) {
-        content = typeof data.result === 'string' ? data.result.trim() : JSON.stringify(data.result);
-    }
-
-    if (!content) {
-        throw new Error('无法解析LLM响应 (响应格式不兼容)');
-    }
-
-    return content;
-}
-
-
-// ==================== 工具函数 ====================
-function closeDialog(dialogId) {
-    document.getElementById(dialogId).style.display = 'none';
-}
-
-function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function showNotification(message, type = 'info') {
-    // 简单的通知实现
-    const colors = {
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#00d9ff'
-    };
-
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${colors[type]};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 10000;
-        animation: slideIn 0.3s;
-    `;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// 添加动画样式
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
-
-// ==================== 版本管理 ====================
 async function checkVersion() {
-    const statusEl = document.getElementById('version-status');
-    const currentVersionEl = document.getElementById('current-version');
-    const latestVersionEl = document.getElementById('latest-version');
-    const latestVersionInfo = document.getElementById('latest-version-info');
-    const updateBadge = document.getElementById('update-badge');
-    const navUpdateBadge = document.getElementById('nav-update-badge');
-    const updateActions = document.getElementById('update-actions');
-    const gitRepoNotice = document.getElementById('git-repo-notice');
-
     try {
         const response = await fetch(`${API_BASE}/version/check`);
         const data = await response.json();
 
-        if (!data.success) {
-            statusEl.textContent = '检测失败';
-            statusEl.className = 'status-badge status-error';
-            currentVersionEl.textContent = data.error || '未知错误';
-            return;
+        const currentVerEl = document.getElementById('current-version');
+        const latestVerEl = document.getElementById('latest-version');
+        const latestVerInfo = document.getElementById('latest-version-info');
+        const statusBadge = document.getElementById('version-status');
+        const updateActions = document.getElementById('update-actions');
+        const updateBadge = document.getElementById('update-badge');
+        const navUpdateBadge = document.getElementById('nav-update-badge');
+
+        if (data.current_version) {
+            currentVerEl.textContent = data.current_version;
         }
 
-        // 显示当前版本
-        currentVersionEl.textContent = data.current_version || '-';
-
-        // 显示最新版本(Git 仓库和 ZIP 用户都显示)
-        if (data.latest_version) {
-            latestVersionEl.textContent = data.latest_version;
-            latestVersionInfo.style.display = 'flex';
-        }
-
-        // 如果是 Git 仓库
-        if (data.is_git_repo) {
-            // 显示 Git 仓库提示
-            gitRepoNotice.textContent = '💡 检测到 Git 仓库,点击更新将自动执行 git pull';
-            gitRepoNotice.style.display = 'block';
-
-            // 根据是否有更新来显示状态和按钮
-            if (data.has_update) {
-                statusEl.textContent = '有新版本';
-                statusEl.className = 'status-badge status-warning';
-                updateBadge.style.display = 'inline-block';
-                navUpdateBadge.style.display = 'inline-block';
-                updateActions.style.display = 'block';
-            } else {
-                statusEl.textContent = '已是最新';
-                statusEl.className = 'status-badge status-success';
-                updateBadge.style.display = 'none';
-                navUpdateBadge.style.display = 'none';
-                updateActions.style.display = 'none';
-            }
-            return;
-        }
-
-        // ZIP 用户的显示逻辑
-        // 检查是否有更新
         if (data.has_update) {
-            statusEl.textContent = '有新版本';
-            statusEl.className = 'status-badge status-warning';
-            updateBadge.style.display = 'inline-block';
-            navUpdateBadge.style.display = 'inline-block';
+            latestVerEl.textContent = data.latest_version;
+            latestVerInfo.style.display = 'flex';
+            statusBadge.textContent = '有新版本';
+            statusBadge.className = 'status-badge status-warning';
             updateActions.style.display = 'block';
+            if (updateBadge) updateBadge.style.display = 'inline-block';
+            if (navUpdateBadge) navUpdateBadge.style.display = 'inline-block';
         } else {
-            statusEl.textContent = '已是最新';
-            statusEl.className = 'status-badge status-success';
-            updateBadge.style.display = 'none';
-            navUpdateBadge.style.display = 'none';
+            statusBadge.textContent = '已是最新';
+            statusBadge.className = 'status-badge status-success';
+            latestVerInfo.style.display = 'none';
             updateActions.style.display = 'none';
+            if (updateBadge) updateBadge.style.display = 'none';
+            if (navUpdateBadge) navUpdateBadge.style.display = 'none';
         }
-
     } catch (error) {
-        console.error('检查版本失败:', error);
-        statusEl.textContent = '检测失败';
-        statusEl.className = 'status-badge status-error';
-        currentVersionEl.textContent = '网络错误';
+        console.error('检查版本更新失败:', error);
     }
 }
 
 async function performUpdate() {
     const updateBtn = document.getElementById('update-btn');
     const updateProgress = document.getElementById('update-progress');
+    const updateActions = document.getElementById('update-actions');
     const progressBar = document.getElementById('version-progress-bar');
     const progressText = document.getElementById('version-progress-text');
-    const updateActions = document.getElementById('update-actions');
 
-    if (!confirm('确定要更新到最新版本吗?\n\n更新过程中请勿关闭浏览器或服务器。\n您的配置和数据将被保留。')) {
-        return;
-    }
+    updateBtn.disabled = true;
+    updateActions.style.display = 'none';
+    updateProgress.style.display = 'block';
+    progressBar.style.width = '30%';
+    progressText.textContent = '正在下载更新...';
 
     try {
-        // 禁用按钮,显示进度
-        updateBtn.disabled = true;
-        updateActions.style.display = 'none';
-        updateProgress.style.display = 'block';
-        progressBar.style.width = '0%';
-        progressText.textContent = '正在准备更新...';
-
-        // 模拟进度(因为后端更新是同步的)
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += 5;
-            if (progress <= 90) {
-                progressBar.style.width = progress + '%';
-            }
-        }, 500);
-
-        // 调用更新 API
-        const response = await fetch(`${API_BASE}/version/update`, {
-            method: 'POST'
-        });
-
-        clearInterval(progressInterval);
-
+        const response = await fetch(`${API_BASE}/version/update`, { method: 'POST' });
         const data = await response.json();
 
         if (response.ok && data.success) {
             progressBar.style.width = '100%';
-            progressText.textContent = '更新完成!';
+            progressText.textContent = '更新成功！准备重启服务...';
 
-            // 检查是否需要重启
-            if (data.should_restart) {
-                showNotification('更新成功!即将自动重启服务...', 'success');
-
-                // 倒计时重启
-                let countdown = 3;
-                const countdownInterval = setInterval(() => {
-                    progressText.textContent = `${countdown} 秒后自动重启服务...`;
-                    countdown--;
-
-                    if (countdown < 0) {
-                        clearInterval(countdownInterval);
-                        progressText.textContent = '正在重启服务...';
-
-                        // 调用重启 API
-                        fetch(`${API_BASE}/restart`, { method: 'POST' })
-                            .then(() => {
-                                progressText.textContent = '服务正在重启,5秒后刷新页面...';
-                                // 等待服务重启,然后刷新页面
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 5000);
-                            })
-                            .catch(err => {
-                                console.error('重启请求失败:', err);
-                                // 即使重启请求失败,也尝试刷新页面
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 3000);
-                            });
-                    }
-                }, 1000);
-            } else {
-                // 不需要重启(例如已经是最新版本)
-                showNotification(data.message || '更新完成!', 'success');
-                setTimeout(() => {
-                    updateBtn.disabled = false;
-                    updateProgress.style.display = 'none';
-                    updateActions.style.display = 'block';
-                    checkVersion(); // 重新检查版本
-                }, 2000);
-            }
-
+            setTimeout(() => {
+                fetch(`${API_BASE}/restart`, { method: 'POST' }).finally(() => {
+                    setTimeout(() => window.location.reload(), 4000);
+                });
+            }, 1000);
         } else {
             throw new Error(data.error || data.detail || '更新失败');
         }
-
     } catch (error) {
         console.error('更新失败:', error);
         showNotification(`更新失败: ${error.message}`, 'error');
-
-        // 重置UI
         updateBtn.disabled = false;
         updateProgress.style.display = 'none';
         updateActions.style.display = 'block';
     }
 }
-
-
-// ==================== GPT-SoVITS 配置管理 ====================
-
 
 // 加载 GPT-SoVITS 配置
 async function loadSovitsConfig() {
@@ -1269,7 +1546,6 @@ async function loadSovitsConfig() {
 
         document.getElementById('sovits-auto-start').checked = config.auto_start !== false;
 
-        // 更新状态徽章
         const statusBadge = document.getElementById('sovits-install-status');
         if (config.installed && config.install_path) {
             statusBadge.textContent = '已配置';
@@ -1306,10 +1582,9 @@ async function saveSovitsConfig() {
         });
 
         const data = await response.json();
-
         if (response.ok) {
-            showNotification('GPT-SoVITS 配置已保存', 'success');
-            loadSovitsConfig(); // 刷新状态
+            showNotification('GPT-SoVITS 配置已成功保存', 'success');
+            loadSovitsConfig();
         } else {
             showNotification(data.detail || '保存失败', 'error');
         }
@@ -1319,66 +1594,7 @@ async function saveSovitsConfig() {
     }
 }
 
-// 解压 GPT-SoVITS 压缩包
-async function extractSovitsPackage() {
-    const archivePath = document.getElementById('sovits-archive-path').value.trim();
-    const extractTo = document.getElementById('sovits-extract-to').value.trim();
-
-    if (!archivePath) {
-        showNotification('请填写压缩包路径', 'warning');
-        return;
-    }
-
-    if (!extractTo) {
-        showNotification('请填写解压目标目录', 'warning');
-        return;
-    }
-
-    const progressDiv = document.getElementById('extract-progress');
-    const progressBar = document.getElementById('extract-progress-bar');
-    const progressText = document.getElementById('extract-progress-text');
-
-    progressDiv.style.display = 'block';
-    progressBar.style.width = '0%';
-    progressText.textContent = '正在解压，请稍候（文件较大，可能需要几分钟）...';
-
-    try {
-        const response = await fetch('/api/sovits/extract', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                archive_path: archivePath,
-                extract_to: extractTo,
-                delete_after: true
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            progressBar.style.width = '100%';
-            progressText.textContent = `解压完成！路径: ${data.extracted_path}`;
-
-            // 自动填充安装路径
-            document.getElementById('sovits-install-path').value = data.extracted_path;
-
-            showNotification('解压完成！已自动填充安装路径', 'success');
-
-            // 切换到手动模式显示路径
-            document.querySelector('input[name="install-mode"][value="manual"]').checked = true;
-            toggleInstallMode();
-        } else {
-            progressText.textContent = '解压失败';
-            showNotification(data.detail || '解压失败', 'error');
-        }
-    } catch (error) {
-        console.error('解压失败:', error);
-        progressText.textContent = '解压失败';
-        showNotification('解压失败，请检查路径是否正确', 'error');
-    }
-}
-
-// 启动 GPT-SoVITS 服务
+// 启动 GPT-SoVITS
 async function startSovitsService() {
     showNotification('正在启动 GPT-SoVITS 服务...', 'info');
 
@@ -1390,10 +1606,8 @@ async function startSovitsService() {
         });
 
         const data = await response.json();
-
         if (response.ok && data.success) {
             showNotification(`GPT-SoVITS 服务已启动 (PID: ${data.pid})`, 'success');
-            // 刷新仪表盘状态
             loadDashboard();
             loadSovitsStatus();
         } else {
@@ -1405,20 +1619,16 @@ async function startSovitsService() {
     }
 }
 
-// 停止 GPT-SoVITS 服务
+// 停止 GPT-SoVITS
 async function stopSovitsService() {
     showNotification('正在停止 GPT-SoVITS 服务...', 'info');
 
     try {
-        const response = await fetch('/api/sovits/stop', {
-            method: 'POST'
-        });
-
+        const response = await fetch('/api/sovits/stop', { method: 'POST' });
         const data = await response.json();
 
         if (data.success) {
             showNotification('GPT-SoVITS 服务已停止', 'success');
-            // 刷新状态
             loadDashboard();
             loadSovitsStatus();
         } else {
@@ -1432,13 +1642,10 @@ async function stopSovitsService() {
 
 // 测试 GPT-SoVITS 连接
 async function testSovitsConnection() {
-    showNotification('正在测试连接...', 'info');
+    showNotification('正在测试 GPT-SoVITS 连接...', 'info');
 
     try {
-        const response = await fetch('/api/sovits/test', {
-            method: 'POST'
-        });
-
+        const response = await fetch('/api/sovits/test', { method: 'POST' });
         const data = await response.json();
 
         if (data.success) {
@@ -1459,8 +1666,6 @@ async function loadSovitsStatus() {
         if (!response.ok) return;
 
         const status = await response.json();
-
-        // 更新安装状态徽章
         const statusBadge = document.getElementById('sovits-install-status');
         if (status.api_reachable) {
             statusBadge.textContent = '运行中';
@@ -1476,12 +1681,3 @@ async function loadSovitsStatus() {
         console.error('加载 GPT-SoVITS 状态失败:', error);
     }
 }
-
-// 页面加载时也加载 GPT-SoVITS 配置
-document.addEventListener('DOMContentLoaded', () => {
-    // 延迟加载，确保其他初始化完成
-    setTimeout(() => {
-        loadSovitsConfig();
-        loadSovitsStatus();
-    }, 500);
-});

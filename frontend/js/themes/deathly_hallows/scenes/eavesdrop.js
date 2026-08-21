@@ -133,6 +133,8 @@ export const eavesdropScene = {
         renderCustomDeathlyHallowsEavesdrop($container, data, ctx);
     },
     cleanup() {
+        $('#dh-true-fullscreen-call').remove();
+        $('#tts-dh-modal').show();
         if (EavesdropApp.cleanup) EavesdropApp.cleanup();
         cleanupGlobalPlayer();
     }

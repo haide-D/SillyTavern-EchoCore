@@ -75,3 +75,14 @@ export const ICON_PHONE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentC
     <line x1="16" y1="8" x2="2" y2="22"/>
     <line x1="17.5" y1="15" x2="9" y2="6.5"/>
 </svg>`;
+
+// 变幻工坊 (魔法调色板与星芒法阵)
+export const ICON_THEME_STORE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+    <path d="M12 2a10 10 0 0 0-10 10c0 4.42 3.58 8 8 8 1 0 1.5-.5 1.5-1.2 0-.4-.2-.8-.2-1.3 0-1.7 1.3-3 3-3h1.7c3.3 0 6-2.7 6-6 0-3.6-4.5-6.5-10-6.5z"/>
+    <circle cx="6.5" cy="8.5" r="1" fill="currentColor"/>
+    <circle cx="10" cy="5.5" r="1" fill="currentColor"/>
+    <circle cx="6.5" cy="13" r="1" fill="currentColor"/>
+    <path d="M16 16l5-5M19.5 9.5l1.5 1.5M14 18l1.5-1.5"/>
+    <path d="M19 3l.4 1.1 1.1.4-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z"/>
+</svg>`;
+

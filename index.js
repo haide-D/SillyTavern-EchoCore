@@ -24,6 +24,7 @@ import { ThemeEngine } from './frontend/js/theme_engine.js';
 import { WebSocketManager } from './frontend/js/websocket_manager.js';
 import { ChatEventListener } from './frontend/js/chat_event_listener.js';
 import { ThemeTesterUI } from './frontend/js/theme_tester_ui.js';
+import { initSettingsUI } from './frontend/js/settings_ui.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
@@ -423,4 +424,11 @@ setTimeout(() => {
     }
 }, 2000);
 
+// 初始化原生扩展设置面板
+eventSource.on(event_types.APP_READY, () => {
+    console.log("🛠️ [Loader] APP_READY: 正在挂载酒馆原生扩展设置面板...");
+    initSettingsUI();
+});
+
 console.log("✅ [TTS] 插件初始化完成");
+

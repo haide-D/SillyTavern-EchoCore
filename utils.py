@@ -2,6 +2,16 @@ import os
 import wave
 from config import load_json, save_json, MAX_CACHE_SIZE_MB
 
+def safe_print(msg):
+    """安全输出日志,兼容各种终端编码"""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        try:
+            print(msg.encode('ascii', 'replace').decode('ascii'))
+        except Exception:
+            pass
+
 def get_audio_duration(file_path):
     """获取音频文件时长(秒)"""
     try:
@@ -11,7 +21,7 @@ def get_audio_duration(file_path):
             duration = frames / float(rate)
             return duration
     except Exception as e:
-        print(f"⚠️ 无法读取音频时长: {file_path}, 错误: {e}")
+        safe_print(f"[Audio] 无法读取音频时长: {file_path}, 错误: {e}")
         return None
 
 def pad_audio_to_duration(input_path, target_duration=3.0):
@@ -44,11 +54,11 @@ def pad_audio_to_duration(input_path, target_duration=3.0):
         
         # 删除备份
         os.remove(backup_path)
-        print(f"✅ 音频已自动填充: {os.path.basename(input_path)} ({current_duration:.2f}s → {target_duration:.2f}s)")
+        safe_print(f"[Audio] 音频已自动填充: {os.path.basename(input_path)} ({current_duration:.2f}s -> {target_duration:.2f}s)")
         return True
         
     except Exception as e:
-        print(f"❌ 音频填充失败: {input_path}, 错误: {e}")
+        safe_print(f"[Audio] 音频填充失败: {input_path}, 错误: {e}")
         # 恢复备份
         if os.path.exists(backup_path):
             import shutil

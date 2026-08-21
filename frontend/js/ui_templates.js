@@ -17,33 +17,16 @@ export function getDashboardHTML(data) {
                 </div>
 
                 <div class="tts-content">
+                    <!-- 1. 快捷生成设置 -->
                     <div class="tts-card">
-                        <div class="tts-card-title">🔌 系统状态</div>
+                        <div class="tts-card-title">⚡ 语音生成</div>
                         <label class="tts-switch-row">
-                            <span class="tts-switch-label">启用 TTS 插件</span>
-                            <input type="checkbox" id="tts-master-switch" class="tts-toggle" ${isEnabled ? 'checked' : ''}>
-                        </label>
-                        <label class="tts-switch-row">
-                            <span class="tts-switch-label">预加载模型(自动生成,建议开启)</span>
+                            <span class="tts-switch-label">自动生成语音 (建议开启)</span>
                             <input type="checkbox" id="tts-toggle-auto" class="tts-toggle" ${settings.auto_generate ? 'checked' : ''}>
                         </label>
                     </div>
 
-                    <div class="tts-card">
-                        <div class="tts-card-title">📡 连接模式</div>
-                        <label class="tts-switch-row">
-                            <span class="tts-switch-label">远程模式 (局域网部署用)</span>
-                            <input type="checkbox" id="tts-remote-switch" class="tts-toggle" ${isRemote ? 'checked' : ''}>
-                        </label>
-                        <div id="tts-remote-input-area" style="display:${isRemote ? 'block' : 'none'}; margin-top:10px; padding-top:10px; border-top:1px dashed #444;">
-                            <div class="tts-input-label">电脑 IP</div>
-                            <div style="display:flex; gap:8px;">
-                                <input type="text" id="tts-remote-ip" class="tts-modern-input" value="${remoteIP}" placeholder="192.168.x.x">
-                                <button id="tts-save-remote" class="btn-primary">保存</button>
-                            </div>
-                        </div>
-                    </div>
-
+                    <!-- 2. 视觉与主题体验 -->
                     <div class="tts-card">
                         <div class="tts-card-title">🎨 视觉体验</div>
 
@@ -61,11 +44,6 @@ export function getDashboardHTML(data) {
                             </div>
                             <input type="hidden" id="theme-selector" value="default">
                         </div>
-
-                        <label class="tts-switch-row" style="border-top: 1px dashed rgba(128,128,128,0.2); padding-top: 10px;">
-                            <span class="tts-switch-label">美化卡专用模式，非前端美化卡请勿勾选</span>
-                            <input type="checkbox" id="tts-iframe-switch" class="tts-toggle" ${settings.iframe_mode ? 'checked' : ''}>
-                        </label>
 
                         <div class="tts-input-row">
                             <span class="tts-input-label">气泡风格</span>
@@ -91,41 +69,54 @@ export function getDashboardHTML(data) {
                             </div>
                             <input type="hidden" id="style-selector" value="default">
                         </div>
+
+                        <label class="tts-switch-row" style="border-top: 1px dashed rgba(128,128,128,0.2); padding-top: 10px; margin-top: 10px;">
+                            <span class="tts-switch-label">美化卡专用模式 (非前端美化卡请勿勾选)</span>
+                            <input type="checkbox" id="tts-iframe-switch" class="tts-toggle" ${settings.iframe_mode ? 'checked' : ''}>
+                        </label>
                     </div>
 
+                    <!-- 3. 角色音色绑定 (分层清晰排版) -->
                     <div class="tts-card">
-                        <div class="tts-card-title">📂 路径与语言配置</div>
-
-                        <div class="tts-input-row">
-                            <span class="tts-input-label">🗣 参考音频语言 (文件夹)</span>
-                            <select id="tts-lang-select" class="tts-modern-input">
-                                <option value="default" ${currentLang === 'default' ? 'selected' : ''}>Default (根目录)</option>
-                                <option value="Chinese" ${currentLang === 'Chinese' ? 'selected' : ''}>Chinese (中文)</option>
-                                <option value="Japanese" ${currentLang === 'Japanese' ? 'selected' : ''}>Japanese (日语)</option>
-                                <option value="English" ${currentLang === 'English' ? 'selected' : ''}>English (英语)</option>
-                            </select>
-                            <div style="font-size:11px; color:#888; margin-top:4px;">对应 reference_audios 下的子文件夹</div>
+                        <div class="tts-card-title">🔗 角色音色绑定</div>
+                        
+                        <!-- 第1行: 角色输入与探测 -->
+                        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                            <input type="text" id="tts-new-char" class="tts-modern-input" style="flex: 1; min-width: 0;" placeholder="输入角色名 (如: 哈利·波特)">
+                            <button id="tts-btn-fill-current-char" class="btn-secondary" style="padding:7px 12px; font-size:12px; white-space:nowrap;" title="一键填入当前对话的角色名">✨ 填入当前</button>
                         </div>
 
-                        <div style="text-align:right; margin-top:12px;">
-                            <button id="tts-btn-save-paths" class="btn-primary">保存配置</button>
-                        </div>
-                    </div>
-
-                    <div class="tts-card">
-                        <div class="tts-card-title">🔗 角色绑定</div>
-                         <div style="display:flex; gap:8px; margin-bottom:12px;">
-                            <input type="text" id="tts-new-char" class="tts-modern-input" style="flex: 1; min-width: 0;" placeholder="角色名">
-
-                            <select id="tts-new-model" class="tts-modern-input" style="flex: 2; min-width: 0;">
-                                <option>...</option>
+                        <!-- 第2行: 音色模型选择 (独占整行，文字不被截断) -->
+                        <div style="margin-bottom:10px;">
+                            <select id="tts-new-model" class="tts-modern-input" style="width:100%;">
+                                <option disabled selected value="">🎙️ 请选择 GPT-SoVITS 语音模型...</option>
                             </select>
                         </div>
 
-                        <button id="tts-btn-bind-new" class="btn-primary" style="width:100%">+ 绑定</button>
-                        <div class="tts-list-zone" style="margin-top:15px;">
-                            <div id="tts-mapping-list" class="tts-list-container" style="border:none; background:transparent;"></div>
+                        <button id="tts-btn-bind-new" class="btn-primary" style="width:100%; margin-bottom:12px;">+ 绑定角色音色</button>
+
+                        <!-- 已绑定列表管理工具栏 -->
+                        <div class="tts-mapping-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed rgba(196,155,79,0.25);">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:12px; color:rgba(196,155,79,0.9);" id="tts-mapping-count">已绑定 (0)</span>
+                                <input type="text" id="tts-mapping-search" placeholder="🔍 快速过滤..." style="width:100px; padding:2px 6px; font-size:11px; border-radius:4px;" />
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button id="tts-btn-select-all" class="btn-secondary" style="padding:2px 6px; font-size:11px;">全选</button>
+                                <button id="tts-btn-batch-unbind" class="btn-red" style="padding:2px 8px; font-size:11px; display:none;">批量解绑</button>
+                            </div>
                         </div>
+
+                        <!-- 紧凑徽章/卡片滚动池 -->
+                        <div class="tts-list-zone">
+                            <div id="tts-mapping-list" class="tts-compact-mapping-list" style="max-height:160px; overflow-y:auto; padding-right:2px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 底部快捷导航与提示 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; font-size:12px; color:#888;">
+                        <span>🧩 IP/端口与供应商可在<b>酒馆扩展设置</b>中调整</span>
+                        <a id="tts-dashboard-open-admin" style="color: #60a5fa; text-decoration: underline; cursor: pointer;">打开管理面板 ⚙️</a>
                     </div>
                 </div>
             </div>

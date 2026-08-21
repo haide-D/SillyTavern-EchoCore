@@ -144,6 +144,8 @@ export const incomingCallScene = {
         renderCustomDeathlyHallowsCall($container, callData, ctx);
     },
     cleanup() {
+        $('#dh-true-fullscreen-call').remove();
+        $('#tts-dh-modal').show();
         if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
         cleanupGlobalPlayer();
     }
