@@ -39,9 +39,12 @@ MyCharacters/*
 data/
 !data/.gitkeep
 
-# --- 文档和临时文件 ---
-# docs 目录包含临时文档、日志等
+# --- 本地备份与环境 ---
+runtime_backup/
+
+# --- 文档和任务管理 ---
 docs/
+management/
 # --- AI Agent / GEMINI 规则与配置文件 ---
 GEMINI.md
 .agents/
