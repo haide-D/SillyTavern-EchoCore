@@ -104,10 +104,27 @@ def init_settings():
                     modified = True
         return modified
 
-    # message_processing 配置 - 共享的消息过滤配置
+    # 默认 TTS 文本发音替换字典 (针对多音字、口语与特殊发音纠正)
+    default_text_replacements = {
+        "操我": "肏我",
+        "操你": "肏你",
+        "我操": "我肏",
+        "卧槽": "卧肏",
+        "重重地": "虫虫地",
+        "行了": "形了",
+        "行的": "形得",
+        "干嘛": "干麻",
+        "噢": "哦",
+        "3Q": "谢谢",
+        "666": "溜溜溜",
+        "233": "哈哈哈"
+    }
+
+    # message_processing 配置 - 共享的消息过滤与替换配置
     message_processing_defaults = {
         "extract_tag": "",
-        "filter_tags": "<small>, [statbar]"
+        "filter_tags": "<small>, [statbar]",
+        "text_replacements": default_text_replacements
     }
     # 类型安全检查：如果值不是字典，用默认值覆盖
     if "message_processing" not in settings or not isinstance(settings["message_processing"], dict):
@@ -211,6 +228,31 @@ def init_settings():
     else:
         if deep_merge(ui_theme_defaults, settings["ui_theme"]):
             dirty = True
+
+    # prompt_injector 注入提示词与情感场景注释默认配置
+    prompt_injector_defaults = {
+        "enabled": True,
+        "custom_template": "",
+        "emotion_annotations": {
+            "default": "日常、平和对话基准语调",
+            "happy": "心情愉悦、开朗、赞许或微笑时使用",
+            "sad": "失落、悲伤、委屈、低落或哭腔时使用",
+            "angry": "受到直接挑衅、被激怒或发生激烈争吵时使用",
+            "surprise": "遇到意料之外事件、震惊或疑惑时使用",
+            "fear": "感到危险、恐惧、被威胁或极度不安时使用",
+            "panting": "仅在剧烈运动、长跑、极度疲惫或身体剧烈消耗时使用 (严禁日常闲聊误用)",
+            "climax": "仅在全剧情最高潮绝境、决战或情绪极值爆发时使用 (严禁轻微情绪波动时误用)",
+            "whisper": "窃窃私语、耳语或私密秘密对话时使用",
+            "disgust": "极度厌恶、鄙夷、嫌弃或排斥时使用",
+            "smug": "自鸣得意、傲娇、得意洋洋或嘲弄时使用"
+        }
+    }
+    if "prompt_injector" not in settings or not isinstance(settings["prompt_injector"], dict):
+        settings["prompt_injector"] = prompt_injector_defaults
+        dirty = True
+    else:
+        if deep_merge(prompt_injector_defaults, settings["prompt_injector"]):
+            dirty = True
     
     # 迁移旧配置（兼容性处理）
     if "analysis_llm" in settings:
@@ -304,3 +346,37 @@ def filter_bound_speakers(speakers: list) -> list:
         print(f"[Config] ⚠️ 以下角色未绑定模型，已过滤: {unbound}")
     
     return bound_speakers
+
+
+def apply_text_replacements(text: str, replacements: dict = None) -> str:
+    """
+    对待合成 TTS 文本执行发音纠正与多音字替换
+    
+    Args:
+        text: 待处理文本
+        replacements: 替换字典 { "原词": "替换词" }，若为空则自动读取系统配置
+        
+    Returns:
+        替换后的文本
+    """
+    if not text:
+        return text
+        
+    if replacements is None:
+        settings = init_settings()
+        msg_processing = settings.get("message_processing", {})
+        replacements = msg_processing.get("text_replacements", {})
+        
+    if not isinstance(replacements, dict) or not replacements:
+        return text
+        
+    # 按原词长度降序排序（避免短词破坏长词匹配）
+    sorted_pairs = sorted(replacements.items(), key=lambda x: len(x[0]), reverse=True)
+    
+    processed = text
+    for old_word, new_word in sorted_pairs:
+        if old_word and old_word in processed:
+            processed = processed.replace(old_word, str(new_word))
+            
+    return processed
+

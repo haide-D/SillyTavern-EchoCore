@@ -14,7 +14,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>🎙️ TTS 管理</h1>
-                <p class="version">v3.0.1</p>
+                <p class="version">v3.1.0</p>
             </div>
 
             <nav class="nav">
@@ -30,6 +30,10 @@
                 <a href="#audios" class="nav-item" data-page="audios">
                     <span class="icon">🎵</span>
                     <span>音频管理</span>
+                </a>
+                <a href="#prompt_emotions" class="nav-item" data-page="prompt_emotions">
+                    <span class="icon">🎭</span>
+                    <span>提示词与情感</span>
                 </a>
                 <a href="#workshop" class="nav-item" data-page="workshop">
                     <span class="icon">🎨</span>
@@ -347,6 +351,60 @@
                 </div>
             </section>
 
+            <!-- 提示词与模型情感独立一级页面 -->
+            <section id="prompt_emotions" class="page">
+                <header class="page-header">
+                    <h2>🎭 提示词与模型情感配置</h2>
+                    <button class="btn btn-success" id="btn-save-prompt-emotions">💾 保存全部配置</button>
+                </header>
+
+                <!-- 模块 1: 系统级 ElevenLabs V3 提示词模板 -->
+                <div class="card" style="margin-bottom: 24px; padding: 20px; background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(196, 155, 79, 0.25); border-radius: 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 style="font-size:16px; color:#fde047; margin:0; display:flex; align-items:center; gap:8px;">
+                            <span>📝</span> 系统级 ElevenLabs V3 提示词模板
+                        </h3>
+                        <button type="button" id="btn-reset-prompt-template" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">🔄 恢复默认模板</button>
+                    </div>
+                    <p style="font-size:12px; color:#9ca3af; margin-top:0; margin-bottom:12px; line-height:1.5;">
+                        此提示词会自动注入到 SillyTavern 主模型（LLM）的上下文底部，规范模型严格按情绪标签对白输出。支持在下方点击插入动态占位符。
+                    </p>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                            <span style="font-size:12px; color:#cbd5e1; align-self:center;">可用插槽:</span>
+                            <button type="button" class="btn btn-secondary btn-slot-insert" data-slot="{{bound_characters_section}}" style="padding:2px 8px; font-size:11px; font-family:monospace;">{{bound_characters_section}} (绑定角色与情感列表)</button>
+                            <button type="button" class="btn btn-secondary btn-slot-insert" data-slot="{{skipped_characters_section}}" style="padding:2px 8px; font-size:11px; font-family:monospace;">{{skipped_characters_section}} (跳过角色)</button>
+                            <button type="button" class="btn btn-secondary btn-slot-insert" data-slot="{{primary_character_note}}" style="padding:2px 8px; font-size:11px; font-family:monospace;">{{primary_character_note}} (主角色提示)</button>
+                        </div>
+                        <textarea id="setting-prompt-template" class="input" rows="12" style="font-family:monospace; font-size:12px; line-height:1.45; color:#a7f3d0; width:100%;"></textarea>
+                    </div>
+                </div>
+
+                <!-- 模块 2: 模型情感场景与专属语速设置 -->
+                <div class="card" style="padding: 20px; background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(196, 155, 79, 0.25); border-radius: 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                        <h3 style="font-size:16px; color:#fde047; margin:0; display:flex; align-items:center; gap:8px;">
+                            <span>🎙️</span> 模型情感场景与专属语速设置 (按模型划分)
+                        </h3>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#cbd5e1; cursor:pointer; user-select:none; background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px;">
+                                <input type="checkbox" id="checkbox-select-all-models" style="cursor:pointer;"> 全选
+                            </label>
+                            <button type="button" id="btn-batch-ai-summarize" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">🤖 AI 批量生成选中模型场景</button>
+                            <button type="button" id="btn-refresh-models-emotions" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">🔄 刷新模型与情绪</button>
+                        </div>
+                    </div>
+                    <p style="font-size:12px; color:#9ca3af; margin-top:0; margin-bottom:16px; line-height:1.5;">
+                        已自动从模型库扫描识别所有模型。你可以点击 <strong>「🤖 AI 自动生成场景」</strong>（将发送该模型全部音频台词与前缀，由 AI 自动推断并提炼精炼短小的场景规则），也可为每个模型配置<strong>专属语速倍率</strong>。
+                    </p>
+
+                    <div id="model-emotion-cards-container" style="display:flex; flex-direction:column; gap:16px;">
+                        <div style="text-align:center; padding:20px; color:#9ca3af;">正在加载已扫描模型及情绪列表...</div>
+                    </div>
+                </div>
+            </section>
+
             <!-- 系统配置页面 -->
             <section id="settings" class="page">
                 <header class="page-header">
@@ -359,6 +417,7 @@
                     <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
                     <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
                     <button class="settings-tab" data-tab="phone">📞 电话功能</button>
+                    <button class="settings-tab" data-tab="remote">🌐 远程与穿透</button>
                 </div>
 
                 <!-- 基础配置 Tab -->
@@ -426,6 +485,23 @@
                                 3. 前缀|后缀 - 过滤自定义前后缀包裹的内容<br>
                                 多个标签用逗号分隔
                             </small>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:8px;">
+                            <label style="font-weight:600; color:#fde047; margin:0; display:flex; align-items:center; gap:6px;">
+                                <span>🔄</span> TTS 文本发音替换与过滤词库
+                            </label>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" id="btn-add-replacement-rule" class="btn btn-primary" style="padding:2px 10px; font-size:11px;">➕ 添加替换词</button>
+                                <button type="button" id="btn-reset-replacements" class="btn btn-secondary" style="padding:2px 10px; font-size:11px;">🔄 恢复常用词库</button>
+                            </div>
+                        </div>
+                        <small style="display:block; margin-bottom:10px; color:#94a3b8;">
+                            在送入 GPT-SoVITS 推理合成前自动执行词汇替换，专门用于纠正多音字误读（如把“操我”自动替换为四声“肏我”）、敏感字拟声或口语谐音。
+                        </small>
+
+                        <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                            <!-- 动态渲染替换列表 -->
                         </div>
                     </div>
                 </div>

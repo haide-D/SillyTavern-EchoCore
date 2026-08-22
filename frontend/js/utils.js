@@ -585,7 +585,32 @@ export function extractAndFilter(text, extractTag, filterTags) {
         processed = applyFilterTags(processed, filterTags);
     }
 
+    // 步骤3: 应用文本发音/敏感字/多音字替换字典
+    const settings = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.settings) || {};
+    const replacements = (settings.message_processing && settings.message_processing.text_replacements) || null;
+    if (replacements && typeof replacements === 'object') {
+        processed = applyTextReplacements(processed, replacements);
+    }
+
     return processed;
+}
+
+/**
+ * 对待合成 TTS 文本执行发音纠正与多音字替换
+ * @param {string} text 
+ * @param {Object} replacements 
+ * @returns {string}
+ */
+export function applyTextReplacements(text, replacements = {}) {
+    if (!text || !replacements || typeof replacements !== 'object') return text;
+    const sortedKeys = Object.keys(replacements).sort((a, b) => b.length - a.length);
+    let result = text;
+    for (const key of sortedKeys) {
+        if (key && result.includes(key)) {
+            result = result.replaceAll(key, String(replacements[key]));
+        }
+    }
+    return result;
 }
 
 /**
