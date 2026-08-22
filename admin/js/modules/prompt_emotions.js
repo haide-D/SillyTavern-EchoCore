@@ -144,27 +144,37 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
         const card = document.createElement('div');
         card.className = 'model-emotion-card';
         card.dataset.model = modelName;
-        card.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; transition:border-color 0.2s;';
+        card.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; transition:all 0.2s;';
 
         // 卡片头部
         const header = document.createElement('div');
-        header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(0,0,0,0.25); border-bottom:1px solid rgba(255,255,255,0.06);';
+        header.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(0,0,0,0.25); border-bottom:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; gap:10px;';
         header.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" class="model-select-checkbox" data-model="${escapeHtml(modelName)}" style="cursor:pointer; width:15px; height:15px;">
                 <span style="font-size:16px;">🎙️</span>
                 <strong style="font-size:14px; color:#f1f5f9;">${escapeHtml(modelName)}</strong>
                 <span style="font-size:11px; background:rgba(196,155,79,0.2); color:#fde047; padding:2px 8px; border-radius:12px; border:1px solid rgba(196,155,79,0.4);">
                     ${emotionsList.length} 个可用情绪
                 </span>
             </div>
-            <div style="display:flex; align-items:center; gap:16px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <label style="font-size:12px; color:#94a3b8;">⚡ 语速倍率:</label>
                     <input type="number" step="0.05" min="0.5" max="2.0" class="input model-speed-input" value="${speed}" style="width:75px; text-align:center; font-weight:bold; color:#38bdf8; padding:3px 6px; font-size:12px;">
                     <span style="font-size:12px; color:#64748b;">x</span>
                 </div>
+                <button type="button" class="btn btn-primary btn-ai-summarize-single" data-model="${escapeHtml(modelName)}" style="padding:4px 10px; font-size:12px; display:flex; align-items:center; gap:4px;">
+                    <span>🤖</span> AI 智能总结场景
+                </button>
             </div>
         `;
+
+        // 绑定单模型 AI 总结按钮
+        header.querySelector('.btn-ai-summarize-single').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            await triggerAiSummarizeForModel(model, card, btn);
+        });
 
         // 情绪列表内容区
         const body = document.createElement('div');
@@ -178,14 +188,14 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
             const row = document.createElement('div');
             row.className = 'model-emotion-row';
             row.dataset.emotion = emo;
-            row.style.cssText = 'display:flex; gap:10px; align-items:center; background:rgba(0,0,0,0.15); padding:6px 10px; border-radius:6px;';
+            row.style.cssText = 'display:flex; gap:10px; align-items:center; background:rgba(0,0,0,0.15); padding:6px 10px; border-radius:6px; transition:background-color 0.3s;';
             row.innerHTML = `
                 <div style="width:110px; flex-shrink:0;">
                     <span style="font-size:12px; font-weight:600; color:#fde047; font-family:monospace; background:rgba(253,224,71,0.1); padding:2px 6px; border-radius:4px;">
                         ${escapeHtml(emo)}
                     </span>
                 </div>
-                <input type="text" class="input model-emotion-desc-input" value="${escapeHtml(descValue)}" style="flex:1; font-size:12px; padding:4px 8px;" placeholder="规定该模型在 ${escapeHtml(emo)} 情绪下的适用场景与限制...">
+                <input type="text" class="input model-emotion-desc-input" value="${escapeHtml(descValue)}" style="flex:1; font-size:12px; padding:4px 8px; transition:border-color 0.3s;" placeholder="规定该模型在 ${escapeHtml(emo)} 情绪下的适用场景与限制...">
                 <button type="button" class="btn btn-secondary btn-reset-single-emotion" title="恢复此情绪的默认推荐场景" style="padding:4px 8px; font-size:11px; white-space:nowrap;">🔄 默认</button>
             `;
 
@@ -202,6 +212,175 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
         card.appendChild(body);
         container.appendChild(card);
     });
+
+    // 绑定全选与单选联动
+    updateSelectAllCheckboxState();
+}
+
+/**
+ * 触发单个模型的 AI 情绪场景分析与总结
+ */
+async function triggerAiSummarizeForModel(model, cardElement, triggerButton) {
+    if (!model) return;
+
+    // 1. 获取 LLM 配置
+    const llmConfig = getActiveLLMConfig();
+    if (!llmConfig.apiUrl || !llmConfig.apiKey) {
+        showNotification('请先在「系统配置 -> 分析引擎/电话」中配置 LLM 的 API 地址与密钥！', 'error');
+        return;
+    }
+
+    // 2. 收集该模型的所有音频样本台词与前缀
+    const samplesByEmotion = {};
+    if (model.languages) {
+        for (const langAudios of Object.values(model.languages)) {
+            if (Array.isArray(langAudios)) {
+                langAudios.forEach(audio => {
+                    if (audio && audio.emotion) {
+                        const emo = audio.emotion.trim();
+                        if (!samplesByEmotion[emo]) samplesByEmotion[emo] = [];
+                        const textContent = audio.text ? audio.text.trim() : '';
+                        const filename = audio.filename || '';
+                        if (textContent) {
+                            samplesByEmotion[emo].push(`台词: "${textContent}"`);
+                        } else if (filename) {
+                            samplesByEmotion[emo].push(`文件名: ${filename}`);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    const emotionKeys = Object.keys(samplesByEmotion);
+    if (emotionKeys.length === 0) {
+        showNotification(`模型「${model.name}」未找到任何包含情绪标签的音频样本！`, 'info');
+        return;
+    }
+
+    // 构建发给 AI 的样本摘要文本
+    let samplesText = '';
+    for (const [emo, samples] of Object.entries(samplesByEmotion)) {
+        const topSamples = samples.slice(0, 5).join('； ');
+        samplesText += `- 情绪标签【${emo}】: ${topSamples}\n`;
+    }
+
+    const originalBtnText = triggerButton ? triggerButton.innerHTML : '';
+    if (triggerButton) {
+        triggerButton.disabled = true;
+        triggerButton.innerHTML = '<span>⏳</span> AI 正在分析台词...';
+    }
+
+    try {
+        const resultDict = await callLLMForEmotionSummary(model.name, samplesText, llmConfig);
+
+        // 回填到卡片中
+        let updatedCount = 0;
+        cardElement.querySelectorAll('.model-emotion-row').forEach(row => {
+            const emo = row.dataset.emotion;
+            const input = row.querySelector('.model-emotion-desc-input');
+            const cleanEmo = emo.toLowerCase();
+
+            if (resultDict[emo] || resultDict[cleanEmo]) {
+                const desc = (resultDict[emo] || resultDict[cleanEmo]).trim();
+                if (desc) {
+                    input.value = desc;
+                    row.style.background = 'rgba(34, 197, 94, 0.15)';
+                    setTimeout(() => {
+                        row.style.background = 'rgba(0,0,0,0.15)';
+                    }, 2000);
+                    updatedCount++;
+                }
+            }
+        });
+
+        showNotification(`🎉 已成功通过 AI 总结「${model.name}」的 ${updatedCount} 个情绪场景！请核对后点击保存。`, 'success');
+    } catch (e) {
+        console.error('AI 分析情绪场景失败:', e);
+        showNotification(`AI 分析失败: ${e.message}`, 'error');
+    } finally {
+        if (triggerButton) {
+            triggerButton.disabled = false;
+            triggerButton.innerHTML = originalBtnText;
+        }
+    }
+}
+
+/**
+ * 调用 LLM 生成简短精炼的情绪场景规则
+ */
+async function callLLMForEmotionSummary(modelName, samplesText, llmConfig) {
+    const prompt = `你是一位专业的声音导演与戏剧角色分析专家。
+以下是角色「${modelName}」在不同情绪标签下的参考音频台词与文件样本：
+
+${samplesText}
+
+【任务要求】
+请根据上述台词的内容语气、性格特征与语境，为该角色的每一个情绪标签提炼出极其简明精准的【适用场景与使用限制】：
+1. 语言必须简短精炼，每条情绪的描述严格控制在 10 ~ 25 个字以内，一针见血，绝不废话！
+2. 明确指出适用语境（如：何时使用）与限制边界（对于 panting/climax 等特殊情绪须强调日常闲聊禁用）。
+3. 严格输出标准 JSON 键值对（键为情绪英文名，值为描述），不要包含任何多余文字或解释。
+
+【输出格式示例】
+{
+  "angry": "受到直接挑衅或争吵时使用",
+  "climax": "仅限全剧情最高潮绝境爆发时使用",
+  "neutral": "日常平稳对话与事实叙述",
+  "panting": "仅在剧烈运动或极度疲惫喘息时使用"
+}`;
+
+    const endpoint = llmConfig.apiUrl.endsWith('/chat/completions') 
+        ? llmConfig.apiUrl 
+        : llmConfig.apiUrl.replace(/\/+$/, '') + '/chat/completions';
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${llmConfig.apiKey}`
+        },
+        body: JSON.stringify({
+            model: llmConfig.model || 'gpt-3.5-turbo',
+            messages: [
+                { role: 'system', content: 'You are an expert voice director that always outputs valid JSON only.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.5,
+            max_tokens: 800
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(`LLM 接口返回 HTTP ${response.status}: ${err.error?.message || ''}`);
+    }
+
+    const data = await response.json();
+    let content = data.choices?.[0]?.message?.content || '';
+
+    // 解析 JSON
+    content = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const firstBrace = content.indexOf('{');
+    const lastBrace = content.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+        content = content.substring(firstBrace, lastBrace + 1);
+    }
+
+    return JSON.parse(content);
+}
+
+/**
+ * 获取当前已配置的有效 LLM
+ */
+function getActiveLLMConfig() {
+    const analysis = (currentSettings.analysis_engine && currentSettings.analysis_engine.llm) || {};
+    const phone = (currentSettings.phone_call && currentSettings.phone_call.llm) || {};
+
+    return {
+        apiUrl: analysis.api_url || phone.api_url || '',
+        apiKey: analysis.api_key || phone.api_key || '',
+        model: analysis.model || phone.model || 'gpt-3.5-turbo'
+    };
 }
 
 /**
@@ -212,6 +391,8 @@ function bindPromptControls() {
     const resetPromptBtn = document.getElementById('btn-reset-prompt-template');
     const refreshModelsBtn = document.getElementById('btn-refresh-models-emotions');
     const saveBtn = document.getElementById('btn-save-prompt-emotions');
+    const selectAllCheckbox = document.getElementById('checkbox-select-all-models');
+    const batchAiBtn = document.getElementById('btn-batch-ai-summarize');
 
     if (resetPromptBtn && promptTemplateEl) {
         resetPromptBtn.addEventListener('click', () => {
@@ -249,11 +430,72 @@ function bindPromptControls() {
         });
     }
 
+    // 全选/反选
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            document.querySelectorAll('.model-select-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+        });
+    }
+
+    // 批量 AI 生成
+    if (batchAiBtn) {
+        batchAiBtn.addEventListener('click', async () => {
+            const checkedBoxes = Array.from(document.querySelectorAll('.model-select-checkbox:checked'));
+            if (checkedBoxes.length === 0) {
+                showNotification('请先勾选需要 AI 分析总结的模型！', 'info');
+                return;
+            }
+
+            batchAiBtn.disabled = true;
+            const originalText = batchAiBtn.textContent;
+            let successCount = 0;
+
+            for (let i = 0; i < checkedBoxes.length; i++) {
+                const cb = checkedBoxes[i];
+                const modelName = cb.dataset.model;
+                const model = currentModels.find(m => m.name === modelName);
+                const card = cb.closest('.model-emotion-card');
+
+                batchAiBtn.textContent = `🤖 正在分析 (${i + 1}/${checkedBoxes.length}): ${modelName}...`;
+
+                if (model && card) {
+                    try {
+                        await triggerAiSummarizeForModel(model, card, null);
+                        successCount++;
+                    } catch (err) {
+                        console.error(`批量分析 ${modelName} 失败:`, err);
+                    }
+                }
+            }
+
+            batchAiBtn.disabled = false;
+            batchAiBtn.textContent = originalText;
+            showNotification(`🎉 批量处理完毕！已成功为 ${successCount} 个模型生成情绪场景说明。请检查后点击保存。`, 'success');
+        });
+    }
+
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
             savePromptEmotionsSettings();
         });
     }
+}
+
+function updateSelectAllCheckboxState() {
+    const selectAllCheckbox = document.getElementById('checkbox-select-all-models');
+    const allBoxes = document.querySelectorAll('.model-select-checkbox');
+    
+    allBoxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            if (selectAllCheckbox) {
+                const checkedCount = document.querySelectorAll('.model-select-checkbox:checked').length;
+                selectAllCheckbox.checked = checkedCount === allBoxes.length && allBoxes.length > 0;
+            }
+        });
+    });
 }
 
 /**

@@ -383,16 +383,20 @@
 
                 <!-- 模块 2: 模型情感场景与专属语速设置 -->
                 <div class="card" style="padding: 20px; background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(196, 155, 79, 0.25); border-radius: 12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
                         <h3 style="font-size:16px; color:#fde047; margin:0; display:flex; align-items:center; gap:8px;">
                             <span>🎙️</span> 模型情感场景与专属语速设置 (按模型划分)
                         </h3>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#cbd5e1; cursor:pointer; user-select:none; background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px;">
+                                <input type="checkbox" id="checkbox-select-all-models" style="cursor:pointer;"> 全选
+                            </label>
+                            <button type="button" id="btn-batch-ai-summarize" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">🤖 AI 批量生成选中模型场景</button>
                             <button type="button" id="btn-refresh-models-emotions" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">🔄 刷新模型与情绪</button>
                         </div>
                     </div>
                     <p style="font-size:12px; color:#9ca3af; margin-top:0; margin-bottom:16px; line-height:1.5;">
-                        已自动从模型库扫描识别所有已绑定的模型及其拥有的全部情绪。你可以在此为<strong>每个模型单独配置语速倍率 (Speed: 0.5x~2.0x)</strong>，并为该模型下的各情绪标签规定使用场景（<strong>防止日常闲聊误用喘息 panting 或绝境高潮 climax</strong>）。
+                        已自动从模型库扫描识别所有模型。你可以点击 <strong>「🤖 AI 自动生成场景」</strong>（将发送该模型全部音频台词与前缀，由 AI 自动推断并提炼精炼短小的场景规则），也可为每个模型配置<strong>专属语速倍率</strong>。
                     </p>
 
                     <div id="model-emotion-cards-container" style="display:flex; flex-direction:column; gap:16px;">
