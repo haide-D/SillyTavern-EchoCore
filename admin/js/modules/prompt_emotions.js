@@ -56,7 +56,7 @@ export const DEFAULT_EMOTION_ANNOTATIONS = {
     "whisper": "窃窃私语、耳语或私密秘密对话时使用",
     "disgust": "极度厌恶、鄙夷、嫌弃或排斥时使用",
     "smug": "自鸣得意、傲娇、得意洋洋或嘲弄时使用",
-    "neutral": "中立、冷静、客观叙述时使用"
+    "neutral": "日常平稳对话、冷静叙述与事实表达"
 };
 
 // 内存缓存当前数据
@@ -125,8 +125,24 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
         const speed = (modelConfig.speed !== undefined && modelConfig.speed !== null) ? modelConfig.speed : 1.0;
         const savedEmotions = modelConfig.emotions || {};
 
-        // 提取该模型拥有的所有情绪标签
+        // 提取该模型拥有的所有情绪标签 (精准读取 audio_stats.by_emotion)
         const emotionsSet = new Set(['default']);
+        
+        // 1. 从 audio_stats.by_emotion 读取
+        if (model.audio_stats && model.audio_stats.by_emotion) {
+            Object.keys(model.audio_stats.by_emotion).forEach(emo => {
+                if (emo && emo.trim()) emotionsSet.add(emo.trim());
+            });
+        }
+
+        // 2. 兼容已保存的模型自定义情绪配置
+        if (modelConfig.emotions) {
+            Object.keys(modelConfig.emotions).forEach(emo => {
+                if (emo && emo.trim()) emotionsSet.add(emo.trim());
+            });
+        }
+
+        // 3. 兼容 languages 结构（若有）
         if (model.languages) {
             for (const langAudios of Object.values(model.languages)) {
                 if (Array.isArray(langAudios)) {
@@ -138,6 +154,7 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
                 }
             }
         }
+
         const emotionsList = Array.from(emotionsSet);
 
         // 创建模型卡片
@@ -156,6 +173,9 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
                 <strong style="font-size:14px; color:#f1f5f9;">${escapeHtml(modelName)}</strong>
                 <span style="font-size:11px; background:rgba(196,155,79,0.2); color:#fde047; padding:2px 8px; border-radius:12px; border:1px solid rgba(196,155,79,0.4);">
                     ${emotionsList.length} 个可用情绪
+                </span>
+                <span style="font-size:11px; color:#94a3b8;">
+                    (共 ${(model.audio_stats && model.audio_stats.total) || 0} 条音频)
                 </span>
             </div>
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -230,48 +250,58 @@ async function triggerAiSummarizeForModel(model, cardElement, triggerButton) {
         return;
     }
 
-    // 2. 收集该模型的所有音频样本台词与前缀
-    const samplesByEmotion = {};
-    if (model.languages) {
-        for (const langAudios of Object.values(model.languages)) {
-            if (Array.isArray(langAudios)) {
-                langAudios.forEach(audio => {
-                    if (audio && audio.emotion) {
-                        const emo = audio.emotion.trim();
-                        if (!samplesByEmotion[emo]) samplesByEmotion[emo] = [];
-                        const textContent = audio.text ? audio.text.trim() : '';
-                        const filename = audio.filename || '';
-                        if (textContent) {
-                            samplesByEmotion[emo].push(`台词: "${textContent}"`);
-                        } else if (filename) {
-                            samplesByEmotion[emo].push(`文件名: ${filename}`);
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    const emotionKeys = Object.keys(samplesByEmotion);
-    if (emotionKeys.length === 0) {
-        showNotification(`模型「${model.name}」未找到任何包含情绪标签的音频样本！`, 'info');
-        return;
-    }
-
-    // 构建发给 AI 的样本摘要文本
-    let samplesText = '';
-    for (const [emo, samples] of Object.entries(samplesByEmotion)) {
-        const topSamples = samples.slice(0, 5).join('； ');
-        samplesText += `- 情绪标签【${emo}】: ${topSamples}\n`;
-    }
-
     const originalBtnText = triggerButton ? triggerButton.innerHTML : '';
     if (triggerButton) {
         triggerButton.disabled = true;
-        triggerButton.innerHTML = '<span>⏳</span> AI 正在分析台词...';
+        triggerButton.innerHTML = '<span>⏳</span> 正在拉取台词...';
     }
 
     try {
+        // 2. 从后端 API 异步拉取该模型的所有参考音频台词与文件名
+        const audiosRes = await fetch(`${API_BASE}/models/${encodeURIComponent(model.name)}/audios`);
+        if (!audiosRes.ok) throw new Error(`拉取模型音频失败: HTTP ${audiosRes.status}`);
+        const audiosData = await audiosRes.json();
+        const audiosList = audiosData.audios || [];
+
+        const samplesByEmotion = {};
+
+        audiosList.forEach(audio => {
+            const emo = audio.emotion ? audio.emotion.trim() : 'default';
+            if (!samplesByEmotion[emo]) samplesByEmotion[emo] = [];
+
+            // 提取台词内容：优先使用 audio.text，若无则从文件名提取
+            let textContent = audio.text ? audio.text.trim() : '';
+            if (!textContent && audio.filename) {
+                const rawName = audio.filename.replace(/\.[^/.]+$/, "");
+                if (rawName.includes('_')) {
+                    textContent = rawName.split('_').slice(1).join('_').trim();
+                } else {
+                    textContent = rawName.trim();
+                }
+            }
+
+            if (textContent) {
+                samplesByEmotion[emo].push(`"${textContent}"`);
+            }
+        });
+
+        const emotionKeys = Object.keys(samplesByEmotion);
+        if (emotionKeys.length === 0) {
+            showNotification(`模型「${model.name}」未找到任何音频台词样本！`, 'info');
+            return;
+        }
+
+        // 构建发给 AI 的样本摘要文本
+        let samplesText = '';
+        for (const [emo, samples] of Object.entries(samplesByEmotion)) {
+            const topSamples = samples.slice(0, 5).join('； ');
+            samplesText += `- 情绪标签【${emo}】: ${topSamples}\n`;
+        }
+
+        if (triggerButton) {
+            triggerButton.innerHTML = '<span>⏳</span> AI 正在推断场景...';
+        }
+
         const resultDict = await callLLMForEmotionSummary(model.name, samplesText, llmConfig);
 
         // 回填到卡片中
@@ -285,7 +315,7 @@ async function triggerAiSummarizeForModel(model, cardElement, triggerButton) {
                 const desc = (resultDict[emo] || resultDict[cleanEmo]).trim();
                 if (desc) {
                     input.value = desc;
-                    row.style.background = 'rgba(34, 197, 94, 0.15)';
+                    row.style.background = 'rgba(34, 197, 94, 0.2)';
                     setTimeout(() => {
                         row.style.background = 'rgba(0,0,0,0.15)';
                     }, 2000);
@@ -311,7 +341,7 @@ async function triggerAiSummarizeForModel(model, cardElement, triggerButton) {
  */
 async function callLLMForEmotionSummary(modelName, samplesText, llmConfig) {
     const prompt = `你是一位专业的声音导演与戏剧角色分析专家。
-以下是角色「${modelName}」在不同情绪标签下的参考音频台词与文件样本：
+以下是角色「${modelName}」在不同情绪标签下的实际参考音频台词与文件样本：
 
 ${samplesText}
 
