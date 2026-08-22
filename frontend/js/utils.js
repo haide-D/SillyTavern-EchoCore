@@ -634,28 +634,13 @@ export function getLatestRemoteConfig() {
             extConfig = context?.extensionSettings?.st_direct_tts;
         }
 
-        // 决策：谁包含有效的远程配置 (useRemote 为 true 且 ip 不为空)
-        const extValid = extConfig && !!extConfig.use_remote && !!(extConfig.remote_ip || '').trim();
-        const localValid = localConfig && !!localConfig.useRemote && !!(localConfig.ip || '').trim();
-
-        if (extValid) {
-            config.useRemote = true;
-            config.ip = (extConfig.remote_ip || '').trim();
-            config.port = parseInt(extConfig.remote_port) || 3000;
-            config.token = (extConfig.remote_token || '').trim();
-            // 同步至 localStorage
-            localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
-                useRemote: true,
-                ip: config.ip,
-                port: config.port,
-                token: config.token
-            }));
-        } else if (localValid) {
+        // 决策：优先使用用户在当前浏览器最新保存的 localConfig，彻底杜绝回退覆盖旧域名
+        if (localValid) {
             config.useRemote = true;
             config.ip = (localConfig.ip || '').trim();
             config.port = parseInt(localConfig.port) || 3000;
             config.token = (localConfig.token || '').trim();
-            // 反向同步至 extensionSettings
+            // 同步至 extensionSettings
             if (context && context.extensionSettings) {
                 if (!context.extensionSettings.st_direct_tts) {
                     context.extensionSettings.st_direct_tts = {};
@@ -669,17 +654,28 @@ export function getLatestRemoteConfig() {
                     context.saveSettingsDebounced();
                 }
             }
-        } else if (extConfig) {
-            // 都是本地模式，但保留填写的 ip/port/token
-            config.useRemote = !!extConfig.use_remote;
+        } else if (extValid) {
+            config.useRemote = true;
             config.ip = (extConfig.remote_ip || '').trim();
             config.port = parseInt(extConfig.remote_port) || 3000;
             config.token = (extConfig.remote_token || '').trim();
+            // 同步至 localStorage
+            localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
+                useRemote: true,
+                ip: config.ip,
+                port: config.port,
+                token: config.token
+            }));
         } else if (localConfig) {
             config.useRemote = !!localConfig.useRemote;
             config.ip = (localConfig.ip || '').trim();
             config.port = parseInt(localConfig.port) || 3000;
             config.token = (localConfig.token || '').trim();
+        } else if (extConfig) {
+            config.useRemote = !!extConfig.use_remote;
+            config.ip = (extConfig.remote_ip || '').trim();
+            config.port = parseInt(extConfig.remote_port) || 3000;
+            config.token = (extConfig.remote_token || '').trim();
         }
     } catch (e) {
         console.warn("[TTS] 获取远程配置异常:", e);

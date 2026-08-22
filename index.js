@@ -354,14 +354,38 @@ function showEmergencyConfig(currentApi) {
         const token = $('#tts-emergency-token').val().trim();
         if (!ip) return alert("请输入 IP 或反代 URL");
 
+        // 1. 保存到 localStorage (优先凭据)
         localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
             useRemote: true,
             ip: ip,
             port: portVal,
-            token: token
+            token: token,
+            updatedAt: Date.now()
         }));
 
-        alert(`设置已保存: ${ip}\n页面即将刷新...`);
+        // 2. 同步覆盖酒馆扩展配置 (彻底防止刷新后被旧配置覆盖回退)
+        if (window.SillyTavern && typeof window.SillyTavern.getContext === 'function') {
+            try {
+                const context = window.SillyTavern.getContext();
+                if (context && context.extensionSettings) {
+                    if (!context.extensionSettings.st_direct_tts) {
+                        context.extensionSettings.st_direct_tts = {};
+                    }
+                    const ext = context.extensionSettings.st_direct_tts;
+                    ext.use_remote = true;
+                    ext.remote_ip = ip;
+                    ext.remote_port = portVal;
+                    ext.remote_token = token;
+                    if (typeof context.saveSettingsDebounced === 'function') {
+                        context.saveSettingsDebounced();
+                    }
+                }
+            } catch (e) {
+                console.warn("[TTS] 同步更新 extensionSettings 异常:", e);
+            }
+        }
+
+        alert(`设置已永久保存: ${ip}\n页面即将刷新...`);
         location.reload();
     });
 }
