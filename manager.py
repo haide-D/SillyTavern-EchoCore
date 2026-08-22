@@ -41,7 +41,7 @@ app.add_middleware(AuthMiddleware)
 # 最外层: 全局 CORS 跨域支持 (最先捕获 preflight OPTIONS 并注入响应头)
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"^https?://.*",
+    allow_origin_regex=r".*",
     allow_origins=[],
     allow_credentials=True,
     allow_methods=["*"],

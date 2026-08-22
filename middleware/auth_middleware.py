@@ -6,7 +6,7 @@
 from urllib.parse import unquote
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse
 from config import get_security_settings, verify_auth_token
 
 
@@ -35,35 +35,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
     }
 
     async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin", "")
-        cors_origin = origin if origin else "*"
-
-        # 1. 预检请求 (CORS OPTIONS) 直接响应 200 并携带完整 CORS 头部
+        # 1. 预检请求 (CORS OPTIONS) 直接放行交给 CORSMiddleware 处理
         if request.method == "OPTIONS":
-            response = Response(status_code=200)
-            response.headers["Access-Control-Allow-Origin"] = cors_origin
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "86400"
-            return response
+            return await call_next(request)
 
         path = unquote(request.url.path)
 
         # 2. 检查是否为静态资源或登录相关公开接口
         if path in self.EXEMPT_PATHS or any(path.startswith(prefix) for prefix in self.EXEMPT_PREFIXES):
-            response = await call_next(request)
-            response.headers["Access-Control-Allow-Origin"] = cors_origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            return response
+            return await call_next(request)
 
         # 3. 检查系统是否启用了安全防护
         sec = get_security_settings()
         if not sec["enabled"] and not sec["admin_password"] and not sec["api_token"]:
-            response = await call_next(request)
-            response.headers["Access-Control-Allow-Origin"] = cors_origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            return response
+            return await call_next(request)
 
         # 4. 提取客户端提供的凭据 Token
         token = ""
@@ -81,9 +66,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not token:
             token = request.query_params.get("token", "").strip()
 
-        if token:
-            token = unquote(token)
-
         # 5. 校验 Token
         if not verify_auth_token(token):
             return JSONResponse(
@@ -92,16 +74,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "detail": "Unauthorized: 访问受限，请提供正确的 API Token 或管理员登录密码",
                     "code": 401,
                     "auth_required": True
-                },
-                headers={
-                    "Access-Control-Allow-Origin": cors_origin,
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
-                    "Access-Control-Allow-Headers": "*",
-                    "Access-Control-Allow-Credentials": "true"
                 }
             )
 
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = cors_origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        return response
+        return await call_next(request)
