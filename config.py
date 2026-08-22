@@ -104,10 +104,27 @@ def init_settings():
                     modified = True
         return modified
 
-    # message_processing 配置 - 共享的消息过滤配置
+    # 默认 TTS 文本发音替换字典 (针对多音字、口语与特殊发音纠正)
+    default_text_replacements = {
+        "操我": "肏我",
+        "操你": "肏你",
+        "我操": "我肏",
+        "卧槽": "卧肏",
+        "重重地": "虫虫地",
+        "行了": "形了",
+        "行的": "形得",
+        "干嘛": "干麻",
+        "噢": "哦",
+        "3Q": "谢谢",
+        "666": "溜溜溜",
+        "233": "哈哈哈"
+    }
+
+    # message_processing 配置 - 共享的消息过滤与替换配置
     message_processing_defaults = {
         "extract_tag": "",
-        "filter_tags": "<small>, [statbar]"
+        "filter_tags": "<small>, [statbar]",
+        "text_replacements": default_text_replacements
     }
     # 类型安全检查：如果值不是字典，用默认值覆盖
     if "message_processing" not in settings or not isinstance(settings["message_processing"], dict):
@@ -329,3 +346,37 @@ def filter_bound_speakers(speakers: list) -> list:
         print(f"[Config] ⚠️ 以下角色未绑定模型，已过滤: {unbound}")
     
     return bound_speakers
+
+
+def apply_text_replacements(text: str, replacements: dict = None) -> str:
+    """
+    对待合成 TTS 文本执行发音纠正与多音字替换
+    
+    Args:
+        text: 待处理文本
+        replacements: 替换字典 { "原词": "替换词" }，若为空则自动读取系统配置
+        
+    Returns:
+        替换后的文本
+    """
+    if not text:
+        return text
+        
+    if replacements is None:
+        settings = init_settings()
+        msg_processing = settings.get("message_processing", {})
+        replacements = msg_processing.get("text_replacements", {})
+        
+    if not isinstance(replacements, dict) or not replacements:
+        return text
+        
+    # 按原词长度降序排序（避免短词破坏长词匹配）
+    sorted_pairs = sorted(replacements.items(), key=lambda x: len(x[0]), reverse=True)
+    
+    processed = text
+    for old_word, new_word in sorted_pairs:
+        if old_word and old_word in processed:
+            processed = processed.replace(old_word, str(new_word))
+            
+    return processed
+

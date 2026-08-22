@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from typing import Optional, Union, List
 from pydantic import BaseModel
 
-from config import get_current_dirs, get_sovits_host
+from config import get_current_dirs, get_sovits_host, apply_text_replacements
 from utils import maintain_cache_size
 
 router = APIRouter()
@@ -103,6 +103,9 @@ async def tts_proxy(
 ):
     from services.model_weight_service import model_weight_service
     
+    # 执行 TTS 文本发音纠正与敏感/多音字替换
+    text = apply_text_replacements(text)
+
     # 统一语速倍率
     actual_speed = speed_factor if speed_factor is not None else (speed if speed is not None else 1.0)
     
@@ -259,6 +262,9 @@ async def tts_proxy_v2(req: TTSRequest, check_only: Optional[str] = None):
         音频文件或缓存状态
     """
     _, cache_dir = get_current_dirs()
+
+    # 执行 TTS 文本发音纠正与敏感/多音字替换
+    req.text = apply_text_replacements(req.text)
 
     try:
         # 新缓存Key: 基于emotion,不包含具体音频路径

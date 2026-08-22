@@ -486,6 +486,23 @@
                                 多个标签用逗号分隔
                             </small>
                         </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:8px;">
+                            <label style="font-weight:600; color:#fde047; margin:0; display:flex; align-items:center; gap:6px;">
+                                <span>🔄</span> TTS 文本发音替换与过滤词库
+                            </label>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" id="btn-add-replacement-rule" class="btn btn-primary" style="padding:2px 10px; font-size:11px;">➕ 添加替换词</button>
+                                <button type="button" id="btn-reset-replacements" class="btn btn-secondary" style="padding:2px 10px; font-size:11px;">🔄 恢复常用词库</button>
+                            </div>
+                        </div>
+                        <small style="display:block; margin-bottom:10px; color:#94a3b8;">
+                            在送入 GPT-SoVITS 推理合成前自动执行词汇替换，专门用于纠正多音字误读（如把“操我”自动替换为四声“肏我”）、敏感字拟声或口语谐音。
+                        </small>
+
+                        <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                            <!-- 动态渲染替换列表 -->
+                        </div>
                     </div>
                 </div>
 

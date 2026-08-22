@@ -239,6 +239,12 @@ export async function loadSettings() {
         const filterTagsEl = document.getElementById('setting-filter-tags');
         if (extractTagEl) extractTagEl.value = msgProcessing.extract_tag || '';
         if (filterTagsEl) filterTagsEl.value = msgProcessing.filter_tags || '';
+
+        // 渲染文本发音替换词库列表 (如果为空则展示默认常用词库)
+        const replacements = (msgProcessing.text_replacements && Object.keys(msgProcessing.text_replacements).length > 0)
+            ? msgProcessing.text_replacements
+            : DEFAULT_TEXT_REPLACEMENTS;
+        renderTextReplacementsUI(replacements);
     } catch (error) {
         console.error('加载系统配置失败:', error);
     }
@@ -312,7 +318,8 @@ export async function saveSettings() {
 
         message_processing: {
             extract_tag: extractTagEl ? extractTagEl.value.trim() : '',
-            filter_tags: filterTagsEl ? filterTagsEl.value.trim() : ''
+            filter_tags: filterTagsEl ? filterTagsEl.value.trim() : '',
+            text_replacements: collectTextReplacements()
         },
 
         phone_call: {
@@ -638,4 +645,121 @@ export function bindPromptAndEmotionControls() {
         });
     }
 }
+
+export const DEFAULT_TEXT_REPLACEMENTS = {
+    "操我": "肏我",
+    "操你": "肏你",
+    "我操": "我肏",
+    "卧槽": "卧肏",
+    "重重地": "虫虫地",
+    "行了": "形了",
+    "行的": "形得",
+    "干嘛": "干麻",
+    "噢": "哦",
+    "3Q": "谢谢",
+    "666": "溜溜溜",
+    "233": "哈哈哈"
+};
+
+/**
+ * 渲染文本替换规则 UI 列表
+ */
+export function renderTextReplacementsUI(replacementsMap = {}) {
+    const container = document.getElementById('text-replacements-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const entries = Object.entries(replacementsMap);
+
+    if (entries.length === 0) {
+        container.innerHTML = '<div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">暂无替换规则，点击上方「➕ 添加替换词」添加</div>';
+        return;
+    }
+
+    entries.forEach(([oldWord, newWord]) => {
+        const row = document.createElement('div');
+        row.className = 'replacement-rule-row';
+        row.style.cssText = 'display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.03); padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);';
+        row.innerHTML = `
+            <input type="text" class="input rep-old-input" value="${escapeHtml(oldWord)}" style="flex:1; padding:4px 8px; font-size:12px;" placeholder="原词 (如 操我)">
+            <span style="color:#38bdf8; font-size:12px; font-weight:bold;">➔</span>
+            <input type="text" class="input rep-new-input" value="${escapeHtml(newWord)}" style="flex:1; padding:4px 8px; font-size:12px; color:#a7f3d0;" placeholder="替换为 (如 肏我)">
+            <button type="button" class="btn btn-danger btn-delete-rep-row" style="padding:2px 6px; font-size:11px;">🗑️</button>
+        `;
+
+        row.querySelector('.btn-delete-rep-row').addEventListener('click', () => {
+            row.remove();
+            if (container.children.length === 0) {
+                container.innerHTML = '<div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">暂无替换规则，点击上方「➕ 添加替换词」添加</div>';
+            }
+        });
+
+        container.appendChild(row);
+    });
+}
+
+/**
+ * 收集当前配置的文本替换词字典
+ */
+export function collectTextReplacements() {
+    const replacements = {};
+    document.querySelectorAll('.replacement-rule-row').forEach(row => {
+        const oldInput = row.querySelector('.rep-old-input');
+        const newInput = row.querySelector('.rep-new-input');
+        if (oldInput && newInput) {
+            const oldVal = oldInput.value.trim();
+            const newVal = newInput.value.trim();
+            if (oldVal) {
+                replacements[oldVal] = newVal;
+            }
+        }
+    });
+    return replacements;
+}
+
+/**
+ * 绑定文本替换词库按钮操作
+ */
+export function bindTextReplacementControls() {
+    const addBtn = document.getElementById('btn-add-replacement-rule');
+    const resetBtn = document.getElementById('btn-reset-replacements');
+    const container = document.getElementById('text-replacements-container');
+
+    if (addBtn && container) {
+        addBtn.addEventListener('click', () => {
+            // 清理占位空提示
+            if (container.querySelector('.replacement-rule-row') === null) {
+                container.innerHTML = '';
+            }
+
+            const row = document.createElement('div');
+            row.className = 'replacement-rule-row';
+            row.style.cssText = 'display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.03); padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);';
+            row.innerHTML = `
+                <input type="text" class="input rep-old-input" value="" style="flex:1; padding:4px 8px; font-size:12px;" placeholder="原词 (如 操我)">
+                <span style="color:#38bdf8; font-size:12px; font-weight:bold;">➔</span>
+                <input type="text" class="input rep-new-input" value="" style="flex:1; padding:4px 8px; font-size:12px; color:#a7f3d0;" placeholder="替换为 (如 肏我)">
+                <button type="button" class="btn btn-danger btn-delete-rep-row" style="padding:2px 6px; font-size:11px;">🗑️</button>
+            `;
+
+            row.querySelector('.btn-delete-rep-row').addEventListener('click', () => {
+                row.remove();
+                if (container.children.length === 0) {
+                    container.innerHTML = '<div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">暂无替换规则，点击上方「➕ 添加替换词」添加</div>';
+                }
+            });
+
+            container.prepend(row);
+            row.querySelector('.rep-old-input').focus();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            renderTextReplacementsUI(DEFAULT_TEXT_REPLACEMENTS);
+            showNotification('已恢复官方推荐的常用发音/多音字替换词库', 'info');
+        });
+    }
+}
+
 

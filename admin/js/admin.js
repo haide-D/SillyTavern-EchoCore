@@ -58,7 +58,8 @@ import {
     bindFetchModelsButton,
     bindTestConnectionButton,
     bindAnalysisLLMButtons,
-    bindPromptAndEmotionControls
+    bindPromptAndEmotionControls,
+    bindTextReplacementControls
 } from './modules/settings.js';
 import {
     checkVersion,
@@ -221,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindFetchModelsButton();
     bindTestConnectionButton();
     bindAnalysisLLMButtons();
+    bindTextReplacementControls();
     bindSettingsTabs();
 
     // 显示通告弹窗

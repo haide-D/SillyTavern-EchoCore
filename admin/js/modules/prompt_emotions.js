@@ -127,7 +127,7 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
 
         // 提取该模型拥有的所有情绪标签 (精准读取 audio_stats.by_emotion)
         const emotionsSet = new Set(['default']);
-        
+
         // 1. 从 audio_stats.by_emotion 读取
         if (model.audio_stats && model.audio_stats.by_emotion) {
             Object.keys(model.audio_stats.by_emotion).forEach(emo => {
@@ -359,8 +359,8 @@ ${samplesText}
   "panting": "仅在剧烈运动或极度疲惫喘息时使用"
 }`;
 
-    const endpoint = llmConfig.apiUrl.endsWith('/chat/completions') 
-        ? llmConfig.apiUrl 
+    const endpoint = llmConfig.apiUrl.endsWith('/chat/completions')
+        ? llmConfig.apiUrl
         : llmConfig.apiUrl.replace(/\/+$/, '') + '/chat/completions';
 
     const response = await fetch(endpoint, {
@@ -376,8 +376,8 @@ ${samplesText}
                 { role: 'user', content: prompt }
             ],
             temperature: 0.3,
-            max_tokens: 4096,
-            max_completion_tokens: 4096
+            max_tokens: 14096,
+            max_completion_tokens: 14096
         })
     });
 
@@ -537,7 +537,7 @@ function bindPromptControls() {
 function updateSelectAllCheckboxState() {
     const selectAllCheckbox = document.getElementById('checkbox-select-all-models');
     const allBoxes = document.querySelectorAll('.model-select-checkbox');
-    
+
     allBoxes.forEach(cb => {
         cb.addEventListener('change', () => {
             if (selectAllCheckbox) {
