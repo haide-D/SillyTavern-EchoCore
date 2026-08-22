@@ -19,7 +19,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     EXEMPT_PREFIXES = (
         "/static",
         "/frontend",
-        "/admin/static",
+        "/admin",
         "/docs",
         "/openapi.json",
         "/favicon.ico"
