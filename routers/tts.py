@@ -90,7 +90,7 @@ async def proxy_set_sovits_weights(weights_path: str):
 
 class MiniMaxTestRequest(BaseModel):
     api_key: str
-    group_id: str
+    group_id: Optional[str] = ""
     api_url: Optional[str] = "https://api.minimax.chat/v1/t2a_v2"
 
 

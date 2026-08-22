@@ -270,12 +270,12 @@ class MiniMaxTTSService:
         return False, filename, None
 
     @classmethod
-    async def test_credentials(cls, api_key: str, group_id: str, api_url: Optional[str] = None) -> Dict[str, Any]:
+    async def test_credentials(cls, api_key: str, group_id: Optional[str] = None, api_url: Optional[str] = None) -> Dict[str, Any]:
         """
-        快速验证 MiniMax API Key 与 Group ID 连通性
+        快速验证 MiniMax API Key 连通性 (Group ID 为可选)
         """
-        if not api_key or not group_id:
-            return {"success": False, "message": "API Key 或 Group ID 不能为空"}
+        if not api_key or not api_key.strip():
+            return {"success": False, "message": "API Key 不能为空"}
 
         target_url = (api_url or "https://api.minimax.chat/v1/t2a_v2").strip()
         if not target_url.endswith("/t2a_v2"):
@@ -284,7 +284,10 @@ class MiniMaxTTSService:
             else:
                 target_url = target_url.rstrip("/") + "/t2a_v2"
 
-        url = f"{target_url}?GroupId={group_id.strip()}"
+        if group_id and group_id.strip():
+            url = f"{target_url}?GroupId={group_id.strip()}"
+        else:
+            url = target_url
         headers = {
             "Authorization": f"Bearer {api_key.strip()}",
             "Content-Type": "application/json"
@@ -384,8 +387,6 @@ class MiniMaxTTSService:
 
         if not api_key:
             raise ValueError("MiniMax API Key 未配置，请在设置中填入有效的 MiniMax API Key")
-        if not group_id:
-            raise ValueError("MiniMax Group ID 未配置，请在设置中填入 MiniMax Group ID")
 
         # 3. 音色与情绪参数合成
         final_voice_id = voice_id or cfg.get("default_voice_id") or "female-shaonv"
@@ -445,7 +446,10 @@ class MiniMaxTTSService:
             else:
                 target_url = target_url.rstrip("/") + "/t2a_v2"
         
-        request_url = f"{target_url}?GroupId={group_id}"
+        if group_id and group_id.strip():
+            request_url = f"{target_url}?GroupId={group_id.strip()}"
+        else:
+            request_url = target_url
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"

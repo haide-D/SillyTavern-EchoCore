@@ -309,14 +309,16 @@ function showEmergencyConfig(currentApi) {
             background: #2d3436; color: #fff; padding: 15px;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             font-family: sans-serif; font-size: 14px; border: 1px solid #ff7675;
-            max-width: 280px;
+            max-width: 320px;
         ">
             <div style="font-weight:bold; color:#ff7675; margin-bottom:8px;">⚠️ 无法连接插件后端，请检查是否开启插件后端</div>
             <div style="font-size:12px; color:#aaa; margin-bottom:8px;">尝试连接: ${currentApi} 失败。<br>请输入电脑 IP、域名或反代 URL：</div>
 
-            <input type="text" id="tts-emergency-ip" placeholder="例如: 192.168.1.5 或 https://tts.xxx.com"
+            <input type="text" id="tts-emergency-ip" placeholder="例如: 64.83.25.198 或 https://tts.xxx.com"
                 style="width:100%; box-sizing:border-box; padding:5px; margin-bottom:6px; border-radius:4px; border:none;">
             <input type="number" id="tts-emergency-port" placeholder="端口号 (默认 3000，反代URL忽略)" value="${remoteConfig.port || 3000}"
+                style="width:100%; box-sizing:border-box; padding:5px; margin-bottom:6px; border-radius:4px; border:none;">
+            <input type="password" id="tts-emergency-token" placeholder="访问凭证 / API Token (开启鉴权时填写)"
                 style="width:100%; box-sizing:border-box; padding:5px; margin-bottom:8px; border-radius:4px; border:none;">
 
             <button id="tts-emergency-save" style="
@@ -338,6 +340,7 @@ function showEmergencyConfig(currentApi) {
             const p = JSON.parse(saved);
             if (p.ip) $('#tts-emergency-ip').val(p.ip);
             if (p.port) $('#tts-emergency-port').val(p.port);
+            if (p.token) $('#tts-emergency-token').val(p.token);
         } catch (e) { }
     }
 
@@ -348,12 +351,14 @@ function showEmergencyConfig(currentApi) {
     $('#tts-emergency-save').on('click', function () {
         const ip = $('#tts-emergency-ip').val().trim();
         const portVal = parseInt($('#tts-emergency-port').val()) || 3000;
+        const token = $('#tts-emergency-token').val().trim();
         if (!ip) return alert("请输入 IP 或反代 URL");
 
         localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
             useRemote: true,
             ip: ip,
-            port: portVal
+            port: portVal,
+            token: token
         }));
 
         alert(`设置已保存: ${ip}\n页面即将刷新...`);
