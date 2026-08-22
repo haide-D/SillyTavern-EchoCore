@@ -211,8 +211,6 @@ async def tts_proxy(
                 "cached": cached,
                 "filename": new_filename
             }
-                "filename": new_filename
-            }
 
         # 优先查找新缓存 (不需要锁)
         if os.path.exists(new_cache_path):
