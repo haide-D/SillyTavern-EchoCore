@@ -15,6 +15,7 @@
 > 4. **主题内必须独立实现场景细节 (`scenes/`)**：每个主题必须在 `scenes/` 目录下完整实现自己的 `home.js`、`incoming_call.js` (专属沉浸式通话)、`eavesdrop.js` (专属沉浸式窃听)，严禁只挂一个通用的 fallback 占位。
 > 5. **Canvas 粒子与物理系统深度集成**：悬浮入口周围与全屏背景必须集成 Canvas 粒子物理系统，实时驱动光尘流转、微事件爆发与交互反馈，且必须在 `destroy()` 时彻底释放。
 > 6. **🚫 严禁使用 Emoji 表情，强制使用高精矢量 SVG**：**严禁在选项卡、按钮、标题与界面文案中直接使用 Emoji 表情（如 💬, 📜, ⚔️, 📞, 👁️, ⚡）！** Emoji 在不同操作系统（Windows、macOS、Android）中渲染风格极度割裂且像素模糊，无法随主题滤镜变色。**必须全部使用内联高精 `<svg>` 矢量结构或从 `STATUS_SVGS` / `assets.js` 导入的矢量图标，配合 `currentColor` 实现与主题色完美共鸣！**
+> 7. **🚫 严禁实心色块贴图感，必须采用 3D 几何线条与动态流轨 (Geometric Line Art & Flow Paths)**：**严禁将悬浮入口画成死板的 2D 平面贴纸（使用大面积实心 `fill` 填色拼合出来的平面图标极度廉价且无质感）！** 高级质感的法阵/灵器必须采用**分层几何工笔线条（虚实结合的 `stroke`） + 双层反向自转轨道（Orbit Rings） + 沿路径流动的灵气光轨（`stroke-dasharray` / `stroke-dashoffset` 线性流光） + 带有独立多频呼吸脉动的微光阵眼灵核 + `perspective: 800px` 3D 空间倾斜悬浮**。以《死亡圣器》与《仙途凌霄》为标准范式。
 
 ---
 
@@ -737,5 +738,7 @@ export default {
 
 ## 8. 内置标准主题参考
 
-- **官方沉浸式主题范例**：`frontend/js/themes/deathly_hallows/`（死亡圣器主题，展示了多场景拆分、粒子动效引擎 `particle_engine.js`、高质量 SVG `assets.js`、状态管理与独立弹窗覆盖）。
-- **极简主题范例**：`frontend/js/themes/default/`（默认主题，展示了单文件轻量实现）。
+- **《死亡圣器》(deathly_hallows)**：`frontend/js/themes/deathly_hallows/`（西方奇幻与神秘几何法阵标杆，展示了 3D 空间漂浮透视、多重同心轨道逆旋、多场景拆分、Canvas 粒子物理引擎 `particle_engine.js`、高质量 SVG `assets.js`、状态管理与独立弹窗覆盖）。
+- **《仙途凌霄》(immortal_sword)**：`frontend/js/themes/immortal_sword/`（**东方仙侠风骨与 3D 混元法阵标杆**，展示了**拒绝 2D 平面贴纸、采用 3D 工笔白描几何线条法阵**的高阶质感；包含双层反向自转天轨、太极 S 曲线灵气奔流流光 `taiji-flow`、天心本命飞剑破空流芒、玄墨冷玉宋简长卷框架与清冷月白霜华粒子系统）。
+- **《极简默认》(default)**：`frontend/js/themes/default/`（默认主题，展示了单文件轻量实现）。
+

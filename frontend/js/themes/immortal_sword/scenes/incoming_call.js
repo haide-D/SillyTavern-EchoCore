@@ -106,12 +106,12 @@ function showCustomInCallUI(container, callData, ctx) {
         </div>
         <div class="immortal-call-actions in-call">
             <div class="immortal-action-group">
-                <button class="immortal-action-btn inject" id="immortal-btn-inject" title="将此番传书铭刻入酒馆聊天" style="background:rgba(52, 211, 153, 0.2); border:1px solid rgba(52, 211, 153, 0.5); color:#a7f3d0; font-size:16px;">${STATUS_SVGS.scroll}</button>
+                <button class="immortal-action-btn inject" id="immortal-btn-inject" title="将此番传书铭刻入酒馆聊天" style="background:rgba(92, 141, 137, 0.18); border:0.8px solid rgba(140, 181, 174, 0.35); color:#8cb5ae; font-size:15px;">${STATUS_SVGS.scroll}</button>
                 <span class="immortal-action-label" id="immortal-inject-label">铭刻仙卷</span>
             </div>
             ${CallQueueManager.hasNext() ? `
             <div class="immortal-action-group">
-                <button class="immortal-action-btn next" id="immortal-btn-next" title="启阅下一封飞剑传书" style="background:rgba(251, 191, 36, 0.2); border:1px solid rgba(251, 191, 36, 0.5); color:#fef08a; font-size:16px;">${STATUS_SVGS.import}</button>
+                <button class="immortal-action-btn next" id="immortal-btn-next" title="启阅下一封飞剑传书" style="background:rgba(18, 24, 29, 0.8); border:0.8px solid rgba(194, 166, 117, 0.35); color:#c2a675; font-size:15px;">${STATUS_SVGS.import}</button>
                 <span class="immortal-action-label">下一封 (${CallQueueManager.getPendingCount() - 1})</span>
             </div>
             ` : ''}
@@ -142,8 +142,8 @@ function showCustomInCallUI(container, callData, ctx) {
                 audioUrl: callData.audio_url
             });
             hasInjected = true;
-            $btn.css({ background: 'rgba(16, 185, 129, 0.4)', borderColor: '#fbbf24', color: '#fef08a' }).html(STATUS_SVGS.check);
-            $lbl.text('已铭刻').css('color', '#fbbf24');
+            $btn.css({ background: 'rgba(92, 141, 137, 0.3)', borderColor: '#c2a675', color: '#f1f5f9' }).html(STATUS_SVGS.check);
+            $lbl.text('已铭刻').css('color', '#c2a675');
         } catch (e) {
             console.error('[ImmortalSword] 手动注入失败:', e);
             $lbl.text('重试铭刻');

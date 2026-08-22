@@ -108,7 +108,7 @@ const ImmortalSwordTheme = {
                 $('#tts-immortal-trigger').addClass('calling-resonant incoming-call').removeClass('whisper-sensing eavesdrop-ready');
                 if (ThemeState.particleEngine) {
                     ThemeState.particleEngine.triggerSwordSurge();
-                    ThemeState.particleEngine.burstParticles(24, 'gold');
+                    ThemeState.particleEngine.burstParticles(10, 'gold');
                 }
                 if (window.toastr) {
                     window.toastr.info(`✦ 飞剑传书破空而至: ${data.char_name || '修仙道友'}`);
@@ -120,7 +120,7 @@ const ImmortalSwordTheme = {
                 $('#tts-immortal-trigger').addClass('whisper-sensing eavesdrop-ready').removeClass('calling-resonant incoming-call');
                 if (ThemeState.particleEngine) {
                     ThemeState.particleEngine.triggerResonance();
-                    ThemeState.particleEngine.burstParticles(18, 'cyan');
+                    ThemeState.particleEngine.burstParticles(8, 'jade');
                 }
                 if (window.toastr) {
                     window.toastr.info(`✦ 神识感应到隐秘道音: ${(data.speakers || []).join(' ✦ ')}`);

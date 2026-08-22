@@ -21,11 +21,14 @@ export function ensureCSS() {
 export function renderTriggerDOM() {
     if ($('#tts-immortal-trigger').length > 0) return;
 
-    // 1. 注入先天太极八卦阴阳鱼悬浮小球
+    // 1. 注入混元太极剑印3D悬浮球
     const triggerHtml = `
-        <div id="tts-immortal-trigger" class="immortal-sword-trigger" style="position:fixed; z-index:9999; cursor:pointer;" title="太极阴阳鱼 · 乾坤天机">
-            <div class="immortal-sword-wrap" id="immortalSwordWrap">
+        <div id="tts-immortal-trigger" class="immortal-sword-trigger" style="position:fixed; z-index:9999; cursor:pointer;" title="混元道印 · 太极剑阵">
+            <div class="immortal-inner" id="immortalInner">
+                <div class="immortal-glow"></div>
+                <div class="immortal-aura"></div>
                 ${IMMORTAL_SWORD_TRIGGER_SVG}
+                <div class="immortal-shadow"></div>
             </div>
         </div>
     `;
@@ -131,7 +134,7 @@ export function bindDragAndClick() {
 
         if (!ThemeState.drag.hasMoved) {
             if (ThemeState.particleEngine) {
-                ThemeState.particleEngine.burstParticles(16, 'mixed');
+                ThemeState.particleEngine.burstParticles(8, 'jade');
             }
             if (ThemeState.engine) {
                 ThemeState.engine.toggle();
