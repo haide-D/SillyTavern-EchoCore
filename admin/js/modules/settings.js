@@ -125,6 +125,10 @@ export async function loadSettings() {
         const filterTagsEl = document.getElementById('setting-filter-tags');
         if (extractTagEl) extractTagEl.value = msgProcessing.extract_tag || '';
         if (filterTagsEl) filterTagsEl.value = msgProcessing.filter_tags || '';
+
+        // 远程穿透
+        const autoShareTunnelEl = document.getElementById('setting-auto-share-tunnel');
+        if (autoShareTunnelEl) autoShareTunnelEl.value = String(settings.auto_share_tunnel === true);
     } catch (error) {
         console.error('加载系统配置失败:', error);
     }
@@ -140,6 +144,7 @@ export async function saveSettings() {
     const managerPortEl = document.getElementById('setting-manager-port');
     const defaultLangEl = document.getElementById('setting-default-lang');
     const devModeEl = document.getElementById('setting-developer-mode');
+    const autoShareTunnelEl = document.getElementById('setting-auto-share-tunnel');
 
     const analysisEnabledEl = document.getElementById('setting-analysis-enabled');
     const analysisIntervalEl = document.getElementById('setting-analysis-interval');
@@ -172,6 +177,7 @@ export async function saveSettings() {
         manager_port: managerPortEl ? (parseInt(managerPortEl.value) || 3000) : 3000,
         default_lang: defaultLangEl ? defaultLangEl.value : 'Chinese',
         developer_mode: devModeEl ? devModeEl.value === 'true' : false,
+        auto_share_tunnel: autoShareTunnelEl ? autoShareTunnelEl.value === 'true' : false,
 
         analysis_engine: {
             enabled: analysisEnabledEl ? analysisEnabledEl.value === 'true' : true,
@@ -449,6 +455,178 @@ export function bindAnalysisLLMButtons() {
             } finally {
                 testBtn.disabled = false;
                 testBtn.textContent = '🧪 测试连接';
+            }
+        });
+    }
+}
+
+/**
+ * 绑定远程与穿透 Tab 控件逻辑 (Cloudflare 隧道 + Nginx 生成器)
+ */
+export function bindTunnelAndNginxControls() {
+    const statusText = document.getElementById('tunnel-status-text');
+    const statusIndicator = document.getElementById('tunnel-status-indicator');
+    const startBtn = document.getElementById('btn-start-tunnel');
+    const stopBtn = document.getElementById('btn-stop-tunnel');
+    const refreshBtn = document.getElementById('btn-refresh-tunnel');
+    const urlContainer = document.getElementById('tunnel-url-container');
+    const urlInput = document.getElementById('tunnel-public-url-input');
+    const copyUrlBtn = document.getElementById('btn-copy-tunnel-url');
+
+    const updateTunnelUI = (isRunning, publicUrl) => {
+        if (isRunning && publicUrl) {
+            if (statusIndicator) statusIndicator.style.background = '#10b981';
+            if (statusText) statusText.textContent = `🟢 隧道运行中: ${publicUrl}`;
+            if (urlContainer) urlContainer.style.display = 'block';
+            if (urlInput) urlInput.value = publicUrl;
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = 'inline-block';
+        } else if (isRunning && !publicUrl) {
+            if (statusIndicator) statusIndicator.style.background = '#f59e0b';
+            if (statusText) statusText.textContent = '⏳ 隧道正在建立握手中...';
+            if (urlContainer) urlContainer.style.display = 'none';
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = 'inline-block';
+        } else {
+            if (statusIndicator) statusIndicator.style.background = '#9ca3af';
+            if (statusText) statusText.textContent = '⚪ 隧道未运行';
+            if (urlContainer) urlContainer.style.display = 'none';
+            if (startBtn) startBtn.style.display = 'inline-block';
+            if (stopBtn) stopBtn.style.display = 'none';
+        }
+    };
+
+    const fetchTunnelStatus = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/system/tunnel/status`);
+            if (res.ok) {
+                const data = await res.json();
+                updateTunnelUI(data.is_running, data.public_url);
+            }
+        } catch (e) {
+            console.error('获取隧道状态失败:', e);
+        }
+    };
+
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ 启动中...';
+            try {
+                const res = await fetch(`${API_BASE}/system/tunnel/start`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Cloudflare 隧道已发起，正在获取公网地址...', 'info');
+                    // 轮询 3 次状态
+                    let attempts = 0;
+                    const timer = setInterval(async () => {
+                        attempts++;
+                        await fetchTunnelStatus();
+                        if (attempts >= 8) clearInterval(timer);
+                    }, 1500);
+                } else {
+                    showNotification(data.message || '启动失败', 'error');
+                }
+            } catch (err) {
+                showNotification(`请求失败: ${err.message}`, 'error');
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 开启公网隧道';
+            }
+        });
+    }
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', async () => {
+            try {
+                await fetch(`${API_BASE}/system/tunnel/stop`, { method: 'POST' });
+                updateTunnelUI(false, null);
+                showNotification('Cloudflare 安全隧道已关闭', 'info');
+            } catch (err) {
+                showNotification(`关闭失败: ${err.message}`, 'error');
+            }
+        });
+    }
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            fetchTunnelStatus();
+            showNotification('已刷新隧道状态', 'info');
+        });
+    }
+
+    if (copyUrlBtn && urlInput) {
+        copyUrlBtn.addEventListener('click', () => {
+            if (urlInput.value) {
+                navigator.clipboard.writeText(urlInput.value);
+                showNotification('已成功复制公网直连 URL！可在酒馆插件直接填入', 'success');
+            }
+        });
+    }
+
+    // 初次加载拉取一次状态
+    fetchTunnelStatus();
+
+    // 2. Nginx 配置生成器绑定
+    const enableSslSelect = document.getElementById('nginx-enable-ssl');
+    const sslFields = document.getElementById('nginx-ssl-fields');
+    const generateNginxBtn = document.getElementById('btn-generate-nginx');
+    const nginxResultBox = document.getElementById('nginx-result-box');
+    const nginxTextarea = document.getElementById('nginx-config-textarea');
+    const copyNginxBtn = document.getElementById('btn-copy-nginx');
+
+    if (enableSslSelect && sslFields) {
+        enableSslSelect.addEventListener('change', () => {
+            sslFields.style.display = enableSslSelect.value === 'true' ? 'block' : 'none';
+        });
+    }
+
+    if (generateNginxBtn) {
+        generateNginxBtn.addEventListener('click', async () => {
+            const domain = document.getElementById('nginx-domain-input').value.trim() || 'tts.example.com';
+            const enableSsl = enableSslSelect ? enableSslSelect.value === 'true' : true;
+            const certPath = document.getElementById('nginx-ssl-cert-input')?.value.trim();
+            const keyPath = document.getElementById('nginx-ssl-key-input')?.value.trim();
+            const port = parseInt(document.getElementById('setting-manager-port')?.value) || 3000;
+
+            generateNginxBtn.disabled = true;
+            generateNginxBtn.textContent = '⏳ 生成中...';
+
+            try {
+                const res = await fetch(`${API_BASE}/system/tunnel/generate_nginx`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        domain: domain,
+                        local_port: port,
+                        enable_ssl: enableSsl,
+                        ssl_cert_path: certPath,
+                        ssl_key_path: keyPath
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (nginxResultBox) nginxResultBox.style.display = 'block';
+                    if (nginxTextarea) nginxTextarea.value = data.config;
+                    showNotification('Nginx 配置文件已成功生成！', 'success');
+                } else {
+                    showNotification('生成失败', 'error');
+                }
+            } catch (err) {
+                showNotification(`生成异常: ${err.message}`, 'error');
+            } finally {
+                generateNginxBtn.disabled = false;
+                generateNginxBtn.textContent = '✨ 一键生成 Nginx 完整配置文件';
+            }
+        });
+    }
+
+    if (copyNginxBtn && nginxTextarea) {
+        copyNginxBtn.addEventListener('click', () => {
+            if (nginxTextarea.value) {
+                navigator.clipboard.writeText(nginxTextarea.value);
+                showNotification('已复制 Nginx 配置到剪贴板！', 'success');
             }
         });
     }
