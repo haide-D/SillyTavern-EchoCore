@@ -26,6 +26,7 @@ import { ChatEventListener } from './frontend/js/chat_event_listener.js';
 import { ThemeTesterUI } from './frontend/js/theme_tester_ui.js';
 import { initSettingsUI } from './frontend/js/settings_ui.js';
 import { PromptInjector } from './frontend/js/prompt_injector.js';
+import { CallQueueManager } from './frontend/js/call_queue_manager.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');

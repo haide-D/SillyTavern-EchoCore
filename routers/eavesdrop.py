@@ -162,7 +162,7 @@ async def parse_and_generate_eavesdrop(req: ParseEavesdropRequest):
             fp = req.context_fingerprint or f"manual_eavesdrop_{int(time.time())}"
             floor = req.trigger_floor or 1
             try:
-                record_id = db.create_eavesdrop(
+                record_id = db.add_eavesdrop_record(
                     chat_branch=branch,
                     context_fingerprint=fp,
                     speakers=req.speakers,

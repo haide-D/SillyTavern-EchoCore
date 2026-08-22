@@ -1,4 +1,6 @@
 // 文件: ui_dashboard.js
+import { getCharacterAvatar, setCustomSpeakerAvatar, getCustomSpeakerAvatars, renderAvatarHtml, getDefaultAvatarDataUrl } from './mobile_apps/shared/utils.js';
+
 if (!window.TTS_UI) {
     window.TTS_UI = {};
 }
@@ -7,6 +9,18 @@ export const TTS_UI = window.TTS_UI;
 
 (function (scope) {
 
+    // 辅助函数: 刷新输入区的头像预览
+    function updateNewAvatarPreview() {
+        const charName = $('#tts-new-char').val().trim();
+        const customUrl = $('#tts-new-char-avatar').val().trim();
+        const effectiveUrl = customUrl || (charName ? getCharacterAvatar(charName) : null);
+        const $preview = $('#tts-new-avatar-preview');
+        if (effectiveUrl) {
+            $preview.html(`<img src="${effectiveUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.onerror=null; this.src='${getDefaultAvatarDataUrl(charName)}';" />`);
+        } else {
+            $preview.html(`<span style="font-size:16px; opacity:0.6;">👤</span>`);
+        }
+    }
 
     // 绑定面板内的所有事件
     scope.bindDashboardEvents = function () {
@@ -91,17 +105,71 @@ export const TTS_UI = window.TTS_UI;
             btn.text(oldText).prop('disabled', false);
         });
 
+        // 监听角色名或自定义头像输入变化，动态刷新预览
+        $('#tts-new-char, #tts-new-char-avatar').off('input').on('input', function () {
+            updateNewAvatarPreview();
+        });
+
+        // 选卡弹窗/快捷填充
+        $('#tts-btn-pick-char-avatar').off('click').on('click', function () {
+            const context = window.SillyTavern?.getContext?.();
+            const characters = context?.characters || [];
+            if (!characters.length) {
+                alert('未检测到酒馆角色卡，请先加载或创建角色卡');
+                return;
+            }
+
+            const modalHtml = `
+                <div id="tts-char-picker-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+                    <div style="width:340px; max-height:80vh; background:#1e1b2e; border:1px solid rgba(196,155,79,0.5); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 32px rgba(0,0,0,0.6); color:#fff;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(196,155,79,0.2); padding-bottom:8px;">
+                            <span style="font-weight:600; color:#fde047; font-size:14px;">🖼️ 快速选取酒馆角色卡</span>
+                            <button id="tts-picker-close" style="background:transparent; border:none; color:#999; font-size:20px; cursor:pointer;">×</button>
+                        </div>
+                        <div style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+                            ${characters.map(c => {
+                                const avUrl = c.avatar && context.getThumbnailUrl ? context.getThumbnailUrl('avatar', c.avatar) : `/characters/${c.avatar || ''}`;
+                                return `
+                                    <div class="tts-picker-item" data-name="${c.name || ''}" data-avatar="${avUrl}" style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; background:rgba(255,255,255,0.05); cursor:pointer; transition:background 0.2s; border:1px solid transparent;">
+                                        <img src="${avUrl}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(196,155,79,0.3);" onerror="this.src='${getDefaultAvatarDataUrl(c.name)}';" />
+                                        <span style="font-size:13px; font-weight:500; color:#e5e7eb;">${c.name || '未命名'}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(modalHtml);
+
+            $('#tts-picker-close').on('click', () => $('#tts-char-picker-modal').remove());
+            $('.tts-picker-item').on('click', function () {
+                const name = $(this).data('name');
+                const avatar = $(this).data('avatar');
+                if (name) $('#tts-new-char').val(name);
+                if (avatar) $('#tts-new-char-avatar').val(avatar);
+                updateNewAvatarPreview();
+                $('#tts-char-picker-modal').remove();
+            });
+        });
+
         // 绑定新角色
-        $('#tts-btn-bind-new').click(async function () {
+        $('#tts-btn-bind-new').off('click').on('click', async function () {
             const charName = $('#tts-new-char').val().trim();
+            const customAvatar = $('#tts-new-char-avatar').val().trim();
             const modelName = $('#tts-new-model').val();
             if (!charName || !modelName) { alert('请填写角色名并选择模型'); return; }
 
             try {
                 await window.TTS_API.bindCharacter(charName, modelName);
+                if (customAvatar) {
+                    setCustomSpeakerAvatar(charName, customAvatar);
+                }
                 await CTX.Callbacks.refreshData();
                 scope.renderDashboardList();
                 $('#tts-new-char').val('');
+                $('#tts-new-char-avatar').val('');
+                updateNewAvatarPreview();
             } catch (e) {
                 console.error(e);
                 alert("绑定失败,请检查后端日志");
@@ -201,9 +269,14 @@ export const TTS_UI = window.TTS_UI;
         // 一键填入当前对话角色
         $('#tts-btn-fill-current-char').off('click').on('click', function () {
             let currentChar = '';
+            let currentAvatar = '';
             const ctx = window.SillyTavern ? window.SillyTavern.getContext() : null;
             if (ctx && ctx.characterId !== undefined && ctx.characters && ctx.characters[ctx.characterId]) {
-                currentChar = ctx.characters[ctx.characterId].name;
+                const charObj = ctx.characters[ctx.characterId];
+                currentChar = charObj.name || '';
+                if (charObj.avatar && ctx.getThumbnailUrl) {
+                    currentAvatar = ctx.getThumbnailUrl('avatar', charObj.avatar);
+                }
             } else if (ctx && ctx.character) {
                 currentChar = ctx.character;
             }
@@ -212,6 +285,10 @@ export const TTS_UI = window.TTS_UI;
             }
             if (currentChar) {
                 $('#tts-new-char').val(currentChar);
+                if (currentAvatar) {
+                    $('#tts-new-char-avatar').val(currentAvatar);
+                }
+                updateNewAvatarPreview();
             } else {
                 alert('未检测到当前对话角色，请在输入框手动输入');
             }
@@ -258,6 +335,7 @@ export const TTS_UI = window.TTS_UI;
             try {
                 for (const charName of selectedChars) {
                     await window.TTS_API.unbindCharacter(charName);
+                    setCustomSpeakerAvatar(charName, null);
                     $(`.voice-bubble[data-voice-name="${charName}"]`).attr('data-status', 'waiting').removeClass('error playing ready');
                 }
                 await CTX.Callbacks.refreshData();
@@ -309,13 +387,14 @@ export const TTS_UI = window.TTS_UI;
     };
 
     // ===========================================
-    // ⬇️ 渲染绑定列表 (紧凑卡片 + 批量管理)
+    // ⬇️ 渲染绑定列表 (紧凑卡片 + 头像显示与快捷编辑)
     // ===========================================
     scope.renderDashboardList = function () {
         const CTX = scope.CTX;
         const c = $('#tts-mapping-list').empty();
         const mappings = (CTX && CTX.CACHE && CTX.CACHE.mappings) ? CTX.CACHE.mappings : {};
         const keys = Object.keys(mappings);
+        const customAvatars = getCustomSpeakerAvatars();
 
         $('#tts-mapping-count').text(`已绑定 (${keys.length})`);
         $('#tts-btn-batch-unbind').hide();
@@ -328,17 +407,42 @@ export const TTS_UI = window.TTS_UI;
 
         keys.forEach(k => {
             const modelName = mappings[k];
-            c.append(`
-                <div class="tts-compact-item" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; margin-bottom:4px; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(196,155,79,0.25);">
+            const hasCustom = !!customAvatars[k];
+            const avHtml = renderAvatarHtml(k, 'tts-item-avatar', 'width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer; border:1px solid ' + (hasCustom ? '#f59e0b' : 'rgba(196,155,79,0.3)'));
+
+            const $item = $(`
+                <div class="tts-compact-item" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; margin-bottom:4px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(196,155,79,0.25);">
                     <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
                         <input type="checkbox" class="tts-mapping-check" data-char="${k}" style="cursor:pointer;" />
-                        <span style="font-weight:400; color:rgba(220,200,150,0.95); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;" title="${k}">${k}</span>
+                        <div class="tts-avatar-trigger" title="${hasCustom ? '已自定义专属头像 (点击修改)' : '点击为该角色绑定/修改头像'}" data-char="${k}">
+                            ${avHtml}
+                        </div>
+                        <span style="font-weight:500; color:rgba(220,200,150,0.95); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;" title="${k}">${k}</span>
                         <span style="color:rgba(196,155,79,0.6); font-size:11px;">➔</span>
                         <span style="color:rgba(196,155,79,0.85); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${modelName}">${modelName}</span>
                     </div>
-                    <button class="btn-red" style="padding:1px 6px; font-size:11px; margin-left:6px; border-radius:3px; background:rgba(220,53,53,0.2); border:1px solid rgba(220,53,53,0.4); color:#fca5a5; cursor:pointer;" onclick="window.TTS_UI.handleUnbind('${k}')" title="解绑此角色">×</button>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <button class="btn-secondary tts-btn-edit-avatar" style="padding:1px 5px; font-size:10.5px; border-radius:3px; background:rgba(255,255,255,0.06); color:#cbd5e1;" title="修改该 Speaker 头像" data-char="${k}">🖼️</button>
+                        <button class="btn-red" style="padding:1px 6px; font-size:11px; margin-left:2px; border-radius:3px; background:rgba(220,53,53,0.2); border:1px solid rgba(220,53,53,0.4); color:#fca5a5; cursor:pointer;" onclick="window.TTS_UI.handleUnbind('${k}')" title="解绑此角色">×</button>
+                    </div>
                 </div>
             `);
+            c.append($item);
+        });
+
+        // 绑定头像快捷编辑事件
+        c.find('.tts-avatar-trigger, .tts-btn-edit-avatar').off('click').on('click', function (e) {
+            e.stopPropagation();
+            const charName = $(this).data('char');
+            if (!charName) return;
+
+            const curAvatars = getCustomSpeakerAvatars();
+            const currentUrl = curAvatars[charName] || '';
+            const newUrl = prompt(`为角色【${charName}】设置自定义头像图片 URL 或相对路径：\n(留空将清除自定义绑定并自动使用酒馆角色卡头像)`, currentUrl);
+            if (newUrl !== null) {
+                setCustomSpeakerAvatar(charName, newUrl.trim() || null);
+                scope.renderDashboardList();
+            }
         });
     };
 

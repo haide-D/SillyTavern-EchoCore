@@ -33,6 +33,7 @@ class PresetService:
 **⚠️ 纯语音输出铁律 (TTS 规范)**:
 1. text 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。
 2. **【情绪标签严格闭环】**: 每个 segment 的 `emotion` 字段值**必须 100% 严格从上述【可用角色与情绪】列表中选取**，严禁自行编造或臆造列表中不存在的情绪词（若无对应情绪，使用 default 或 neutral）。
+3. **【translation 字段铁律】: 无论 text 字段是日文、英文还是其他任何语言，translation 字段必须且只能输出地道流畅的简体中文翻译！严禁在 translation 字段中输出英文或非中文内容！若 text 本身是中文，则复制相同中文。**
 
 **输出格式 (严格 JSON)**:
 ```json
@@ -42,7 +43,7 @@ class PresetService:
     {
       "emotion": "必须从可用情绪列表中选取",
       "text": "纯对话内容，**必须使用{{lang_display}}**",
-      "translation": "中文翻译 (必填，若已是中文则一致)",
+      "translation": "简体中文翻译 (【铁律】：必须是中文！严禁输出英文或日文！若text是中文则一致)",
       "pause_after": 0.4,
       "speed": 1.0,
       "filler_word": null
@@ -67,6 +68,7 @@ class PresetService:
 **⚠️ 纯语音输出铁律 (TTS 规范)**:
 1. text 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白（如 `（轻微吸气）`、`（身体僵硬）`）。
 2. **【情绪标签严格闭环】**: 每个 segment 的 `emotion` 字段值**必须 100% 严格从该角色对应的【可用情绪列表】中选取**，严禁自行编造或臆造列表中不存在的情绪词。
+3. **【translation 字段铁律】: 无论 text 字段是日文、英文还是其他任何语言，translation 字段必须且只能填写流畅地道的简体中文！严禁在 translation 字段输出英文或非中文！若 text 本身是中文则一致。**
 
 **输出格式 (严格 JSON)**:
 ```json
@@ -77,7 +79,7 @@ class PresetService:
       "speaker": "角色名 (必须是参与角色之一)",
       "emotion": "必须从该角色的可用情绪列表中选取",
       "text": "纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**",
-      "translation": "中文翻译 (必填)",
+      "translation": "简体中文翻译 (【铁律】：必须是中文！严禁输出英文或日文！若text是中文则一致)",
       "pause_after": 0.5
     }
   ]

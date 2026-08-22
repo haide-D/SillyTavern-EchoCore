@@ -10,6 +10,7 @@
  */
 
 import { PhoneCallAPIClient } from './phone_call_api_client.js';
+import { CallQueueManager } from './call_queue_manager.js';
 
 export class NotificationHandler {
     /**
@@ -42,19 +43,19 @@ export class NotificationHandler {
         };
 
         const fullAudioUrl = resolveUrl(audio_url) || resolveUrl(audio_path);
+        const avatarUrl = this.getCharacterAvatar(actualCaller, char_name) || data.avatar_url || null;
 
         console.log('[NotificationHandler] 🎵 音频 URL 转换:');
         console.log('  - 原始 audio_url:', audio_url);
         console.log('  - 完整 URL:', fullAudioUrl);
         console.log('  - 实际打电话人 (selected_speaker):', actualCaller);
+        console.log('  - 角色头像 avatar_url:', avatarUrl);
 
-        // 获取角色头像 URL
-        const avatarUrl = this.getCharacterAvatar(actualCaller, char_name);
-
-        // 存储来电数据
-        window.TTS_IncomingCall = {
-            call_id,
-            char_name: actualCaller,  // 使用实际打电话人
+        // 构造标准化条目并入队
+        const callItem = {
+            id: call_id,
+            type: 'phone_call',
+            char_name: actualCaller,
             selected_speaker: actualCaller,
             target_user: data.target_user,
             call_reason: data.call_reason,
@@ -65,10 +66,19 @@ export class NotificationHandler {
             avatar_url: avatarUrl
         };
 
-        console.log('[NotificationHandler] ✅ 来电数据已存储到 window.TTS_IncomingCall:', window.TTS_IncomingCall);
+        // 存储到待听队列
+        CallQueueManager.enqueue(callItem);
+
+        // 存储来电数据 (向下兼容)
+        window.TTS_IncomingCall = callItem;
+
+        console.log('[NotificationHandler] ✅ 来电数据已加入待听队列并同步全局:', window.TTS_IncomingCall);
+
+        const pendingCount = CallQueueManager.getPendingCount();
+        const pendingBadgeText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
 
         // 统一触发悬浮球动效（保障 DOM 元素直接呈现动画）
-        this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...`);
+        this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...${pendingBadgeText}`);
 
         // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现与粒子/法阵状态）
         if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
@@ -76,7 +86,7 @@ export class NotificationHandler {
         }
 
         // 显示通知
-        this.showNotification(`📞 ${actualCaller} 来电!`, 'info');
+        this.showNotification(`📞 ${actualCaller} 来电!${pendingBadgeText}`, 'info');
     }
 
     /**
@@ -106,9 +116,10 @@ export class NotificationHandler {
         };
         const fullAudioUrl = resolveUrl(audio_url);
 
-        // 存储对话追踪数据 (双变量兼容各主题读取)
-        window.TTS_EavesdropData = {
+        const eavesdropItem = {
+            id: record_id,
             record_id,
+            type: 'eavesdrop',
             speakers,
             segments,
             audio_url: fullAudioUrl,
@@ -116,14 +127,23 @@ export class NotificationHandler {
             notification_text: notification_text || `检测到 ${(speakers || []).join(' 和 ')} 的密谈`,
             preset_id: data.preset_id
         };
+
+        // 存储到待听队列
+        CallQueueManager.enqueue(eavesdropItem);
+
+        // 存储对话追踪数据 (双变量兼容各主题读取)
+        window.TTS_EavesdropData = eavesdropItem;
         window.TTS_EavesdropReady = window.TTS_EavesdropData;
 
-        console.log('[NotificationHandler] ✅ 对话追踪数据已存储到 window.TTS_EavesdropData');
+        console.log('[NotificationHandler] ✅ 对话追踪数据已加入待听队列并同步全局');
+
+        const pendingCount = CallQueueManager.getPendingCount();
+        const pendingBadgeText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
 
         // 统一触发悬浮球动效
         this.triggerFloatingBallAnimation(
             'eavesdrop-available',
-            notification_text || `${(speakers || []).join(' 和 ')} 正在私聊...`
+            (notification_text || `${(speakers || []).join(' 和 ')} 正在私聊...`) + pendingBadgeText
         );
 
         // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）

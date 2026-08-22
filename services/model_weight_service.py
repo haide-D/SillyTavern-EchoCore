@@ -14,7 +14,7 @@ import os
 import glob
 import asyncio
 import logging
-import requests
+import httpx
 from typing import Optional, Dict
 from contextlib import asynccontextmanager
 
@@ -200,7 +200,7 @@ class ModelWeightService:
             "model_folder": model_folder
         }
     
-    def set_gpt_weights(self, weights_path: str, skip_if_same: bool = True) -> Dict:
+    async def set_gpt_weights(self, weights_path: str, skip_if_same: bool = True) -> Dict:
         """
         切换 GPT 权重（注意：此方法不获取锁，调用方需自行管理锁）
         
@@ -223,14 +223,10 @@ class ModelWeightService:
         try:
             sovits_host = get_sovits_host()
             url = f"{sovits_host}/set_gpt_weights"
-            print(f"[ModelWeightService] 🔄 切换 GPT 权重: {weights_path}")
+            print(f"[ModelWeightService] 🔄 异步切换 GPT 权重: {weights_path}")
             
-            resp = requests.get(
-                url,
-                params={"weights_path": weights_path},
-                timeout=120,
-                proxies={'http': None, 'https': None}
-            )
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.get(url, params={"weights_path": weights_path})
             
             if resp.status_code != 200:
                 print(f"[ModelWeightService] ❌ GPT 权重切换失败: {resp.status_code} - {resp.text}")
@@ -241,17 +237,17 @@ class ModelWeightService:
             print(f"[ModelWeightService] ✅ GPT 权重已切换")
             return {"success": True, "message": resp.text, "skipped": False}
             
-        except requests.exceptions.ConnectionError:
+        except httpx.ConnectError:
             print(f"[ModelWeightService] ❌ 无法连接到 GPT-SoVITS 服务")
             return {"success": False, "message": "无法连接到 GPT-SoVITS 服务", "skipped": False}
-        except requests.exceptions.Timeout:
+        except httpx.TimeoutException:
             print(f"[ModelWeightService] ❌ 连接超时")
             return {"success": False, "message": "连接超时", "skipped": False}
         except Exception as e:
             print(f"[ModelWeightService] ❌ 异常: {e}")
             return {"success": False, "message": str(e), "skipped": False}
     
-    def set_sovits_weights(self, weights_path: str, skip_if_same: bool = True) -> Dict:
+    async def set_sovits_weights(self, weights_path: str, skip_if_same: bool = True) -> Dict:
         """
         切换 SoVITS 权重（注意：此方法不获取锁，调用方需自行管理锁）
         
@@ -274,14 +270,10 @@ class ModelWeightService:
         try:
             sovits_host = get_sovits_host()
             url = f"{sovits_host}/set_sovits_weights"
-            print(f"[ModelWeightService] 🔄 切换 SoVITS 权重: {weights_path}")
+            print(f"[ModelWeightService] 🔄 异步切换 SoVITS 权重: {weights_path}")
             
-            resp = requests.get(
-                url,
-                params={"weights_path": weights_path},
-                timeout=120,
-                proxies={'http': None, 'https': None}
-            )
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.get(url, params={"weights_path": weights_path})
             
             if resp.status_code != 200:
                 print(f"[ModelWeightService] ❌ SoVITS 权重切换失败: {resp.status_code} - {resp.text}")
@@ -292,10 +284,10 @@ class ModelWeightService:
             print(f"[ModelWeightService] ✅ SoVITS 权重已切换")
             return {"success": True, "message": resp.text, "skipped": False}
             
-        except requests.exceptions.ConnectionError:
+        except httpx.ConnectError:
             print(f"[ModelWeightService] ❌ 无法连接到 GPT-SoVITS 服务")
             return {"success": False, "message": "无法连接到 GPT-SoVITS 服务", "skipped": False}
-        except requests.exceptions.Timeout:
+        except httpx.TimeoutException:
             print(f"[ModelWeightService] ❌ 连接超时")
             return {"success": False, "message": "连接超时", "skipped": False}
         except Exception as e:
@@ -321,12 +313,12 @@ class ModelWeightService:
         sovits_path = model_config["sovits_path"]
         
         # 切换 GPT 权重
-        gpt_result = self.set_gpt_weights(gpt_path)
+        gpt_result = await self.set_gpt_weights(gpt_path)
         if not gpt_result["success"]:
             return False
         
         # 切换 SoVITS 权重
-        sovits_result = self.set_sovits_weights(sovits_path)
+        sovits_result = await self.set_sovits_weights(sovits_path)
         if not sovits_result["success"]:
             return False
         

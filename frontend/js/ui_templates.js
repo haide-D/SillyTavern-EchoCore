@@ -86,14 +86,23 @@ export function getDashboardHTML(data) {
                             <button id="tts-btn-fill-current-char" class="btn-secondary" style="padding:7px 12px; font-size:12px; white-space:nowrap;" title="一键填入当前对话的角色名">✨ 填入当前</button>
                         </div>
 
-                        <!-- 第2行: 音色模型选择 (独占整行，文字不被截断) -->
+                        <!-- 第2行: 自定义头像绑定 (可选) -->
+                        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                            <div id="tts-new-avatar-preview" style="width:36px; height:36px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.08); border:1px solid rgba(196,155,79,0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <span style="font-size:16px;">👤</span>
+                            </div>
+                            <input type="text" id="tts-new-char-avatar" class="tts-modern-input" style="flex: 1; min-width: 0; font-size: 11.5px;" placeholder="自定义头像图片URL (选填，自动探测角色卡)">
+                            <button id="tts-btn-pick-char-avatar" class="btn-secondary" style="padding:7px 10px; font-size:11.5px; white-space:nowrap;" title="从当前酒馆角色列表中选取">🖼️ 选卡</button>
+                        </div>
+
+                        <!-- 第3行: 音色模型选择 (独占整行，文字不被截断) -->
                         <div style="margin-bottom:10px;">
                             <select id="tts-new-model" class="tts-modern-input" style="width:100%;">
                                 <option disabled selected value="">🎙️ 请选择 GPT-SoVITS 语音模型...</option>
                             </select>
                         </div>
 
-                        <button id="tts-btn-bind-new" class="btn-primary" style="width:100%; margin-bottom:12px;">+ 绑定角色音色</button>
+                        <button id="tts-btn-bind-new" class="btn-primary" style="width:100%; margin-bottom:12px;">+ 绑定角色音色与头像</button>
 
                         <!-- 已绑定列表管理工具栏 -->
                         <div class="tts-mapping-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed rgba(196,155,79,0.25);">

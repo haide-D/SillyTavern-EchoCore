@@ -70,11 +70,11 @@ class PromptBuilder:
 3. 【情绪标签严格闭环】: 每个 segment 的 emotion 字段值**必须 100% 严格从上述【参与角色及其可用情绪】列表中选取**，严禁自行编造或臆造列表中不存在的情绪词。
 4. 每个角色的说话风格要符合其性格人设。
 5. **text 字段必须使用{{lang_display}}进行对话，这是强制要求，不可使用其他语言**
-6. **translation 字段必须填写中文翻译（即使 text 已经是中文也要复制过来）**
+6. **【translation 字段铁律】: 无论 text 字段是日文、英文还是其他任何语言，translation 字段必须且只能填写流畅地道的简体中文！严禁在 translation 字段输出英文或非中文内容！若 text 本身是中文，则将中文原句复制到 translation。**
 
 **⚠️ 重要：纯语音内容规范**:
 这是一个 TTS 语音合成系统，text 字段只能包含**可朗读的纯对话文本**。
-**严禁**在 text 字段中包含：
+严禁在 text 字段中包含：
 - ❌ 括号内的动作描述，如 `（轻微吸气）`、`（看向窗外）`
 - ❌ 括号内的心理活动，如 `（心想这个人真讨厌）`
 - ❌ 括号内的场景描述，如 `（伤口隐痛）`、`（身体僵硬）`
@@ -92,7 +92,7 @@ class PromptBuilder:
       "speaker": "角色名",
       "emotion": "情绪标签",
       "text": "纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**",
-      "translation": "中文翻译 (必填！不能省略！如果text是中文就复制text内容)",
+      "translation": "简体中文翻译 (【铁律】：必须是中文！严禁输出英文或日文！若text是中文就复制相同中文)",
       "pause_after": 0.5
     }
   ]
@@ -103,7 +103,7 @@ class PromptBuilder:
 - speaker 必须是上述角色之一
 - emotion 必须是该角色的可用情绪
 - **text 字段只能是纯对话，禁止任何括号或动作描述**
-- **translation 字段必填，必须是中文，不能为空或省略**
+- **translation 字段必填，必须且只能是简体中文，严禁省略或输出非中文**
 - 生成 10-25 个对话片段
 - 让对话自然流畅，角色交替说话"""
 
@@ -126,11 +126,11 @@ class PromptBuilder:
 2. 【情绪标签严格闭环】: 每个 segment 的 emotion 字段值**必须 100% 严格从上述【参与角色及其可用情绪】列表中选取**，严禁自行编造或臆造列表中不存在的情绪词。
 3. 每个角色的说话风格要符合其性格人设，情绪要自然过渡。
 4. **text 字段必须使用{{lang_display}}进行对话，这是强制要求，不可使用其他语言**
-5. **translation 字段必须填写中文翻译（即使 text 已经是中文也要复制过来）**
+5. **【translation 字段铁律】: 无论 text 字段是日文、英文还是其他任何语言，translation 字段必须且只能填写流畅地道的简体中文！严禁在 translation 字段输出英文或非中文内容！若 text 本身是中文，则将中文原句复制到 translation。**
 
 **⚠️ 重要：纯语音内容规范**:
 这是一个 TTS 语音合成系统，text 字段只能包含**可朗读的纯对话文本**。
-**严禁**在 text 字段中包含：
+严禁在 text 字段中包含：
 - ❌ 括号内的动作描述，如 `（轻微吸气）`、`（看向窗外）`
 - ❌ 括号内的心理活动，如 `（心想这个人真讨厌）`
 - ❌ 括号内的场景描述，如 `（伤口隐痛）`、`（身体僵硬）`
@@ -148,7 +148,7 @@ class PromptBuilder:
       "speaker": "角色名",
       "emotion": "情绪标签",
       "text": "纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**",
-      "translation": "中文翻译 (必填！不能省略！如果text是中文就复制text内容)",
+      "translation": "简体中文翻译 (【铁律】：必须是中文！严禁输出英文或日文！若text是中文就复制相同中文)",
       "pause_after": 0.5
     }
   ]
@@ -159,7 +159,7 @@ class PromptBuilder:
 - speaker 必须是上述角色之一
 - emotion 必须是该角色的可用情绪
 - **text 字段只能是纯对话，禁止任何括号或动作描述**
-- **translation 字段必填，必须是中文，不能为空或省略**
+- **translation 字段必填，必须且只能是简体中文，严禁输出非中文**
 - 生成 15-25 个对话片段
 - 让对话自然流畅，角色交替说话
 - **对话内容必须紧扣主题，不能偏离大纲"""
@@ -183,6 +183,7 @@ class PromptBuilder:
 2. 【单向通话/独角戏】: 这是一个单向来电/独白，接听方 {{user_name}} 在此阶段**不会有任何语音回应**。绝对禁止自导自演假装听到对方说话并自我回应（严禁出现“啊？你说什么？……哦，这样啊”等虚假互动），必须保持单向倾诉、询问或叙述的连贯口语表达。
 3. 【情绪标签严格闭环】: 每个片段的 emotion 字段值**必须 100% 严格从上述【Available Speakers and Their Emotions】列表中选择**，严禁自行臆造列表中不存在的情绪标签！
 4. 确定由哪位角色发起呼叫，围绕动机生成 10-15 个具有真实生活感的情感片段。
+5. **【translation 字段铁律】: 无论 text 字段是英文、日文还是其他任何语言，translation 字段必须且只能输出地道流畅的简体中文翻译！严禁在 translation 中输出英文！如果 text 已经是中文，则 translation 输出相同中文。**
 {{followup_call_instructions}}
 
 **IMPORTANT**: Respond ONLY with valid JSON in this exact format:
@@ -194,7 +195,7 @@ class PromptBuilder:
     {
       "emotion": "must_be_from_available_emotions_list",
       "text": "对话内容，**必须使用{{lang_display}}**",
-      "translation": "中文翻译 (必须写上，如果已经是中文，就写上中文)",
+      "translation": "简体中文翻译 (【铁律】：必须是中文！严禁输出英文或日文！如果text已经是中文则填入相同中文)",
       "pause_after": 0.8,
       "speed": 1.0,
       "filler_word": null

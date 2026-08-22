@@ -1,5 +1,5 @@
 import re
-import requests
+import httpx
 from typing import Dict, Optional
 from phone_call_utils.response_parser import EmotionSegment
 
@@ -117,8 +117,8 @@ class TTSService:
         print(f"[TTSService] 参数: text={params['text'][:30]}... (lang={effective_text_lang}), ref_audio={ref_audio['path']} (prompt_lang={effective_prompt_lang})")
         
         try:
-            # 使用 requests 与 GPT-SoVITS 保持一致
-            response = requests.get(url, params=params, timeout=120)
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.get(url, params=params)
             
             if response.status_code != 200:
                 print(f"[TTSService] ❌ HTTP错误: {response.status_code}")
@@ -138,7 +138,7 @@ class TTSService:
             print(f"[TTSService] ✅ 音频生成成功: {len(content)} 字节")
             return content
             
-        except requests.exceptions.RequestException as e:
+        except (httpx.ConnectError, httpx.RequestError) as e:
             print(f"[TTSService] ❌ 请求失败: {e}")
             raise
 

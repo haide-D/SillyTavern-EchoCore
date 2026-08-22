@@ -262,11 +262,11 @@ export class AudioPlayer {
     }
 
     /**
-     * 同步字幕
+     * 同步字幕与说话人切换
      * @private
      */
     _syncSubtitle(currentTime) {
-        if (!this.subtitleRenderer || !this.segments.length) return;
+        if (!this.segments || !this.segments.length) return;
 
         let activeIndex = -1;
         let charProgress = 0;
@@ -288,9 +288,24 @@ export class AudioPlayer {
         }
 
         if (activeIndex >= 0) {
-            this.subtitleRenderer.update(this.segments[activeIndex], activeIndex, charProgress);
+            const currentSeg = this.segments[activeIndex];
+            if (this.subtitleRenderer) {
+                this.subtitleRenderer.update(currentSeg, activeIndex, charProgress);
+            }
+
+            if (this._lastSegmentIndex !== activeIndex) {
+                this._lastSegmentIndex = activeIndex;
+                const speaker = currentSeg.speaker || '';
+                this.emit('segment_change', { segment: currentSeg, index: activeIndex });
+                if (this._lastSpeaker !== speaker) {
+                    this._lastSpeaker = speaker;
+                    this.emit('speaker_change', { speaker, segment: currentSeg, index: activeIndex });
+                }
+            }
         } else {
-            this.subtitleRenderer.clear();
+            if (this.subtitleRenderer) {
+                this.subtitleRenderer.clear();
+            }
         }
     }
 

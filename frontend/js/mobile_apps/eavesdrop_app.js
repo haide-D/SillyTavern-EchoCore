@@ -11,7 +11,8 @@ import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
 import { NotificationHandler } from '../notification_handler.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
-import { getApiHost, getChatBranch, formatTime } from './shared/utils.js';
+import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar, getDefaultAvatarDataUrl } from './shared/utils.js';
+import { loadExtensionSettings } from '../settings_ui.js';
 import { STATUS_SVGS, getEavesdropStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
 
 export const id = 'eavesdrop';
@@ -52,16 +53,47 @@ const injectCSS = () => {
             position: relative;
         }
 
+        /* 多角色头像胶囊栈 */
+        .ed-avatar-stack {
+            display: flex;
+            align-items: center;
+        }
+        .ed-avatar-stack-item {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #181224;
+            margin-left: -8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+        }
+        .ed-avatar-stack-item:first-child {
+            margin-left: 0;
+        }
+        .ed-avatar-stack-item.speaking {
+            transform: scale(1.2);
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+            z-index: 20 !important;
+        }
+        .ed-avatar-stack-item.dimmed {
+            opacity: 0.45;
+            filter: grayscale(40%);
+        }
+
         /* 顶部三子列表导航切换栏 */
         .ed-nav-tabs {
-            display: flex;
+            display: flex !important;
+            flex-direction: row !important;
             background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid rgba(196, 155, 79, 0.2);
             padding: 8px 10px;
             gap: 6px;
             flex-shrink: 0;
             box-sizing: border-box;
-            width: 100%;
+            width: 100% !important;
         }
         .ed-nav-tab-btn {
             flex: 1;
@@ -441,58 +473,98 @@ export async function render(container, createNavbar) {
         _activeTab = tab;
         $root.find('.ed-nav-tab-btn').removeClass('active');
         $(this).addClass('active');
-        renderActiveTabContent();
+        renderActiveTabContent($root);
     });
 
-    // 初始化预设与已绑定 Speakers
-    await initPresetsAndSpeakers();
+    // 优先立即在当前 $root 容器中渲染子视图，0毫秒秒级出画面，不受全局挂载时钟影响
+    renderActiveTabContent($root);
 
-    // 渲染当前子视图
-    await renderActiveTabContent();
+    // 后台静默刷新预设与 Speakers
+    initPresetsAndSpeakers().then(() => {
+        if (_activeTab === 'launch') {
+            renderActiveTabContent($root);
+        }
+    }).catch(() => {});
 }
 
 /**
- * 初始化 Speakers 与剧本工坊预设池
+ * 初始化 Speakers 与剧本工坊预设池 (带超时保护与优雅回退)
  */
 async function initPresetsAndSpeakers() {
     const apiHost = getApiHost();
     try {
+        const fetchWithTimeout = (url, ms = 3000) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), ms);
+            return fetch(url, { signal: controller.signal })
+                .then(r => r.json())
+                .catch(() => null)
+                .finally(() => clearTimeout(timeoutId));
+        };
+
         const [dataRes, presetsRes] = await Promise.all([
-            fetch(`${apiHost}/api/get_data`).then(r => r.json()).catch(() => null),
-            fetch(`${apiHost}/api/presets?category=eavesdrop`).then(r => r.json()).catch(() => null)
+            fetchWithTimeout(`${apiHost}/api/get_data`),
+            fetchWithTimeout(`${apiHost}/api/presets?category=eavesdrop`)
         ]);
 
         if (dataRes && dataRes.mappings) {
             _boundSpeakersCache = Object.keys(dataRes.mappings);
         }
-        _presetsCache = (presetsRes && presetsRes.presets) || [];
+        if (presetsRes && presetsRes.presets) {
+            _presetsCache = presetsRes.presets;
+        }
     } catch (e) {
-        console.warn('[EavesdropApp] 初始化预设与 Speakers 失败:', e);
+        console.warn('[EavesdropApp] 初始化预设与 Speakers 失败 (使用内存缓存):', e);
     }
 }
 
 /**
- * 渲染当前激活的子视图内容
+ * 渲染当前激活的子视图内容 (支持上下文 DOM 容器)
  */
-async function renderActiveTabContent() {
-    const $container = $('#ed-tab-content');
+async function renderActiveTabContent($parentRoot) {
+    const $container = ($parentRoot && $parentRoot.find('#ed-tab-content').length)
+        ? $parentRoot.find('#ed-tab-content')
+        : $('#ed-tab-content');
     if (!$container.length) return;
 
     if (_activeTab === 'current') {
-        await renderCurrentBranchEavesdrops($container);
+        await renderCurrentBranchEavesdrops($container, $parentRoot);
     } else if (_activeTab === 'all') {
-        await renderAllHistoryEavesdrops($container);
+        await renderAllHistoryEavesdrops($container, $parentRoot);
     } else if (_activeTab === 'launch') {
-        renderLaunchConsole($container);
+        renderLaunchConsole($container, $parentRoot);
     }
 }
 
 /**
  * 子视图 1: 渲染当前对话分支的密谈记录
  */
-async function renderCurrentBranchEavesdrops($container) {
-    $container.html(`<div class="ed-history-scroll" id="ed-current-list"><div style="text-align:center; padding:30px; color:#9ca3af;">正在加载当前对话密谈...</div></div>`);
-    const $list = $('#ed-current-list');
+async function renderCurrentBranchEavesdrops($container, $parentRoot) {
+    const pendingCount = window.TTS_CallQueueManager ? window.TTS_CallQueueManager.getPendingCount() : 0;
+    const queueBannerHtml = pendingCount > 0 ? `
+        <div style="background:linear-gradient(135deg, rgba(168,85,247,0.15), rgba(147,51,234,0.15)); border:1px solid rgba(168,85,247,0.4); border-radius:10px; padding:10px 14px; margin:10px 14px 4px 14px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="font-size:12px; font-weight:600; color:#c084fc;">
+                📬 待听队列中存有 ${pendingCount} 条密谈传讯
+            </div>
+            <button id="ed-play-all-queue-btn" style="background:#a855f7; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:600; cursor:pointer;">
+                连续收听 🎧
+            </button>
+        </div>
+    ` : '';
+
+    $container.html(`
+        ${queueBannerHtml}
+        <div class="ed-history-scroll" id="ed-current-list">
+            <div style="text-align:center; padding:30px; color:#9ca3af;">正在读取密谈记录...</div>
+        </div>
+    `);
+
+    $container.find('#ed-play-all-queue-btn').on('click', function() {
+        if (window.TTS_ThemeEngine) {
+            window.TTS_ThemeEngine.showScene('eavesdrop');
+        }
+    });
+    const $list = $container.find('#ed-current-list');
 
     const chatBranch = getChatBranch();
     const apiHost = getApiHost();
@@ -505,7 +577,20 @@ async function renderCurrentBranchEavesdrops($container) {
         const res = await fetch(url).then(r => r.json());
         _currentEavesdropsCache = (res && (res.history || res.records)) || [];
 
-        renderEavesdropsToContainer($list, _currentEavesdropsCache, true);
+        if (_currentEavesdropsCache.length === 0 && chatBranch) {
+            // 如果指定分支暂无记录，尝试读取总历史作为智能兜底
+            const fallbackRes = await fetch(`${apiHost}/api/eavesdrop/history?limit=20`).then(r => r.json()).catch(() => null);
+            const allList = (fallbackRes && (fallbackRes.history || fallbackRes.records)) || [];
+            if (allList.length > 0) {
+                // 筛选出未绑定分支 (default / 空) 的记录
+                const unbranched = allList.filter(r => !r.chat_branch || r.chat_branch === 'default' || r.chat_branch === '');
+                if (unbranched.length > 0) {
+                    _currentEavesdropsCache = unbranched;
+                }
+            }
+        }
+
+        renderEavesdropsToContainer($list, _currentEavesdropsCache, true, $parentRoot);
     } catch (e) {
         console.error('[EavesdropApp] 加载当前对话密谈失败:', e);
         $list.html(`<div style="text-align:center; padding:30px; color:#ef4444;">加载失败: ${e.message}</div>`);
@@ -560,7 +645,7 @@ async function renderAllHistoryEavesdrops($container) {
 /**
  * 渲染密谈卡片通用列表
  */
-function renderEavesdropsToContainer($list, records, isCurrentTab = false) {
+function renderEavesdropsToContainer($list, records, isCurrentTab = false, $parentRoot = null) {
     $list.empty();
     const statusTexts = getEavesdropStatusTexts();
 
@@ -571,14 +656,29 @@ function renderEavesdropsToContainer($list, records, isCurrentTab = false) {
 
     if (records.length === 0 && (!_lastGeneratedEavesdrop || !isCurrentTab)) {
         $list.html(`
-            <div style="text-align:center; padding:50px 20px; color:#9ca3af;">
+            <div style="text-align:center; padding:45px 20px; color:#9ca3af;">
                 <div style="font-size:28px; margin-bottom:10px; opacity:0.8;">${SVG.ear}</div>
-                <div>${isCurrentTab ? statusTexts.emptyCurrentTitle : statusTexts.emptyAllTitle}</div>
+                <div style="font-weight:600; font-size:14px; color:#f3f4f6;">${isCurrentTab ? statusTexts.emptyCurrentTitle : statusTexts.emptyAllTitle}</div>
                 <div style="font-size:11.5px; color:rgba(220,200,160,0.6); margin-top:6px;">
                     ${statusTexts.emptySub}
                 </div>
+                ${isCurrentTab ? `
+                <div style="margin-top:16px;">
+                    <button class="ed-go-all-btn" style="background:rgba(217,119,6,0.2); border:1px solid rgba(217,119,6,0.5); color:#fde047; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; font-weight:500;">
+                        📜 查看总历史记录
+                    </button>
+                </div>
+                ` : ''}
             </div>
         `);
+
+        $list.find('.ed-go-all-btn').on('click', function () {
+            _activeTab = 'all';
+            const $root = $parentRoot || $('.ed-app-container');
+            $root.find('.ed-nav-tab-btn').removeClass('active');
+            $root.find('.ed-nav-tab-btn[data-tab="all"]').addClass('active');
+            renderActiveTabContent($parentRoot);
+        });
         return;
     }
 
@@ -798,12 +898,24 @@ function createEavesdropCard(rec, isLatest = false) {
         return `<div><strong>${s.speaker || '角色'}:</strong> ${t}</div>`;
     }).join('');
 
+    // 构造多角色头像胶囊栈
+    const avatarStackHtml = speakers.map((s, idx) => `
+        <div class="ed-avatar-stack-item" data-speaker="${s}" style="z-index:${10 - idx};" title="${s}">
+            ${renderAvatarHtml(s, '', 'width:100%; height:100%; object-fit:cover;')}
+        </div>
+    `).join('');
+
     const $card = $(`
         <div class="ed-card ${isLatest ? 'highlight' : ''}">
             <div class="ed-card-header">
-                <div class="ed-speakers-tag">
-                    ${SVG.ear} ${speakersStr}
-                    ${isLatest ? '<span style="font-size:10px; background:#d97706; color:#fff; padding:1px 6px; border-radius:10px;">最新密谈</span>' : ''}
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="ed-avatar-stack">
+                        ${avatarStackHtml}
+                    </div>
+                    <div class="ed-speakers-tag">
+                        ${speakersStr}
+                        ${isLatest ? '<span style="font-size:10px; background:#d97706; color:#fff; padding:1px 6px; border-radius:10px;">最新密谈</span>' : ''}
+                    </div>
                 </div>
                 <span class="ed-time">${timeStr}</span>
             </div>
@@ -830,7 +942,7 @@ function createEavesdropCard(rec, isLatest = false) {
         </div>
     `);
 
-    // 播放/暂停
+    // 播放/暂停及说话人动态切换
     $card.find('.ws-btn-play').on('click', function () {
         if (!audioUrl) return;
         const $btn = $(this);
@@ -838,15 +950,29 @@ function createEavesdropCard(rec, isLatest = false) {
         if (_currentAudioPlayer && _currentAudioPlayer.isPlaying()) {
             _currentAudioPlayer.pause();
             $btn.html(`${SVG.play} 播放录音`);
+            $card.find('.ed-avatar-stack-item').removeClass('speaking dimmed');
             return;
         }
 
         cleanupGlobalPlayer();
-        _currentAudioPlayer = new AudioPlayer({ audioUrl });
+        _currentAudioPlayer = new AudioPlayer({ audioUrl, segments });
         setGlobalPlayer(_currentAudioPlayer);
+
+        // 监听说话人切换事件，动态聚光灯高亮当前发言人头像
+        _currentAudioPlayer.on('speaker_change', ({ speaker }) => {
+            $card.find('.ed-avatar-stack-item').each(function () {
+                const spk = $(this).data('speaker');
+                if (spk === speaker) {
+                    $(this).addClass('speaking').removeClass('dimmed');
+                } else {
+                    $(this).removeClass('speaking').addClass('dimmed');
+                }
+            });
+        });
 
         _currentAudioPlayer.on('ended', () => {
             $btn.html(`${SVG.play} 播放录音`);
+            $card.find('.ed-avatar-stack-item').removeClass('speaking dimmed');
         });
 
         _currentAudioPlayer.play();
@@ -896,12 +1022,21 @@ function createEavesdropCard(rec, isLatest = false) {
  * 渲染被动待监听界面 (推送触发)
  */
 function renderPassivePrompt(container, eavesdropData) {
-    const speakersText = (eavesdropData.speakers || []).join(' 与 ') || '角色私聊';
+    const speakers = eavesdropData.speakers || [];
+    const speakersText = speakers.join(' 与 ') || '角色私聊';
+
+    const avatarStackHtml = speakers.map((s, idx) => `
+        <div style="width:52px; height:52px; border-radius:50%; overflow:hidden; border:3px solid rgba(217,119,6,0.6); margin-left:${idx === 0 ? '0' : '-16px'}; z-index:${10 - idx}; display:inline-block; box-shadow:0 4px 12px rgba(0,0,0,0.5);" title="${s}">
+            ${renderAvatarHtml(s, '', 'width:100%; height:100%; object-fit:cover;')}
+        </div>
+    `).join('');
 
     const $prompt = $(`
         <div class="ed-app-container">
             <div class="ed-prompt-container">
-                <div class="ed-prompt-icon">${SVG.ear}</div>
+                <div style="display:flex; justify-content:center; align-items:center; margin-bottom:12px;">
+                    ${avatarStackHtml}
+                </div>
                 <h3 style="margin:0; font-size:18px; color:#fef08a;">检测到密谈: ${speakersText}</h3>
                 <p style="margin:0; font-size:13px; color:rgba(220,200,160,0.85);">${eavesdropData.scene_description || '角色们正在私底下商讨重要事宜...'}</p>
                 
@@ -938,24 +1073,30 @@ function renderPassivePrompt(container, eavesdropData) {
         }
         _lastGeneratedEavesdrop = eavesdropData;
 
-        // 自动注入聊天
-        try {
-            await ChatInjector.appendToLastAIMessage({
-                type: 'eavesdrop',
-                segments: eavesdropData.segments || [],
-                speakers: eavesdropData.speakers || [],
-                callId: eavesdropData.record_id || Date.now(),
-                audioUrl: eavesdropData.audio_url,
-                sceneDescription: eavesdropData.scene_description
-            });
-        } catch (e) {
-            console.error('[EavesdropApp] 自动注入失败:', e);
+        // 检查是否开启自动注入
+        const settings = loadExtensionSettings();
+        if (settings.auto_inject_on_answer) {
+            try {
+                await ChatInjector.appendToLastAIMessage({
+                    type: 'eavesdrop',
+                    segments: eavesdropData.segments || [],
+                    speakers: eavesdropData.speakers || [],
+                    callId: eavesdropData.record_id || Date.now(),
+                    audioUrl: eavesdropData.audio_url,
+                    sceneDescription: eavesdropData.scene_description
+                });
+                console.log('[EavesdropApp] ✅ 密谈内容已自动追加到聊天');
+            } catch (e) {
+                console.error('[EavesdropApp] 自动注入失败:', e);
+            }
+        } else {
+            console.log('[EavesdropApp] ℹ️ 自动注入未开启，用户可手动在卡片上点击注入');
         }
 
         // 自动播放
         if (eavesdropData.audio_url) {
             cleanupGlobalPlayer();
-            _currentAudioPlayer = new AudioPlayer({ audioUrl: eavesdropData.audio_url });
+            _currentAudioPlayer = new AudioPlayer({ audioUrl: eavesdropData.audio_url, segments: eavesdropData.segments || [] });
             setGlobalPlayer(_currentAudioPlayer);
             _currentAudioPlayer.play();
         }

@@ -1,4 +1,5 @@
 import os
+import asyncio
 from io import BytesIO
 from typing import List, Dict, Optional, Tuple
 from pydub import AudioSegment as PydubSegment
@@ -70,10 +71,12 @@ class AudioPipeline:
                         previous_ref_audio=previous_ref_audio if emotion_changed else None
                     )
 
-                    # 计算音频时长 (秒)
+                    # 异步计算音频时长 (秒)，避免阻塞主事件循环
                     try:
-                        audio_seg = PydubSegment.from_file(BytesIO(audio_bytes), format="wav")
-                        duration_seconds = len(audio_seg) / 1000.0
+                        def _calc_duration(data):
+                            seg = PydubSegment.from_file(BytesIO(data), format="wav")
+                            return len(seg) / 1000.0
+                        duration_seconds = await asyncio.to_thread(_calc_duration, audio_bytes)
                         segment.audio_duration = duration_seconds
                     except Exception as dur_err:
                         print(f"[AudioPipeline] ⚠️ 计算音频时长失败: {dur_err}")
@@ -89,9 +92,13 @@ class AudioPipeline:
         if not audio_bytes_list:
             return None, segments
 
-        # 合并音频 (释放模型锁后进行纯 CPU 音频合并)
-        print(f"[AudioPipeline] 正在合并 {len(audio_bytes_list)} 段音频...")
-        merged_audio = self.audio_merger.merge_segments(audio_bytes_list, audio_merge_config)
+        # 异步合并音频 (释放模型锁后在独立线程中进行纯 CPU 音频合并)
+        print(f"[AudioPipeline] 正在合并 {len(audio_bytes_list)} 段音频 (线程池执行)...")
+        merged_audio = await asyncio.to_thread(
+            self.audio_merger.merge_segments,
+            audio_bytes_list,
+            audio_merge_config
+        )
 
         # 计算音轨起始时间与停顿同步
         current_time = 0.0

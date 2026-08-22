@@ -678,7 +678,10 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
-    
+
+    # 兼容别名
+    create_eavesdrop = add_eavesdrop_record
+
     def is_eavesdrop_generated(self, chat_branch: str, context_fingerprint: str) -> bool:
         """
         检查指定上下文指纹是否已成功生成过对话追踪

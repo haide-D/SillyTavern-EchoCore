@@ -8,6 +8,8 @@ const defaultSettings = {
     remote_ip: '',
     remote_port: 3000,
     active_provider: 'gpt_sovits',
+    auto_inject_on_answer: false,
+    speaker_avatars: {},
     provider_settings: {
         gpt_sovits: {},
         minimax: { api_key: '', group_id: '' },
@@ -40,6 +42,12 @@ export function loadExtensionSettings() {
     }
 
     const config = extensionSettings[MODULE_NAME];
+    if (config.auto_inject_on_answer === undefined) {
+        config.auto_inject_on_answer = false;
+    }
+    if (!config.speaker_avatars) {
+        config.speaker_avatars = {};
+    }
     if (!config.provider_settings) {
         config.provider_settings = JSON.parse(JSON.stringify(defaultSettings.provider_settings));
     }
@@ -105,6 +113,7 @@ export async function initSettingsUI() {
         $('#tts-ext-remote-fields').toggle(!!config.use_remote);
         $('#tts-ext-remote-ip').val(config.remote_ip || '');
         $('#tts-ext-remote-port').val(config.remote_port || 3000);
+        $('#tts-ext-auto-inject').prop('checked', !!config.auto_inject_on_answer);
 
         const $providerSelect = $('#tts-provider-select');
         $providerSelect.val(config.active_provider || 'gpt_sovits');
@@ -132,6 +141,12 @@ export async function initSettingsUI() {
             if (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.settings) {
                 window.TTS_State.CACHE.settings.enabled = config.enabled;
             }
+            context.saveSettingsDebounced();
+        });
+
+        // 自动注入聊天开关
+        $('#tts-ext-auto-inject').on('change', (e) => {
+            config.auto_inject_on_answer = $(e.target).prop('checked');
             context.saveSettingsDebounced();
         });
 
