@@ -85,6 +85,11 @@ import {
     triggerImportPresetFile,
     handlePresetFileSelected
 } from './modules/workshop.js';
+import {
+    initPromptEmotionsPage,
+    loadPromptEmotionsData,
+    savePromptEmotionsSettings
+} from './modules/prompt_emotions.js';
 
 // ==================== 页面导航 ====================
 export function switchPage(pageName) {
@@ -100,11 +105,16 @@ export function switchPage(pageName) {
         populateModelSelect();
     } else if (pageName === 'workshop') {
         loadWorkshopPresets();
+    } else if (pageName === 'prompt_emotions') {
+        loadPromptEmotionsData();
     }
 }
 
 // ==================== 全局桥接挂载 (保持 HTML inline 事件 100% 兼容) ====================
 Object.assign(window, {
+    initPromptEmotionsPage,
+    loadPromptEmotionsData,
+    savePromptEmotionsSettings,
     // 核心与工具
     API_BASE,
     state,
@@ -205,12 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
     loadModels();
     loadSettings();
+    initPromptEmotionsPage();
 
     // 绑定 LLM 相关测试与选择
     bindFetchModelsButton();
     bindTestConnectionButton();
     bindAnalysisLLMButtons();
-    bindPromptAndEmotionControls();
     bindSettingsTabs();
 
     // 显示通告弹窗

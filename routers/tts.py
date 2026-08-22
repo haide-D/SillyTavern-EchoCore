@@ -96,23 +96,29 @@ async def tts_proxy(
     prompt_text: str, 
     prompt_lang: str, 
     emotion: Optional[str] = "default",
+    speed: Optional[float] = 1.0,
+    speed_factor: Optional[float] = None,
     streaming_mode: Optional[str] = "false", 
     check_only: Optional[str] = None
 ):
     from services.model_weight_service import model_weight_service
     
+    # 统一语速倍率
+    actual_speed = speed_factor if speed_factor is not None else (speed if speed is not None else 1.0)
+    
     # ========== 缓存检查逻辑 ==========
     _, cache_dir = get_current_dirs()
 
     try:
-        # 新缓存Key: 包含情绪,不包含具体音频路径
-        new_key = f"{text}_{emotion}_{text_lang}_{prompt_lang}"
+        # 新缓存Key: 包含情绪与语速
+        speed_tag = f"_sp{actual_speed}" if actual_speed != 1.0 else ""
+        new_key = f"{text}_{emotion}_{text_lang}_{prompt_lang}{speed_tag}"
         new_hash = hashlib.md5(new_key.encode('utf-8')).hexdigest()
         new_filename = f"{new_hash}.wav"
         new_cache_path = os.path.join(cache_dir, new_filename)
         
         # 旧缓存Key: 包含音频路径 (用于兼容旧数据)
-        old_key = f"{text}_{ref_audio_path}_{prompt_text}_{text_lang}_{prompt_lang}"
+        old_key = f"{text}_{ref_audio_path}_{prompt_text}_{text_lang}_{prompt_lang}{speed_tag}"
         old_hash = hashlib.md5(old_key.encode('utf-8')).hexdigest()
         old_filename = f"{old_hash}.wav"
         old_cache_path = os.path.join(cache_dir, old_filename)
@@ -173,6 +179,8 @@ async def tts_proxy(
                 "ref_audio_path": ref_audio_path,
                 "prompt_text": prompt_text,
                 "prompt_lang": prompt_lang,
+                "speed": actual_speed,
+                "speed_factor": actual_speed,
                 "streaming_mode": "false" # 明确关闭流式
             }
 

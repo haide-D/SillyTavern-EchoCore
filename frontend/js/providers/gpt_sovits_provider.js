@@ -33,13 +33,20 @@ export class GPTSoVITSProvider extends BaseTTSProvider {
             const ref = task.selectedRef;
             if (!ref) return { cached: false };
 
+            // 获取该角色或模型的独立语速配置
+            const speed = (window.TTS_PromptInjector && typeof window.TTS_PromptInjector.getModelSpeed === 'function')
+                ? window.TTS_PromptInjector.getModelSpeed(task.speaker || task.character || (modelConfig && modelConfig.name))
+                : 1.0;
+
             const params = {
                 text: task.text,
                 text_lang: "zh",
                 ref_audio_path: ref.path,
                 prompt_text: ref.text,
                 prompt_lang: "zh",
-                emotion: task.emotion
+                emotion: task.emotion,
+                speed: speed,
+                speed_factor: speed
             };
             return await window.TTS_API.checkCache(params);
         } catch { 
@@ -63,13 +70,20 @@ export class GPTSoVITSProvider extends BaseTTSProvider {
         if (currentLang === "Japanese" || currentLang === "日语") promptLangCode = "ja";
         if (currentLang === "English" || currentLang === "英语") promptLangCode = "en";
 
+        // 获取该角色或模型的独立语速配置
+        const speed = (window.TTS_PromptInjector && typeof window.TTS_PromptInjector.getModelSpeed === 'function')
+            ? window.TTS_PromptInjector.getModelSpeed(task.speaker || task.character || (modelConfig && modelConfig.name))
+            : 1.0;
+
         const params = {
             text: text,
             text_lang: promptLangCode,
             ref_audio_path: selectedRef.path,
             prompt_text: selectedRef.text,
             prompt_lang: promptLangCode,
-            emotion: emotion
+            emotion: emotion,
+            speed: speed,
+            speed_factor: speed
         };
 
         const { blob, filename } = await window.TTS_API.generateAudio(params);

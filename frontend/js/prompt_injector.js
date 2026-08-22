@@ -72,6 +72,9 @@ export const PromptInjector = {
     // 当前分支已绑定角色信息缓存: { charName: [emotion1, emotion2, ...] }
     boundSpeakersMap: {},
 
+    // 按模型细分的情感场景与语速配置: { "AD学姐": { speed: 1.1, emotions: { ... } } }
+    modelsConfig: {},
+
     // 情感场景与注释字典: { "panting": "仅限剧烈运动/疲惫", ... }
     emotionAnnotations: { ...DEFAULT_EMOTION_ANNOTATIONS },
 
@@ -119,6 +122,24 @@ export const PromptInjector = {
         } catch (e) {
             console.error('[PromptInjector] 加载本地配置失败:', e);
         }
+    },
+
+    /**
+     * 获取指定角色或模型的配置语速
+     * @param {string} speakerNameOrModel 
+     * @returns {number} 语速倍率 (默认 1.0)
+     */
+    getModelSpeed(speakerNameOrModel) {
+        if (!speakerNameOrModel) return 1.0;
+        const state = window.TTS_State;
+        let modelName = speakerNameOrModel;
+        if (state && state.CACHE && state.CACHE.mappings && state.CACHE.mappings[speakerNameOrModel]) {
+            modelName = state.CACHE.mappings[speakerNameOrModel];
+        }
+        if (this.modelsConfig && this.modelsConfig[modelName] && this.modelsConfig[modelName].speed) {
+            return parseFloat(this.modelsConfig[modelName].speed) || 1.0;
+        }
+        return 1.0;
     },
 
     /**
@@ -223,6 +244,9 @@ export const PromptInjector = {
             if (pi.custom_template && !localStorage.getItem('tts_custom_prompt_template')) {
                 this.customTemplate = pi.custom_template;
             }
+            if (pi.models && typeof pi.models === 'object') {
+                this.modelsConfig = pi.models;
+            }
             if (pi.emotion_annotations && typeof pi.emotion_annotations === 'object') {
                 this.emotionAnnotations = { ...DEFAULT_EMOTION_ANNOTATIONS, ...pi.emotion_annotations };
             }
@@ -246,7 +270,7 @@ export const PromptInjector = {
             console.warn('[PromptInjector] 获取主角色名失败:', e);
         }
 
-        // 2. 构建 List 1: 已绑定角色及其情绪词池
+        // 2. 构建 List 1: 已绑定角色及其情绪词池与模型关联
         const boundMap = {};
         for (const [charName, modelName] of Object.entries(mappings)) {
             if (!charName || !modelName) continue;
@@ -267,7 +291,10 @@ export const PromptInjector = {
                 }
             }
 
-            boundMap[cleanChar] = Array.from(emotionsSet);
+            boundMap[cleanChar] = {
+                modelName: modelName,
+                emotions: Array.from(emotionsSet)
+            };
         }
 
         this.boundSpeakersMap = boundMap;
@@ -280,17 +307,22 @@ export const PromptInjector = {
     },
 
     /**
-     * 编译注入指令（支持插槽变量替换与情感场景注释）
+     * 编译注入指令（支持插槽变量替换与按模型细分的情感场景注释）
      */
     buildPromptDirective(boundMap, skippedList, primaryChar = '') {
         const boundEntries = Object.entries(boundMap);
         
         let boundSection = '';
         if (boundEntries.length > 0) {
-            boundSection = boundEntries.map(([char, emotions]) => {
+            boundSection = boundEntries.map(([char, charInfo]) => {
+                const emotions = charInfo.emotions || [];
+                const modelName = charInfo.modelName || '';
+                const modelEmotions = (this.modelsConfig[modelName] && this.modelsConfig[modelName].emotions) || {};
+
                 const emotionLines = emotions.map(emo => {
                     const cleanEmo = emo.trim().toLowerCase();
-                    const desc = this.emotionAnnotations[cleanEmo] || this.emotionAnnotations[emo] || '';
+                    // 优先读取该模型专属性感场景，若无则回退到全局通用注释字典
+                    const desc = modelEmotions[emo] || modelEmotions[cleanEmo] || this.emotionAnnotations[cleanEmo] || this.emotionAnnotations[emo] || '';
                     if (desc) {
                         return `       * ${emo}: ${desc}`;
                     }
