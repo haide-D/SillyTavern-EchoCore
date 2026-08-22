@@ -10,15 +10,12 @@ export const TTS_API = {
     },
 
     getBaseUrl: function () {
-        if (this.baseUrl && this.baseUrl !== "http://127.0.0.1:3000") {
-            return this.baseUrl;
-        }
         if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
             const cfg = window.TTS_Utils.getLatestRemoteConfig();
             const resolved = window.TTS_Utils.resolveBackendUrls(cfg);
             if (resolved && resolved.httpUrl) {
                 this.baseUrl = resolved.httpUrl;
-                if (cfg.token) this.apiToken = cfg.token;
+                this.apiToken = cfg.token || '';
                 return this.baseUrl;
             }
         }

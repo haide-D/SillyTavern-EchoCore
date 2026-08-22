@@ -614,30 +614,76 @@ export function applyTextReplacements(text, replacements = {}) {
 }
 
 /**
- * 获取系统最新的远程配置（优先从酒馆 extensionSettings，次之从 localStorage）
+ * 获取系统最新的远程配置（智能双向同步合并 酒馆 extensionSettings 与 localStorage）
  */
 export function getLatestRemoteConfig() {
     let config = { useRemote: false, ip: '', port: 3000, token: '' };
     try {
-        if (window.SillyTavern && window.SillyTavern.getContext) {
-            const ext = window.SillyTavern.getContext()?.extensionSettings?.st_direct_tts;
-            if (ext) {
-                config.useRemote = !!ext.use_remote;
-                config.ip = (ext.remote_ip || '').trim();
-                config.port = parseInt(ext.remote_port) || 3000;
-                config.token = (ext.remote_token || '').trim();
-                return config;
-            }
-        }
+        let localConfig = null;
         const saved = localStorage.getItem('tts_plugin_remote_config');
         if (saved) {
-            const p = JSON.parse(saved);
-            config.useRemote = !!p.useRemote;
-            config.ip = (p.ip || '').trim();
-            config.port = parseInt(p.port) || 3000;
-            config.token = (p.token || '').trim();
+            try {
+                localConfig = JSON.parse(saved);
+            } catch (e) { }
         }
-    } catch (e) { }
+
+        let extConfig = null;
+        let context = null;
+        if (window.SillyTavern && typeof window.SillyTavern.getContext === 'function') {
+            context = window.SillyTavern.getContext();
+            extConfig = context?.extensionSettings?.st_direct_tts;
+        }
+
+        // 决策：谁包含有效的远程配置 (useRemote 为 true 且 ip 不为空)
+        const extValid = extConfig && !!extConfig.use_remote && !!(extConfig.remote_ip || '').trim();
+        const localValid = localConfig && !!localConfig.useRemote && !!(localConfig.ip || '').trim();
+
+        if (extValid) {
+            config.useRemote = true;
+            config.ip = (extConfig.remote_ip || '').trim();
+            config.port = parseInt(extConfig.remote_port) || 3000;
+            config.token = (extConfig.remote_token || '').trim();
+            // 同步至 localStorage
+            localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
+                useRemote: true,
+                ip: config.ip,
+                port: config.port,
+                token: config.token
+            }));
+        } else if (localValid) {
+            config.useRemote = true;
+            config.ip = (localConfig.ip || '').trim();
+            config.port = parseInt(localConfig.port) || 3000;
+            config.token = (localConfig.token || '').trim();
+            // 反向同步至 extensionSettings
+            if (context && context.extensionSettings) {
+                if (!context.extensionSettings.st_direct_tts) {
+                    context.extensionSettings.st_direct_tts = {};
+                }
+                const ext = context.extensionSettings.st_direct_tts;
+                ext.use_remote = true;
+                ext.remote_ip = config.ip;
+                ext.remote_port = config.port;
+                ext.remote_token = config.token;
+                if (typeof context.saveSettingsDebounced === 'function') {
+                    context.saveSettingsDebounced();
+                }
+            }
+        } else if (extConfig) {
+            // 都是本地模式，但保留填写的 ip/port/token
+            config.useRemote = !!extConfig.use_remote;
+            config.ip = (extConfig.remote_ip || '').trim();
+            config.port = parseInt(extConfig.remote_port) || 3000;
+            config.token = (extConfig.remote_token || '').trim();
+        } else if (localConfig) {
+            config.useRemote = !!localConfig.useRemote;
+            config.ip = (localConfig.ip || '').trim();
+            config.port = parseInt(localConfig.port) || 3000;
+            config.token = (localConfig.token || '').trim();
+        }
+    } catch (e) {
+        console.warn("[TTS] 获取远程配置异常:", e);
+    }
     return config;
 }
 
