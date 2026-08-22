@@ -1,9 +1,108 @@
-// ==========================================================================
-// ST-Direct-TTS Admin Module: System Settings & LLM Configuration
-// ==========================================================================
+export const DEFAULT_EMOTION_ANNOTATIONS = {
+    "default": "日常、平和对话基准语调",
+    "happy": "心情愉悦、开朗、赞许或微笑时使用",
+    "sad": "失落、悲伤、委屈、低落或哭腔时使用",
+    "angry": "受到直接挑衅、被激怒或发生激烈争吵时使用",
+    "surprise": "遇到意料之外事件、震惊或疑惑时使用",
+    "fear": "感到危险、恐惧、被威胁或极度不安时使用",
+    "panting": "仅在剧烈运动、长跑、极度疲惫或身体剧烈消耗时使用 (严禁日常闲聊误用)",
+    "climax": "仅在全剧情最高潮绝境、决战或情绪极值爆发时使用 (严禁轻微情绪波动时误用)",
+    "whisper": "窃窃私语、耳语或私密秘密对话时使用",
+    "disgust": "极度厌恶、鄙夷、嫌弃或排斥时使用",
+    "smug": "自鸣得意、傲娇、得意洋洋或嘲弄时使用"
+};
 
-import { API_BASE } from '../core/api.js';
-import { showNotification } from '../core/ui.js';
+export const DEFAULT_PROMPT_TEMPLATE = `[Voice Synthesis & Dialogue Protocol]
+You must format spoken dialogue according to the following strict rules:
+{{primary_character_note}}
+
+### Core Rules:
+1. **Character Naming Consistency (Crucial)**:
+   - Each character MUST maintain a single, consistent, official name across the entire reply and conversation.
+   - NEVER switch, alternate, or use temporary pronouns/titles/nicknames in place of the character's exact name. (Every line spoken by the same character must use the identical Character_Name prefix).
+
+2. **Dialogue Tagging Format**:
+   - Place voice tags immediately before direct spoken quotes: \`[Character_Name, emotion] "Spoken dialogue..."\` or \`[Character_Name, emotion] “对白内容……”\`
+   - Narration, environmental descriptions, internal thoughts, and action beats must be written as regular text outside the tag. NEVER put non-spoken narration inside or as the sole content of the tag.
+
+3. **Emotion Continuity & Anti-Whiplash (Crucial)**:
+   - Emotion tags MUST follow natural human emotional progression. DO NOT abruptly jump between extreme emotions (e.g. from sad to climax/happy) without significant narrative transition.
+   - Strictly adhere to each emotion's prescribed usage scenario.
+
+4. **Speaker Categories & Permitted Emotions**:
+   - **List 1: Bound Voice Characters & Emotion Constraints** (Must use listed emotion tags according to their rules):
+{{bound_characters_section}}
+   - **List 2: Skipped Characters** (Plain text only, NO voice tag):
+{{skipped_characters_section}}
+   - **List 3: New / Unbound Characters** (Anyone NOT listed above):
+     Format: \`[New_Character_Name, New] "Spoken dialogue..."\` (Keep name consistent on subsequent lines).
+
+### Demonstrations:
+- ✅ Correct:
+  She stepped out of the room and looked up with a smile.
+  [Alice, happy] "Hello there! Nice to meet you."
+  She tilted her head with mild curiosity.
+  [Alice, default] "Are you heading to the library?"
+- ❌ Forbidden:
+  [Alice, happy] She stepped out of the room and smiled. (Error: putting narration into speech tag)
+  [Assistant, happy] "Hello!" (Error: switching or inventing alternative names for the same person)
+  [Alice, climax] "Good morning." (Error: abusing extreme climax emotion for ordinary morning greeting)`;
+
+let currentEmotionAnnotations = { ...DEFAULT_EMOTION_ANNOTATIONS };
+
+/**
+ * 渲染情感规则列表
+ */
+export function renderEmotionRulesUI(annotations) {
+    const container = document.getElementById('emotion-rules-container');
+    if (!container) return;
+
+    currentEmotionAnnotations = annotations ? { ...annotations } : { ...DEFAULT_EMOTION_ANNOTATIONS };
+    container.innerHTML = '';
+
+    const entries = Object.entries(currentEmotionAnnotations);
+    if (entries.length === 0) {
+        container.innerHTML = '<div style="font-size:12px; color:#9ca3af; padding:8px;">暂无自定义规则，将使用基础标签名</div>';
+        return;
+    }
+
+    entries.forEach(([emo, desc]) => {
+        const row = document.createElement('div');
+        row.className = 'emotion-rule-row';
+        row.style.cssText = 'display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);';
+        row.innerHTML = `
+            <input type="text" class="input emotion-key-input" value="${escapeHtml(emo)}" style="width:130px; font-weight:bold; color:#fde047; font-family:monospace; padding:4px 8px; font-size:12px;" placeholder="情感名 (如 angry)">
+            <input type="text" class="input emotion-desc-input" value="${escapeHtml(desc)}" style="flex:1; padding:4px 8px; font-size:12px;" placeholder="适用场景与限制规定">
+            <button type="button" class="btn btn-danger btn-delete-emotion-row" style="padding:4px 8px; font-size:11px;">🗑️</button>
+        `;
+
+        row.querySelector('.btn-delete-emotion-row').addEventListener('click', () => {
+            row.remove();
+        });
+
+        container.appendChild(row);
+    });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * 从当前 UI 收集情感规则字典
+ */
+export function collectEmotionRulesFromUI() {
+    const result = {};
+    document.querySelectorAll('.emotion-rule-row').forEach(row => {
+        const key = row.querySelector('.emotion-key-input')?.value.trim();
+        const desc = row.querySelector('.emotion-desc-input')?.value.trim();
+        if (key) {
+            result[key] = desc || '';
+        }
+    });
+    return result;
+}
 
 /**
  * 绑定设置页面的标签页切换事件
@@ -37,6 +136,21 @@ export async function loadSettings() {
         const managerPortEl = document.getElementById('setting-manager-port');
         const defaultLangEl = document.getElementById('setting-default-lang');
         const devModeEl = document.getElementById('setting-developer-mode');
+
+        if (baseDirEl) baseDirEl.value = settings.base_dir || '';
+        if (cacheDirEl) cacheDirEl.value = settings.cache_dir || '';
+        if (sovitsHostEl) sovitsHostEl.value = settings.sovits_host || 'http://127.0.0.1:9880';
+        if (managerPortEl) managerPortEl.value = settings.manager_port || 3000;
+        if (defaultLangEl) defaultLangEl.value = settings.default_lang || 'Chinese';
+        if (devModeEl) devModeEl.value = String(settings.developer_mode || false);
+
+        // 提示词与情感
+        const promptInjector = settings.prompt_injector || {};
+        const promptTemplateEl = document.getElementById('setting-prompt-template');
+        if (promptTemplateEl) {
+            promptTemplateEl.value = promptInjector.custom_template || '';
+        }
+        renderEmotionRulesUI(promptInjector.emotion_annotations || DEFAULT_EMOTION_ANNOTATIONS);
 
         if (baseDirEl) baseDirEl.value = settings.base_dir || '';
         if (cacheDirEl) cacheDirEl.value = settings.cache_dir || '';
@@ -165,6 +279,10 @@ export async function saveSettings() {
     const ttsTextSplitEl = document.getElementById('setting-tts-text-split-method');
     const ttsAuxRefEl = document.getElementById('setting-tts-use-aux-ref-audio');
 
+    // 提示词与情感规则
+    const promptTemplateEl = document.getElementById('setting-prompt-template');
+    const emotionAnnotations = collectEmotionRulesFromUI();
+
     const settings = {
         base_dir: baseDirEl ? baseDirEl.value.trim() : '',
         cache_dir: cacheDirEl ? cacheDirEl.value.trim() : '',
@@ -172,6 +290,12 @@ export async function saveSettings() {
         manager_port: managerPortEl ? (parseInt(managerPortEl.value) || 3000) : 3000,
         default_lang: defaultLangEl ? defaultLangEl.value : 'Chinese',
         developer_mode: devModeEl ? devModeEl.value === 'true' : false,
+
+        prompt_injector: {
+            enabled: true,
+            custom_template: promptTemplateEl ? promptTemplateEl.value.trim() : '',
+            emotion_annotations: emotionAnnotations
+        },
 
         analysis_engine: {
             enabled: analysisEnabledEl ? analysisEnabledEl.value === 'true' : true,
@@ -453,3 +577,65 @@ export function bindAnalysisLLMButtons() {
         });
     }
 }
+
+/**
+ * 绑定提示词与情感规则 Tab 按钮与交互
+ */
+export function bindPromptAndEmotionControls() {
+    // 1. 恢复默认提示词模板
+    const resetPromptBtn = document.getElementById('btn-reset-prompt-template');
+    const promptTemplateEl = document.getElementById('setting-prompt-template');
+    if (resetPromptBtn && promptTemplateEl) {
+        resetPromptBtn.addEventListener('click', () => {
+            promptTemplateEl.value = DEFAULT_PROMPT_TEMPLATE;
+            showNotification('已恢复官方标准 ElevenLabs V3 提示词模板', 'info');
+        });
+    }
+
+    // 2. 插入插槽变量按钮
+    document.querySelectorAll('.btn-slot-insert').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const slot = btn.dataset.slot;
+            if (slot && promptTemplateEl) {
+                const start = promptTemplateEl.selectionStart || 0;
+                const end = promptTemplateEl.selectionEnd || 0;
+                const val = promptTemplateEl.value;
+                promptTemplateEl.value = val.substring(0, start) + slot + val.substring(end);
+                promptTemplateEl.focus();
+                promptTemplateEl.selectionStart = promptTemplateEl.selectionEnd = start + slot.length;
+                showNotification(`已插入插槽变量: ${slot}`, 'info');
+            }
+        });
+    });
+
+    // 3. 添加新情感规则
+    const addEmotionBtn = document.getElementById('btn-add-emotion-rule');
+    const container = document.getElementById('emotion-rules-container');
+    if (addEmotionBtn && container) {
+        addEmotionBtn.addEventListener('click', () => {
+            const row = document.createElement('div');
+            row.className = 'emotion-rule-row';
+            row.style.cssText = 'display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);';
+            row.innerHTML = `
+                <input type="text" class="input emotion-key-input" value="" style="width:130px; font-weight:bold; color:#fde047; font-family:monospace; padding:4px 8px; font-size:12px;" placeholder="情感名 (如 shyness)">
+                <input type="text" class="input emotion-desc-input" value="" style="flex:1; padding:4px 8px; font-size:12px;" placeholder="描述限制场景 (如: 仅在害羞脸红时使用)">
+                <button type="button" class="btn btn-danger btn-delete-emotion-row" style="padding:4px 8px; font-size:11px;">🗑️</button>
+            `;
+            row.querySelector('.btn-delete-emotion-row').addEventListener('click', () => {
+                row.remove();
+            });
+            container.prepend(row);
+            row.querySelector('.emotion-key-input').focus();
+        });
+    }
+
+    // 4. 恢复默认情感场景字典
+    const resetEmotionsBtn = document.getElementById('btn-reset-emotion-rules');
+    if (resetEmotionsBtn) {
+        resetEmotionsBtn.addEventListener('click', () => {
+            renderEmotionRulesUI(DEFAULT_EMOTION_ANNOTATIONS);
+            showNotification('已重置为官方内置常见情感场景说明', 'info');
+        });
+    }
+}
+
