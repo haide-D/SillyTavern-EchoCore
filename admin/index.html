@@ -14,7 +14,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>🎙️ TTS 管理</h1>
-                <p class="version">v2.0.0</p>
+                <p class="version">v3.0.0</p>
             </div>
 
             <nav class="nav">
@@ -30,6 +30,10 @@
                 <a href="#audios" class="nav-item" data-page="audios">
                     <span class="icon">🎵</span>
                     <span>音频管理</span>
+                </a>
+                <a href="#workshop" class="nav-item" data-page="workshop">
+                    <span class="icon">🎨</span>
+                    <span>创作者工坊</span>
                 </a>
                 <a href="#settings" class="nav-item" data-page="settings">
                     <span class="icon">⚙️</span>
@@ -209,9 +213,37 @@
             <!-- 模型管理页面 -->
             <section id="models" class="page">
                 <header class="page-header">
-                    <h2>模型管理</h2>
+                    <h2>🤖 模型管理</h2>
                     <button class="btn btn-primary" onclick="showCreateModelDialog()">➕ 创建新模型</button>
                 </header>
+
+                <!-- 模型管理现代化工具条 -->
+                <div class="toolbar-container">
+                    <div class="toolbar-left">
+                        <div class="search-input-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="model-search-input" placeholder="搜索模型名称..." oninput="filterModels()">
+                        </div>
+                        <span class="badge-count" id="model-total-badge">共 0 个模型</span>
+                    </div>
+                    <div class="toolbar-right">
+                        <label class="select-all-label">
+                            <input type="checkbox" id="model-select-all" onchange="toggleSelectAllModels(this.checked)">
+                            <span>全选</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 浮动批量操作条 (模型) -->
+                <div class="sticky-bulk-bar" id="model-bulk-bar">
+                    <div class="bulk-info">
+                        <span>已勾选 <strong id="model-selected-count" style="color: var(--accent-primary);">0</strong> 个模型</span>
+                    </div>
+                    <div class="bulk-actions-group">
+                        <button class="btn btn-danger btn-sm" onclick="showBatchDeleteModelsDialog()">🗑️ 批量安全删除</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearModelSelection()">取消选择</button>
+                    </div>
+                </div>
 
                 <div class="models-container" id="models-list">
                     <p class="loading">加载中...</p>
@@ -221,20 +253,93 @@
             <!-- 音频管理页面 -->
             <section id="audios" class="page">
                 <header class="page-header">
-                    <h2>参考音频管理</h2>
-                    <div class="controls">
-                        <select id="audio-model-select" class="select" onchange="loadAudios()">
-                            <option value="">选择模型...</option>
-                        </select>
-                        <button class="btn btn-secondary" onclick="showBatchEmotionDialogFromAudios()"
-                            id="batch-emotion-btn" disabled>🏷️ 批量修改情感</button>
-                        <button class="btn btn-primary" onclick="showUploadDialog()" id="upload-btn" disabled>⬆️
-                            上传音频</button>
+                    <h2>🎵 参考音频管理</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="showBatchEmotionDialogFromAudios()" id="batch-emotion-btn" disabled>🔄 按前缀替换</button>
+                        <button class="btn btn-primary" onclick="showUploadDialog()" id="upload-btn" disabled>⬆️ 上传音频</button>
                     </div>
                 </header>
 
+                <!-- 音频管理现代化工具条 -->
+                <div class="toolbar-container">
+                    <div class="toolbar-left">
+                        <select id="audio-model-select" class="select" style="min-width: 200px;" onchange="loadAudios()">
+                            <option value="">选择模型...</option>
+                        </select>
+                        <select id="audio-lang-filter" class="select" style="min-width: 130px;" onchange="filterAudios()" disabled>
+                            <option value="all">🌐 全部语言</option>
+                            <option value="Chinese">中文 (Chinese)</option>
+                            <option value="Japanese">日语 (Japanese)</option>
+                            <option value="English">英语 (English)</option>
+                            <option value="default">默认 (default)</option>
+                        </select>
+                        <div class="search-input-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="audio-search-input" placeholder="搜索音频文件名/情感..." oninput="filterAudios()" disabled>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <label class="select-all-label" id="audio-select-all-wrap" style="display: none;">
+                            <input type="checkbox" id="audio-select-all" onchange="toggleSelectAllAudios(this.checked)">
+                            <span>全选</span>
+                        </label>
+                        <span class="badge-count" id="audio-total-badge">0 个音频</span>
+                    </div>
+                </div>
+
+                <!-- 浮动批量操作条 (音频) -->
+                <div class="sticky-bulk-bar" id="audio-bulk-bar">
+                    <div class="bulk-info">
+                        <span>已勾选 <strong id="audio-selected-count" style="color: var(--accent-primary);">0</strong> 个音频</span>
+                    </div>
+                    <div class="bulk-actions-group">
+                        <button class="btn btn-secondary btn-sm" onclick="showBatchSelectedEmotionDialog()">🏷️ 批量修改情感</button>
+                        <button class="btn btn-danger btn-sm" onclick="showBatchDeleteAudiosDialog()">🗑️ 批量删除</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearAudioSelection()">取消选择</button>
+                    </div>
+                </div>
+
                 <div class="audios-container" id="audios-list">
                     <p class="placeholder">请先选择一个模型</p>
+                </div>
+            </section>
+
+            <!-- 创作者工坊页面 -->
+            <section id="workshop" class="page">
+                <header class="page-header">
+                    <div>
+                        <h2>🎨 创作者工坊 (Creative Workshop)</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">自定义来电/窃听剧情场景、专属 Prompt 与变量生态，支持一键导出分享与导入</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="file" id="workshop-file-input" accept=".json" style="display: none;" onchange="handlePresetFileSelected(event)">
+                        <button class="btn btn-secondary" onclick="triggerImportPresetFile()">📥 导入预设 (.json)</button>
+                        <button class="btn btn-primary" onclick="openCreatePresetModal()">✨ 新建设想预设</button>
+                    </div>
+                </header>
+
+                <!-- 工坊工具栏 -->
+                <div class="toolbar-container">
+                    <div class="toolbar-left">
+                        <div class="filter-tabs-pills">
+                            <button class="pill-btn active" data-category="all" onclick="switchWorkshopFilter('all', this)">全部 (All)</button>
+                            <button class="pill-btn" data-category="phone_call" onclick="switchWorkshopFilter('phone_call', this)">📞 主动来电</button>
+                            <button class="pill-btn" data-category="eavesdrop" onclick="switchWorkshopFilter('eavesdrop', this)">👂 私下窃听</button>
+                        </div>
+                        <div class="search-input-wrapper">
+                            <span class="search-icon-inside">🔍</span>
+                            <input type="text" id="workshop-search-input" placeholder="搜索预设名称 / 标签 / 作者..." oninput="filterWorkshopPresets()">
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <span class="badge-count" id="workshop-total-badge">0 个预设</span>
+                        <button class="btn btn-secondary btn-sm" onclick="loadWorkshopPresets()">🔄 刷新</button>
+                    </div>
+                </div>
+
+                <!-- 预设卡片列表 -->
+                <div class="presets-container" id="presets-list">
+                    <p class="loading">加载预设中...</p>
                 </div>
             </section>
 
@@ -287,6 +392,15 @@
                                 <option value="Japanese">日语</option>
                                 <option value="English">英语</option>
                             </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>主题开发者模式</label>
+                            <select id="setting-developer-mode" class="select">
+                                <option value="false">关闭</option>
+                                <option value="true">开启 (显示测试浮窗)</option>
+                            </select>
+                            <small>在酒馆页面显示一个用于测试各个主题、触发来电与窃听的小组件。</small>
                         </div>
 
                         <h3 class="settings-section-title">📄 消息处理（共享）</h3>
@@ -495,30 +609,6 @@
                             </select>
                             <small>使用辅助音频，让情绪转换的时候更加自然，但偶尔也会失真</small>
                         </div>
-
-                        <!-- 
-                        ========== 已废弃：自动生成现由分析引擎控制 ==========
-                        <h3 class="settings-section-title">🤖 自动生成配置</h3>
-
-                        <div class="form-group">
-                            <label>楼层间隔</label>
-                            <input type="number" id="setting-auto-floor-interval" class="input" min="1" placeholder="3">
-                            <small>每隔多少条消息触发一次自动生成(这里指的是轮次，即AI回复)</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>起始楼层</label>
-                            <input type="number" id="setting-auto-start-floor" class="input" min="1" placeholder="3">
-                            <small>从第几条消息开始触发自动生成(这里指的是轮次，即AI回复)</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>最大上下文消息数</label>
-                            <input type="number" id="setting-auto-max-context-messages" class="input" min="1"
-                                placeholder="10">
-                            <small>自动生成时使用的最大上下文消息数量</small>
-                        </div>
-                        -->
                     </div>
                 </div>
             </section>
@@ -581,35 +671,59 @@
         </div>
     </div>
 
-    <!-- 上传音频对话框 -->
+    <!-- 上传参考音频对话框 (支持单选与批量多选) -->
     <div id="upload-dialog" class="dialog-overlay" style="display: none;">
-        <div class="dialog">
+        <div class="dialog" style="max-width: 580px;">
             <div class="dialog-header">
-                <h3>上传参考音频</h3>
+                <h3>⬆️ 上传参考音频 (支持批量)</h3>
                 <button class="close-btn" onclick="closeDialog('upload-dialog')">✕</button>
             </div>
             <div class="dialog-body">
                 <div class="form-group">
-                    <label>语言</label>
+                    <label>目标语言分类</label>
                     <select id="upload-language" class="select">
-                        <option value="Chinese">中文</option>
-                        <option value="Japanese">日语</option>
-                        <option value="English">英语</option>
+                        <option value="Chinese">中文 (Chinese)</option>
+                        <option value="Japanese">日语 (Japanese)</option>
+                        <option value="English">英语 (English)</option>
+                        <option value="default">默认目录 (default)</option>
                     </select>
                 </div>
+
                 <div class="form-group">
-                    <label>情感标签</label>
-                    <input type="text" id="upload-emotion" class="input" placeholder="例: happy, sad, angry"
-                        value="default">
+                    <label>统一情感前缀 (默认: default)</label>
+                    <input type="text" id="upload-emotion" class="input" placeholder="例: happy, sad, angry" value="default">
+                    <small>💡 智能识别：若文件名已自带下划线前缀（如 <code>happy_hello.wav</code>），将自动保留其情绪标签；否则自动添加此处设定的前缀。</small>
                 </div>
+
                 <div class="form-group">
-                    <label>音频文件</label>
-                    <input type="file" id="upload-file" class="input" accept=".wav,.mp3,.ogg,.flac">
+                    <label>选择音频文件 (可同时按住 Ctrl / Shift 多选多个文件)</label>
+                    <input type="file" id="upload-file" class="input" multiple accept=".wav,.mp3,.ogg,.flac" onchange="previewUploadFiles()">
+                    <small>支持 .wav, .mp3, .ogg, .flac 格式。系统将自动校验 3-10 秒要求（小于 3 秒自动补齐）。</small>
+                </div>
+
+                <!-- 待上传文件列表预览 -->
+                <div id="upload-files-preview-box" class="upload-files-preview-box" style="display: none;">
+                    <div class="upload-preview-header">
+                        <span>待上传列表 (<strong id="upload-selected-count">0</strong> 个文件，共 <span id="upload-selected-size">0 MB</span>)</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearUploadFiles()">清空选择</button>
+                    </div>
+                    <div id="upload-files-list" class="upload-files-list"></div>
+                </div>
+
+                <!-- 上传进度指示 -->
+                <div id="audio-upload-progress-container" class="progress-container" style="display: none; margin-top: 1rem;">
+                    <div class="progress-bar">
+                        <div id="audio-upload-progress-bar" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="audio-upload-progress-text">正在上传...</span>
+                        <span id="audio-upload-progress-percent">0%</span>
+                    </div>
                 </div>
             </div>
             <div class="dialog-footer">
                 <button class="btn btn-secondary" onclick="closeDialog('upload-dialog')">取消</button>
-                <button class="btn btn-primary" onclick="uploadAudio()">上传</button>
+                <button class="btn btn-primary" id="confirm-upload-btn" onclick="uploadAudio()">开始上传</button>
             </div>
         </div>
     </div>
@@ -672,10 +786,10 @@
                     <p>欢迎使用 SillyTavern GPT-SoVITS 管理面板！</p>
                     <p style="color: #ff4757; font-size: 1.2em; font-weight: bold;">本插件永久免费，包括模型资源！如果你用到了需要收费的，请加群联系作者！
                     </p>
-                    <p>V2.0版本 情感引擎已上线！多人对话！</p>
+                    <p>V3.0.0 创作者工坊与高定主题生态已重磅上线！</p>
                     <p>请前往系统配置完成设置后使用：</p>
                     <ul style="padding-left: 20px; margin: 10px 0;">
-                        <li>确认填好api与密钥</li>
+                        <li>确认填好 API 与密钥</li>
                         <li>测试连接是否正常，保存设置</li>
                     </ul>
                     <div
@@ -696,7 +810,178 @@
         </div>
     </div>
 
-    <script src="js/admin.js"></script>
+    <!-- 删除模型确认对话框 -->
+    <div id="delete-model-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>⚠️ 确认删除模型</h3>
+                <button class="close-btn" onclick="closeDialog('delete-model-dialog')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <div class="danger-box">
+                    <strong>高危操作警告：</strong> 您即将永久删除以下模型及其全部本地权重文件和参考音频，此操作<strong>不可撤销</strong>！
+                </div>
+                <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-secondary);">即将删除的模型：</p>
+                <div class="delete-target-list" id="delete-model-list"></div>
+                <p class="unbound-notice">⚡ 提示：删除后系统将自动解除 <code>character_mappings.json</code> 中指向这些模型的角色绑定。</p>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('delete-model-dialog')">取消</button>
+                <button class="btn btn-danger" id="confirm-delete-model-btn" onclick="executeModelDeletion()">确认永久删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量/单项删除音频确认对话框 -->
+    <div id="delete-audio-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>⚠️ 确认删除参考音频</h3>
+                <button class="close-btn" onclick="closeDialog('delete-audio-dialog')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <div class="danger-box">
+                    <strong>警告：</strong> 确定要删除选中的音频文件吗？删除后文件无法找回。
+                </div>
+                <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-secondary);">即将删除的音频 (<span id="delete-audio-count">0</span> 项)：</p>
+                <div class="delete-target-list" id="delete-audio-list"></div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('delete-audio-dialog')">取消</button>
+                <button class="btn btn-danger" id="confirm-delete-audio-btn" onclick="executeAudioDeletion()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量修改选中音频情感对话框 -->
+    <div id="batch-selected-emotion-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>🏷️ 批量修改选中音频情感</h3>
+                <button class="close-btn" onclick="closeDialog('batch-selected-emotion-dialog')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    已选择 <strong id="batch-selected-audio-count" style="color: var(--accent-primary);">0</strong> 个音频文件，将统一修改它们的情感前缀。
+                </p>
+                <div class="form-group">
+                    <label>新情感标签</label>
+                    <input type="text" id="batch-selected-new-emotion" class="input" placeholder="例: happy, angry, gentle, shy">
+                    <small>文件将被重命名为 "新情感_原文件名.wav"，方便 GPT-SoVITS 情绪识别。</small>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('batch-selected-emotion-dialog')">取消</button>
+                <button class="btn btn-primary" onclick="confirmBatchSelectedEmotion()">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创作者工坊预设编辑器模态框 -->
+    <div id="preset-editor-modal" class="dialog-overlay" style="display: none;">
+        <div class="dialog dialog-lg">
+            <div class="dialog-header">
+                <h3 id="preset-modal-title">✨ 新建场景预设</h3>
+                <button class="close-btn" onclick="closeDialog('preset-editor-modal')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <form id="preset-form" onsubmit="event.preventDefault(); savePresetForm();">
+                    <input type="hidden" id="preset-is-builtin" value="false">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>预设名称 <span class="required">*</span></label>
+                            <input type="text" id="preset-name" class="input" placeholder="例: 深夜私语 / 密谋商议" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>场景分类 <span class="required">*</span></label>
+                            <select id="preset-category" class="select" required>
+                                <option value="phone_call">📞 主动电话呼叫 (Phone Call)</option>
+                                <option value="eavesdrop">👂 私下窃听/旁听 (Eavesdrop)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>唯一标识符 (ID)</label>
+                            <input type="text" id="preset-id" class="input" placeholder="自动生成或填写英文ID，例: midnight_whisper">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>作者 (Author)</label>
+                            <input type="text" id="preset-author" class="input" placeholder="作者名，例: yuhang">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>预设描述 (Description)</label>
+                        <input type="text" id="preset-description" class="input" placeholder="简要描述本预设的剧情走向、角色动机与适用时机">
+                    </div>
+
+                    <div class="form-group">
+                        <label>标签 (Tags，多个用逗号隔开)</label>
+                        <input type="text" id="preset-tags" class="input" placeholder="例: 恋爱, 深夜, 治愈, 剧情反转">
+                    </div>
+
+                    <!-- Prompt 模板与快捷插槽 -->
+                    <div class="form-group">
+                        <div class="prompt-header-row">
+                            <label>提示词模板 (Prompt Template) <span class="required">*</span></label>
+                            <span class="prompt-tips">💡 点击下方插槽标签快速插入占位符</span>
+                        </div>
+                        <div class="variable-slots-bar" id="preset-variable-slots">
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{speaker}}')">+ {{speaker}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{user_name}}')">+ {{user_name}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{speakers_emotions}}')">+ {{speakers_emotions}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{context}}')">+ {{context}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{lang_display}}')">+ {{lang_display}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{last_call_summary}}')">+ {{last_call_summary}}</button>
+                            <button type="button" class="slot-pill" onclick="insertSlot('{{followup_call_instructions}}')">+ {{followup_call_instructions}}</button>
+                        </div>
+                        <textarea id="preset-prompt-template" class="textarea prompt-textarea" rows="12" placeholder="在此编写或粘贴系统提示词模板..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label>推荐采样温度 (Temperature)</label>
+                            <input type="number" id="preset-temp" class="input" step="0.05" min="0.1" max="1.5" placeholder="0.7">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label>推荐语速倍率 (Speed)</label>
+                            <input type="number" id="preset-speed" class="input" step="0.05" min="0.5" max="2.0" placeholder="1.0">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('preset-editor-modal')">取消</button>
+                <button class="btn btn-primary" id="save-preset-btn" onclick="savePresetForm()">💾 保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除预设确认对话框 -->
+    <div id="delete-preset-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>⚠️ 确认删除场景预设</h3>
+                <button class="close-btn" onclick="closeDialog('delete-preset-dialog')">✕</button>
+            </div>
+            <div class="dialog-body">
+                <div class="danger-box">
+                    <strong>警告：</strong> 确定要删除预设 <code id="delete-preset-name-display"></code> 吗？此操作不可撤销。
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-secondary" onclick="closeDialog('delete-preset-dialog')">取消</button>
+                <button class="btn btn-danger" id="confirm-delete-preset-btn" onclick="executePresetDeletion()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局 Toast 容器 -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="js/admin.js"></script>
 </body>
 
 </html>

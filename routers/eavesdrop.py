@@ -33,6 +33,27 @@ class BuildEavesdropPromptRequest(BaseModel):
     user_name: str = "用户"
     text_lang: str = "zh"
     max_context_messages: int = 20
+    preset_id: Optional[str] = None
+    prompt_template: Optional[str] = None
+    target: Optional[str] = None
+    theme: Optional[str] = None
+    call_reason: Optional[str] = None
+    call_tone: Optional[str] = None
+    character_persona: Optional[str] = None
+    world_info: Optional[str] = None
+    story_summary: Optional[str] = None
+    chat_branch: Optional[str] = None
+
+
+class ParseEavesdropRequest(BaseModel):
+    """解析并生成对话追踪音频请求 (工坊测试用)"""
+    llm_response: str
+    speakers: List[str]
+    text_lang: Optional[str] = "zh"
+    chat_branch: Optional[str] = None
+    context_fingerprint: Optional[str] = None
+    trigger_floor: Optional[int] = None
+    scene_description: Optional[str] = None
 
 
 class CompleteEavesdropRequest(BaseModel):
@@ -52,15 +73,20 @@ async def analyze_scene(req: AnalyzeSceneRequest):
     """
     分析当前场景状态
     
-    判断是否应该触发电话或对话追踪
+    判断是否有角色离开（适合打电话）或多个角色在场（适合私聊）
     """
     try:
-        result = await scene_analyzer.analyze(
+        result = await eavesdrop_service.analyze_scene(
             context=req.context,
             speakers=req.speakers,
-            max_context_messages=req.max_context_messages
+            char_name=req.char_name,
+            call_history=req.call_history,
+            user_name=req.user_name
         )
-        return result.model_dump()
+        return {
+            "status": "success",
+            **result
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -68,21 +94,95 @@ async def analyze_scene(req: AnalyzeSceneRequest):
 @router.post("/build_prompt")
 async def build_eavesdrop_prompt(req: BuildEavesdropPromptRequest):
     """
-    构建对话追踪 Prompt
+    构建对话追踪 LLM Prompt
     
-    返回 prompt 供前端调用 LLM
+    前端拿到 Prompt 后自行调用 LLM 生成，再调 complete_generation
     """
     try:
+        from services.emotion_service import EmotionService
+        emotion_service = EmotionService()
+        speakers_emotions = {}
+        for speaker in req.speakers:
+            try:
+                emotions = emotion_service.get_available_emotions(speaker)
+                speakers_emotions[speaker] = emotions
+            except Exception as e:
+                speakers_emotions[speaker] = ["default", "neutral"]
+
         result = await eavesdrop_service.build_prompt(
             context=req.context,
             speakers=req.speakers,
             user_name=req.user_name,
-            text_lang=req.text_lang,
-            max_context_messages=req.max_context_messages
+            theme=req.call_reason or req.theme,
+            preset_id=req.preset_id,
+            prompt_template=req.prompt_template,
+            target=req.target,
+            call_reason=req.call_reason,
+            call_tone=req.call_tone,
+            character_persona=req.character_persona,
+            world_info=req.world_info,
+            story_summary=req.story_summary,
+            chat_branch=req.chat_branch,
+            text_lang=req.text_lang
         )
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        return {
+            "status": "success",
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/parse_and_generate")
+async def parse_and_generate_eavesdrop(req: ParseEavesdropRequest):
+    """
+    解析 LLM 响应并即时生成对话追踪多角色音频 (剧本工坊即时测试用)
+    """
+    try:
+        from services.emotion_service import EmotionService
+        emotion_service = EmotionService()
+        speakers_emotions = {}
+        for speaker in req.speakers:
+            try:
+                emotions = emotion_service.get_available_emotions(speaker)
+                speakers_emotions[speaker] = emotions
+            except Exception as e:
+                speakers_emotions[speaker] = ["default", "neutral"]
+
+        result = await eavesdrop_service.complete_generation(
+            llm_response=req.llm_response,
+            speakers_emotions=speakers_emotions,
+            text_lang=req.text_lang or "zh"
+        )
+
+        record_id = None
+        if req.chat_branch or req.context_fingerprint:
+            import time
+            branch = req.chat_branch or "default"
+            fp = req.context_fingerprint or f"manual_eavesdrop_{int(time.time())}"
+            floor = req.trigger_floor or 1
+            try:
+                record_id = db.add_eavesdrop_record(
+                    chat_branch=branch,
+                    context_fingerprint=fp,
+                    speakers=req.speakers,
+                    segments=result.get("segments", []),
+                    scene_description=req.scene_description or f"私下对话: {', '.join(req.speakers)}",
+                    audio_path=result.get("audio_path", ""),
+                    audio_url=result.get("audio_url", ""),
+                    trigger_floor=floor,
+                    status="completed"
+                )
+                if record_id:
+                    print(f"[Eavesdrop API] ✅ 已持久化窃听记录至数据库 ID: {record_id}")
+            except Exception as db_err:
+                print(f"[Eavesdrop API] ⚠️ 写入窃听记录失败: {db_err}")
+
+        return {
+            "status": "success",
+            "record_id": record_id,
+            **result
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -189,11 +289,33 @@ async def complete_eavesdrop_generation(req: CompleteEavesdropRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/history/{chat_branch}")
-async def get_eavesdrop_history(chat_branch: str, limit: int = 50):
-    """获取对话追踪历史记录"""
+@router.get("/history")
+async def get_eavesdrop_general_history(chat_branch: Optional[str] = None, limit: int = 50):
+    """获取对话追踪通用历史记录 (支持分支过滤或全量历史)"""
     try:
         history = db.get_eavesdrop_history(chat_branch, limit)
-        return {"records": history, "count": len(history)}
+        return {
+            "status": "success",
+            "history": history,
+            "records": history,
+            "count": len(history),
+            "total": len(history)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/{chat_branch}")
+async def get_eavesdrop_history(chat_branch: str, limit: int = 50):
+    """获取指定分支的对话追踪历史记录"""
+    try:
+        history = db.get_eavesdrop_history(chat_branch, limit)
+        return {
+            "status": "success",
+            "history": history,
+            "records": history,
+            "count": len(history),
+            "total": len(history)
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

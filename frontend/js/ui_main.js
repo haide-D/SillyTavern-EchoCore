@@ -90,19 +90,24 @@ export const TTS_UI = window.TTS_UI;
         $('#tts-manager-btn').removeClass('incoming-call');
         $('#tts-mobile-trigger').removeClass('incoming-call');
 
-        // 来电界面由模拟手机 UI 处理
-        if (window.TTS_Mobile && window.TTS_Mobile.openApp) {
-            console.log('[UI] 使用模拟手机来电界面');
-            // 打开小手机(如果未打开)
+        // 来电界面由主题引擎处理
+        if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.isInitialized()) {
+            console.log('[UI] 使用主题引擎显示来电界面');
+            if (!window.TTS_ThemeEngine.isOpen()) {
+                window.TTS_ThemeEngine.open();
+            }
+            window.TTS_ThemeEngine.showScene('incoming_call', callData);
+        } else if (window.TTS_Mobile && window.TTS_Mobile.openApp) {
+            // 降级: 使用旧的 mobile_ui 方式
+            console.log('[UI] 降级: 使用模拟手机来电界面');
             const $mobileRoot = $('#tts-mobile-root');
             if ($mobileRoot.length > 0 && $mobileRoot.hasClass('minimized')) {
                 $mobileRoot.removeClass('minimized');
                 $('#tts-mobile-trigger').fadeOut();
             }
-            // 打开来电应用
             window.TTS_Mobile.openApp('incoming_call');
         } else {
-            console.warn('[UI] 模拟手机界面不可用，无法显示来电');
+            console.warn('[UI] 主题引擎和模拟手机界面均不可用');
         }
     };
     scope.handleUnbind = async function (c) {

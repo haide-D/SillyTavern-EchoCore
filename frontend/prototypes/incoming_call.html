@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Patronus UI — Rune Awakening</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&family=MedievalSharp&family=Noto+Sans+Runic&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="incoming_call.css">
+</head>
+
+<body>
+    <div class="title-watermark">Patronus UI — Rune Awakening</div>
+
+    <!-- 背景粒子（base.js） -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- 暗幕 -->
+    <div class="dark-overlay" id="darkOverlay"></div>
+
+    <!-- ====== 死亡圣器符文 ====== -->
+    <div class="proto-element dh-container" id="dhContainer">
+        <div class="dh-inner" id="dhInner">
+            <div class="dh-glow"></div>
+
+            <svg class="dh-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                <!-- 轨道环 -->
+                <circle class="dh-orbit-outer" cx="28" cy="28" r="26" />
+                <circle class="dh-orbit-mid" cx="28" cy="28" r="23" />
+
+                <!-- 符文标记环 —— 古卢恩符文沿圆弧排列 -->
+                <defs>
+                    <!-- 外环路径 r=27 -->
+                    <path id="runePathOuter" d="M 55,28 A 27,27 0 1,1 1,28 A 27,27 0 1,1 55,28" fill="none" />
+                    <!-- 内环路径 r=24 -->
+                    <path id="runePathInner" d="M 52,28 A 24,24 0 1,0 4,28 A 24,24 0 1,0 52,28" fill="none" />
+                    <!-- 涡流底池渐变 -->
+                    <radialGradient id="poolShimmer" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#C8C8E8" stop-opacity="0.1" />
+                        <stop offset="60%" stop-color="#C8C8E8" stop-opacity="0.04" />
+                        <stop offset="100%" stop-color="#C8C8E8" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+                <g class="dh-rune-ring">
+                    <!-- 外环：Elder Futhark 符文 -->
+                    <text class="rune-text rune-text-outer">
+                        <textPath href="#runePathOuter" startOffset="0%">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛈ ᛇ ᛉ ᛊ ᛏ ᛒ ᛗ ᛚ ᛜ ᛞ ᛟ ᚠ
+                        </textPath>
+                    </text>
+                    <!-- 内环：反向排列，不同符文序列 -->
+                    <text class="rune-text rune-text-inner">
+                        <textPath href="#runePathInner" startOffset="8%">ᛟ ᛞ ᛜ ᛚ ᛗ ᛒ ᛏ ᛊ ᛉ ᛇ ᛈ ᛃ ᛁ ᚾ ᚺ ᚹ ᚷ ᚲ ᚱ ᚨ ᚦ ᚢ
+                        </textPath>
+                    </text>
+                </g>
+
+                <!-- ===== 三圣器：各自包裹 <g> 以便独立 transform ===== -->
+
+                <!-- 三角形（隐形斗篷）→ 分离后变结界外框 -->
+                <g class="g-triangle">
+                    <path class="dh-triangle" d="M28,10 L42,44 L14,44 Z" />
+                    <path class="dh-triangle-flow" d="M28,10 L42,44 L14,44 Z" />
+                    <!-- 三角形顶点光点 -->
+                    <circle class="dh-node" cx="28" cy="10" r="1.2">
+                        <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <circle class="dh-node" cx="42" cy="44" r="1">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3.5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle class="dh-node" cx="14" cy="44" r="1">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
+                    </circle>
+                </g>
+
+                <!-- 圆（复活石）→ 分离后变记忆涡流 -->
+                <g class="g-circle">
+                    <circle class="dh-circle" cx="28" cy="32" r="10.5" />
+                    <circle class="dh-circle-flow" cx="28" cy="32" r="10.5" />
+                    <!-- ★ 记忆涡流（冥想盆 — 分离后可见） -->
+                    <g class="pensieve-vortex">
+                        <!-- 涡流底池 -->
+                        <circle class="vortex-pool" cx="28" cy="32" r="9" fill="url(#poolShimmer)" />
+                        <!-- 涡流臂组（整组旋转） -->
+                        <g class="vortex-arms">
+                            <!-- 内层螺旋 r≈3, 270°弧 -->
+                            <path class="vortex-thread vt-i1" d="M28,29 A3,3 0 1,1 25,32" />
+                            <path class="vortex-thread vt-i2" d="M28,35 A3,3 0 1,1 31,32" />
+                            <!-- 中层螺旋 r≈5.5, 270°弧 -->
+                            <path class="vortex-thread vt-m1" d="M28,26.5 A5.5,5.5 0 1,1 22.5,32" />
+                            <path class="vortex-thread vt-m2" d="M28,37.5 A5.5,5.5 0 1,1 33.5,32" />
+                            <!-- 外层螺旋 r≈8, 180°弧（半圆瓦解） -->
+                            <path class="vortex-thread vt-o1" d="M28,24 A8,8 0 0,1 28,40" />
+                            <path class="vortex-thread vt-o2" d="M28,40 A8,8 0 0,1 28,24" />
+                        </g>
+                        <!-- 涡旋涟漪（旋转+扩散） -->
+                        <circle class="vortex-ripple vr-1" cx="28" cy="32" r="3" />
+                        <circle class="vortex-ripple vr-2" cx="28" cy="32" r="3" />
+                        <circle class="vortex-ripple vr-3" cx="28" cy="32" r="3" />
+                        <!-- 记忆光点（轨道运动） -->
+                        <circle class="memory-glint mg-1" cx="31" cy="32" r="0.5">
+                            <animateTransform attributeName="transform" type="rotate" values="0 28 32;360 28 32"
+                                dur="4s" repeatCount="indefinite" />
+                        </circle>
+                        <circle class="memory-glint mg-2" cx="34" cy="32" r="0.4">
+                            <animateTransform attributeName="transform" type="rotate" values="120 28 32;480 28 32"
+                                dur="6s" repeatCount="indefinite" />
+                        </circle>
+                        <circle class="memory-glint mg-3" cx="36" cy="32" r="0.3">
+                            <animateTransform attributeName="transform" type="rotate" values="240 28 32;600 28 32"
+                                dur="9s" repeatCount="indefinite" />
+                        </circle>
+                    </g>
+                    <!-- 圆与三角交点光点 -->
+                    <circle class="dh-node" cx="21.5" cy="40" r="0.8" opacity="0.4">
+                        <animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle class="dh-node" cx="34.5" cy="40" r="0.8" opacity="0.4">
+                        <animate attributeName="opacity" values="0.2;0.5;0.2" dur="3.2s" repeatCount="indefinite" />
+                    </circle>
+                </g>
+
+                <!-- 竖线（老魔杖）→ 分离后变能量柱 -->
+                <g class="g-line">
+                    <line class="dh-line" x1="28" y1="10" x2="28" y2="44" />
+                    <line class="dh-line-flow" x1="28" y1="10" x2="28" y2="44" />
+                </g>
+
+                <!-- 核心光点 -->
+                <circle class="dh-core" cx="28" cy="28" r="2" />
+            </svg>
+
+            <div class="dh-shadow"></div>
+        </div>
+    </div>
+
+    <!-- ====== 来电信息 ====== -->
+    <div class="call-info" id="callInfo">
+        <div class="caller-name" id="callerNameText"></div>
+        <div class="caller-subtitle" id="callerSub"></div>
+        <div class="call-buttons" id="callButtons">
+            <button class="call-btn accept" onclick="acceptCall()">Accio</button>
+            <button class="call-btn decline" onclick="declineCall()">Silencio</button>
+        </div>
+    </div>
+
+    <!-- ====== 字幕 ====== -->
+    <div class="subtitle-area" id="subtitleArea">
+        <div class="subtitle-text" id="subtitleText"></div>
+    </div>
+
+    <!-- ====== Debug ====== -->
+    <div class="debug-info" id="debugInfo">Phase: idle</div>
+
+    <div class="debug-bar">
+        <button class="debug-btn active" id="btnIdle" onclick="resetAll()">⚡ 待机</button>
+        <button class="debug-btn" id="btnCall" onclick="triggerIncomingCall()">🦌 来电触发</button>
+        <button class="debug-btn" id="btnActive" onclick="jumpToActive()">📞 通话中</button>
+        <button class="debug-btn" id="btnEnd" onclick="endCall()">🔚 结束</button>
+        <button class="debug-btn" id="btnReset" onclick="resetAll()">↻ 重置</button>
+    </div>
+
+    <script src="base.js"></script>
+    <script src="incoming_call.js"></script>
+
+    <script>
+        // base.js 粒子系统（待机态符文漂浮+星尘）
+        const dhInner = document.getElementById('dhInner');
+        const dhContainer = document.getElementById('dhContainer');
+
+        const proto = new PrototypeBase({
+            elementId: 'dhContainer',
+            elementSize: 72,
+            colors: {
+                dustRGB: '200, 180, 120',
+                dustGlowRGB: '212, 168, 83',
+                trailHue: [38, 52], trailSat: 55, trailLight: 70,
+                goldHue: [40, 50], goldSat: 70, goldLight: 68,
+            },
+            float: { baseX: 0.78, baseY: 0.50 },
+            particles: {
+                trailMaxParticles: 10, trailEmitChance: 0.08,
+                trailLifespan: 3500, ambientParticles: 5,
+            },
+            emitters: {
+                svgViewBox: 56,
+                edges: [
+                    { from: [28, 10], to: [42, 44] },
+                    { from: [42, 44], to: [14, 44] },
+                    { from: [14, 44], to: [28, 10] },
+                ],
+                arcs: [{ cx: 28, cy: 32, r: 10.5 }],
+                vertices: [
+                    [28, 10], [42, 44], [14, 44],
+                    [21.5, 40], [34.5, 40], [28, 28],
+                ],
+            },
+            microEvents: [
+                {
+                    name: 'surge', weight: 100,
+                    fn(done, p) {
+                        p.burstParticles(3, 'gold');
+                        for (let i = 0; i < 2; i++) p._emitOrbitParticle('gold');
+                        setTimeout(done, 800);
+                    }
+                },
+            ],
+            onEnterState() { },
+            onLeaveState() { },
+        });
+        proto.start();
+    </script>
+</body>
+
+</html>

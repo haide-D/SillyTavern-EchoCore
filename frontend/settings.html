@@ -1,47 +1,110 @@
 <!-- frontend/settings.html -->
 <div id="st-direct-tts-settings" class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-        <b>🔊 ST-Direct-TTS 供应商配置</b>
+        <b>🔊 ST-Direct-TTS 语音插件设置</b>
         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down"></div>
     </div>
 
     <div class="inline-drawer-content">
-        <!-- 供应商选择 -->
+        <!-- 1. 全局总开关 -->
         <div class="settings_section">
-            <label for="tts-provider-select"><b>当前 TTS 供应商:</b></label>
-            <select id="tts-provider-select" class="text_pole">
-                <option value="gpt_sovits">GPT-SoVITS (本地模型)</option>
-                <option value="minimax">MiniMax (云端 API)</option>
-                <option value="doubao">豆包 TTS (云端 API)</option>
-            </select>
+            <label class="checkbox_label">
+                <input type="checkbox" id="tts-ext-master-enabled" checked />
+                <span><b>启用 ST-Direct-TTS 插件</b></span>
+            </label>
         </div>
-        
+
         <hr class="sysHR" />
 
-        <!-- 针对 GPT-SoVITS 的面板 -->
-        <div id="tts-provider-panel-gpt_sovits" class="tts-provider-panel">
-            <div class="settings_section">
-                <p><i>当前正使用本地 GPT-SoVITS 服务。详细的模型绑定、路径配置和悬浮UI设置，请点击聊天界面右侧的「🔊 TTS配置」悬浮窗。</i></p>
+        <!-- 2. 后端服务连接配置 -->
+        <div class="settings_section">
+            <h4>📡 后端服务连接 (Manager API)</h4>
+            <div class="flex-container align-items-center" style="gap: 10px; margin-bottom: 8px;">
+                <label class="checkbox_label" style="min-width: 120px;">
+                    <input type="checkbox" id="tts-ext-use-remote" />
+                    <span>远程 / 局域网 / 反向代理连接</span>
+                </label>
+            </div>
+            
+            <div id="tts-ext-remote-fields" style="display: none; margin-top: 8px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 2;">
+                        <small>电脑 IP / 域名 / 完整反代 URL:</small>
+                        <input type="text" id="tts-ext-remote-ip" class="text_pole" placeholder="例如: 192.168.1.100 或 https://tts.example.com" />
+                    </div>
+                    <div style="flex: 1;">
+                        <small>端口 (仅裸IP/host生效):</small>
+                        <input type="number" id="tts-ext-remote-port" class="text_pole" placeholder="3000" min="1" max="65535" />
+                    </div>
+                </div>
+                <small style="display:block; color:#888; font-size:11px; margin-top:2px;">
+                    💡 提示：若填写完整 <code>http(s)://</code> 反代地址，系统将直接连接该地址且自动升级 <code>wss://</code>，不追加额外端口。
+                </small>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <a id="tts-ext-open-admin-btn" class="menu_button" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;" target="_blank">
+                    <span>⚙️ 打开独立 Web 管理面板 (Admin Dashboard)</span>
+                </a>
+                <small style="display:block; color: #888; margin-top: 4px;">用于扫描本地权重路径、批量维护全局角色模型映射、场景预设工坊与清理缓存。</small>
             </div>
         </div>
 
-        <!-- 针对 MiniMax 的面板 -->
-        <div id="tts-provider-panel-minimax" class="tts-provider-panel" style="display:none;">
-            <div class="settings_section">
-                <label for="tts-minimax-api-key">API Key:</label>
-                <input type="password" id="tts-minimax-api-key" class="text_pole" placeholder="输入 MiniMax API Key">
+        <hr class="sysHR" />
+
+        <!-- 3. TTS 供应商与云端 API 凭证 -->
+        <div class="settings_section">
+            <h4>🎙️ TTS 供应商生态</h4>
+            <div style="margin-bottom: 8px;">
+                <label for="tts-provider-select"><b>当前激活供应商:</b></label>
+                <select id="tts-provider-select" class="text_pole" style="width: 100%; margin-top: 4px;">
+                    <option value="gpt_sovits">GPT-SoVITS (本地模型推理)</option>
+                    <option value="minimax">MiniMax (云端 API - 实验性)</option>
+                    <option value="doubao">豆包 TTS (云端 API - 实验性)</option>
+                </select>
             </div>
-            <div class="settings_section">
-                <label for="tts-minimax-group-id">Group ID:</label>
-                <input type="text" id="tts-minimax-group-id" class="text_pole" placeholder="输入 Group ID">
+
+            <!-- GPT-SoVITS 说明 -->
+            <div id="tts-provider-panel-gpt_sovits" class="tts-provider-panel" style="margin-top: 8px;">
+                <p style="font-size: 12px; color: #aaa; margin: 0;">
+                    <i>当前正使用本地 GPT-SoVITS 服务。模型权重加载与热切换由本地 Manager 自动接管。</i>
+                </p>
+            </div>
+
+            <!-- MiniMax 配置 -->
+            <div id="tts-provider-panel-minimax" class="tts-provider-panel" style="display:none; margin-top: 8px;">
+                <div style="margin-bottom: 6px;">
+                    <small>MiniMax API Key:</small>
+                    <input type="password" id="tts-minimax-api-key" class="text_pole" placeholder="输入 MiniMax API Key" />
+                </div>
+                <div>
+                    <small>Group ID:</small>
+                    <input type="text" id="tts-minimax-group-id" class="text_pole" placeholder="输入 Group ID" />
+                </div>
+            </div>
+
+            <!-- 豆包 配置 -->
+            <div id="tts-provider-panel-doubao" class="tts-provider-panel" style="display:none; margin-top: 8px;">
+                <div>
+                    <small>豆包 API Key:</small>
+                    <input type="password" id="tts-doubao-api-key" class="text_pole" placeholder="输入豆包/火山引擎 API Key" />
+                </div>
             </div>
         </div>
 
-        <!-- 针对豆包的面板 -->
-        <div id="tts-provider-panel-doubao" class="tts-provider-panel" style="display:none;">
-            <div class="settings_section">
-                <label for="tts-doubao-api-key">API Key:</label>
-                <input type="password" id="tts-doubao-api-key" class="text_pole" placeholder="输入豆包 API Key">
+        <hr class="sysHR" />
+
+        <!-- 4. 电话与对话追踪交互设置 -->
+        <div class="settings_section">
+            <h4>📞 通话与密谈交互设置</h4>
+            <div style="margin-top: 6px;">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="tts-ext-auto-inject" />
+                    <span><b>接听来电 / 密谈时自动追加到聊天记录</b></span>
+                </label>
+                <small style="display:block; color: #888; margin-top: 4px; line-height: 1.4;">
+                    关闭此项后，接听通话将仅播放语音字幕而不写入聊天；您可随时在通话界面中点击「📜 铭刻聊天」按钮进行手动注入。
+                </small>
             </div>
         </div>
     </div>

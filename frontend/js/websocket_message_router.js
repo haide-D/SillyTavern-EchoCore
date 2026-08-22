@@ -59,6 +59,10 @@ export class WebSocketMessageRouter {
         const handler = this.handlers.get(message.type);
 
         if (!handler) {
+            // 系统级连接/握手通知无需告警
+            if (['connected', 'pong', 'heartbeat'].includes(message.type)) {
+                return;
+            }
             console.warn(`[WebSocketMessageRouter] ⚠️ 未找到处理器: ${message.type}`);
             return;
         }

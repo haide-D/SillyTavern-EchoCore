@@ -2,7 +2,7 @@ import os
 import glob
 from fastapi import APIRouter
 from config import init_settings, load_json, save_json, get_current_dirs, SETTINGS_FILE
-from schemas import SettingsRequest
+from schemas import SettingsRequest, ThemeRequest
 
 router = APIRouter()
 
@@ -27,7 +27,24 @@ def update(req: SettingsRequest):
     if req.default_lang is not None: s["default_lang"] = req.default_lang
     if req.iframe_mode is not None: s["iframe_mode"] = req.iframe_mode
     if req.bubble_style is not None: s["bubble_style"] = req.bubble_style
+    if req.developer_mode is not None: s["developer_mode"] = req.developer_mode
     save_json(SETTINGS_FILE, s)
     # 强制刷新一次，确保目录被创建
     init_settings()
     return {"status": "success", "settings": s}
+
+@router.get("/theme")
+def get_theme():
+    """获取当前主题设置"""
+    s = init_settings()
+    return s.get("ui_theme", {"current": "default", "preferences": {}})
+
+@router.post("/theme")
+def set_theme(req: ThemeRequest):
+    """设置主题"""
+    s = load_json(SETTINGS_FILE)
+    if "ui_theme" not in s:
+        s["ui_theme"] = {"preferences": {}}
+    s["ui_theme"]["current"] = req.theme_id
+    save_json(SETTINGS_FILE, s)
+    return {"status": "success", "theme": req.theme_id}

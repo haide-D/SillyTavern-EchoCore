@@ -1,0 +1,314 @@
+/* =========================================================
+   仙途凌霄 (immortal_sword) - 混元太极剑印 3D 悬浮法阵 (trigger.css)
+   对标高奢质感：3D 悬浮空间透视 · 双向天轨 · 几何白描 · 灵气奔流光轨
+   ========================================================= */
+
+:root {
+    --imm-gold: #c49b4f;
+    --imm-gold-bright: #f3d898;
+    --imm-gold-rgb: 196, 155, 79;
+
+    --imm-jade: #6f9c96;
+    --imm-jade-bright: #a2cfc8;
+    --imm-jade-rgb: 111, 156, 150;
+
+    --imm-silver: #e2e8f0;
+    --imm-silver-rgb: 226, 232, 240;
+}
+
+/* ==================== 1. 3D 悬浮法阵容器 ==================== */
+#tts-immortal-trigger.immortal-sword-trigger,
+#tts-immortal-trigger {
+    position: fixed;
+    width: 68px;
+    height: 68px;
+    perspective: 800px;
+    cursor: pointer;
+    z-index: 9999;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 16px rgba(var(--imm-gold-rgb), 0.25)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.75));
+    transition: filter 0.3s ease;
+}
+
+#tts-immortal-trigger:hover {
+    filter: drop-shadow(0 0 28px rgba(var(--imm-gold-rgb), 0.5)) drop-shadow(0 0 14px rgba(var(--imm-jade-rgb), 0.35));
+}
+
+/* ==================== 2. 内层 3D 漂浮与呼吸动效 ==================== */
+.immortal-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+    animation:
+        immortal-breathe 4.5s ease-in-out infinite,
+        immortal-float-3d 7s ease-in-out infinite;
+}
+
+@keyframes immortal-breathe {
+    0%, 100% {
+        transform: scale(0.96);
+        filter: brightness(0.92);
+    }
+    50% {
+        transform: scale(1.04);
+        filter: brightness(1.12);
+    }
+}
+
+@keyframes immortal-float-3d {
+    0%, 100% {
+        transform: scale(0.96) rotateY(-4deg) rotateX(2deg);
+    }
+    25% {
+        transform: scale(1.0) rotateY(3deg) rotateX(-2deg);
+    }
+    50% {
+        transform: scale(1.04) rotateY(5deg) rotateX(2deg);
+    }
+    75% {
+        transform: scale(1.0) rotateY(-2deg) rotateX(-3deg);
+    }
+}
+
+/* ==================== 3. 混元太极剑印 SVG 几何分层 ==================== */
+.immortal-bagua-trigger-svg {
+    width: 58px;
+    height: 58px;
+    overflow: visible;
+    display: block;
+}
+
+/* --- Layer 1: 双层反向自转天轨 --- */
+.immortal-orbit-outer {
+    fill: none;
+    stroke: rgba(var(--imm-gold-rgb), 0.4);
+    stroke-width: 0.6;
+    stroke-dasharray: 8 14 3 14;
+    animation: immortal-orbit-spin 26s linear infinite;
+    transform-origin: 32px 32px;
+}
+
+.immortal-orbit-mid {
+    fill: none;
+    stroke: rgba(var(--imm-jade-rgb), 0.3);
+    stroke-width: 0.4;
+    stroke-dasharray: 4 10 2 10;
+    animation: immortal-orbit-reverse 18s linear infinite;
+    transform-origin: 32px 32px;
+}
+
+@keyframes immortal-orbit-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes immortal-orbit-reverse {
+    to { transform: rotate(-360deg); }
+}
+
+/* --- Layer 2: 八荒玄符与星位刻度环 (Hover 时隐现) --- */
+.immortal-rune-ring {
+    transform-origin: 32px 32px;
+    animation: immortal-orbit-spin 34s linear infinite;
+    opacity: 0.25;
+    transition: opacity 0.6s ease;
+}
+
+.immortal-rune-ring .rune-glyph {
+    fill: none;
+    stroke: rgba(var(--imm-gold-rgb), 0.65);
+    stroke-width: 0.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 2px rgba(var(--imm-gold-rgb), 0.4));
+}
+
+.immortal-rune-ring .rune-dot {
+    fill: rgba(var(--imm-gold-rgb), 0.5);
+}
+
+#tts-immortal-trigger:hover .immortal-rune-ring {
+    opacity: 0.95;
+}
+
+/* --- Layer 3: 太极几何流轨 (白描底轨 + 金翡双色灵气流光) --- */
+.immortal-taiji-core-group {
+    transform-origin: 32px 32px;
+}
+
+.taiji-base-circle {
+    fill: rgba(13, 17, 21, 0.6);
+    stroke: var(--imm-silver);
+    stroke-width: 0.7;
+    opacity: 0.35;
+    filter: drop-shadow(0 0 1px rgba(var(--imm-silver-rgb), 0.2));
+}
+
+.taiji-flow-circle {
+    fill: none;
+    stroke: var(--imm-gold);
+    stroke-width: 0.9;
+    opacity: 0.8;
+    stroke-dasharray: 12 55;
+    stroke-dashoffset: 0;
+    animation: immortal-gold-flow-circle 5.5s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(var(--imm-gold-rgb), 0.5));
+}
+
+@keyframes immortal-gold-flow-circle {
+    to { stroke-dashoffset: -67; }
+}
+
+.taiji-s-base {
+    fill: none;
+    stroke: var(--imm-silver);
+    stroke-width: 0.7;
+    opacity: 0.35;
+}
+
+.taiji-s-flow {
+    fill: none;
+    stroke: var(--imm-gold-bright);
+    stroke-width: 1;
+    opacity: 0.85;
+    stroke-dasharray: 8 36;
+    stroke-dashoffset: 0;
+    animation: immortal-gold-flow-s 4.5s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(var(--imm-gold-rgb), 0.6));
+}
+
+@keyframes immortal-gold-flow-s {
+    to { stroke-dashoffset: -44; }
+}
+
+.taiji-arc-yin,
+.taiji-arc-yang {
+    fill: none;
+    stroke: var(--imm-jade);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    opacity: 0.35;
+}
+
+/* --- Layer 4: 天心本命飞剑 (剑刃 + 奔流剑芒) --- */
+.sword-blade {
+    stroke: var(--imm-silver);
+    stroke-width: 0.8;
+    stroke-linecap: round;
+    opacity: 0.45;
+}
+
+.sword-blade-flow {
+    stroke: var(--imm-gold-bright);
+    stroke-width: 1.1;
+    stroke-linecap: round;
+    opacity: 0.85;
+    stroke-dasharray: 6 30;
+    stroke-dashoffset: 0;
+    animation: immortal-sword-flow 3.5s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(var(--imm-gold-rgb), 0.7));
+}
+
+@keyframes immortal-sword-flow {
+    to { stroke-dashoffset: -36; }
+}
+
+.sword-guard {
+    stroke: var(--imm-gold);
+    stroke-width: 0.8;
+    opacity: 0.6;
+}
+
+.sword-pommel {
+    fill: var(--imm-gold);
+    opacity: 0.7;
+}
+
+.sword-tip {
+    fill: #ffffff;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+/* --- Layer 5: 阴阳灵核节点 --- */
+.node-core.yang-core {
+    fill: #ffffff;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
+}
+
+.node-glow.yang-glow {
+    fill: none;
+    stroke: var(--imm-silver);
+    stroke-width: 0.5;
+    stroke-dasharray: 2 2;
+}
+
+.node-core.yin-core {
+    fill: var(--imm-jade-bright);
+    filter: drop-shadow(0 0 3px rgba(var(--imm-jade-rgb), 0.8));
+}
+
+.node-glow.yin-glow {
+    fill: none;
+    stroke: var(--imm-jade);
+    stroke-width: 0.5;
+    stroke-dasharray: 2 2;
+}
+
+/* ==================== 4. 飞剑传书 (来电) 特效 ==================== */
+#tts-immortal-trigger.calling-resonant,
+#tts-immortal-trigger.incoming-call {
+    animation: immortalCallVibrate 0.25s ease-in-out infinite alternate !important;
+    filter: drop-shadow(0 0 30px rgba(var(--imm-gold-rgb), 0.7)) drop-shadow(0 0 16px rgba(var(--imm-jade-rgb), 0.5)) !important;
+}
+
+#tts-immortal-trigger.calling-resonant .immortal-orbit-outer,
+#tts-immortal-trigger.incoming-call .immortal-orbit-outer {
+    animation-duration: 4s !important;
+    stroke: var(--imm-gold-bright) !important;
+}
+
+#tts-immortal-trigger.calling-resonant .immortal-orbit-mid,
+#tts-immortal-trigger.incoming-call .immortal-orbit-mid {
+    animation-duration: 3s !important;
+    stroke: var(--imm-jade-bright) !important;
+}
+
+#tts-immortal-trigger.calling-resonant .immortal-rune-ring,
+#tts-immortal-trigger.incoming-call .immortal-rune-ring {
+    opacity: 1 !important;
+    animation-duration: 6s !important;
+}
+
+@keyframes immortalCallVibrate {
+    0% { transform: scale(1.06) rotate(-2deg); }
+    100% { transform: scale(1.12) rotate(2deg); }
+}
+
+/* ==================== 5. 神识探查 (窃听) 特效 ==================== */
+#tts-immortal-trigger.whisper-sensing,
+#tts-immortal-trigger.eavesdrop-ready {
+    animation: immortalWhisperFloat 2.2s ease-in-out infinite !important;
+    filter: drop-shadow(0 0 26px rgba(var(--imm-jade-rgb), 0.75)) drop-shadow(0 0 14px rgba(var(--imm-gold-rgb), 0.4)) !important;
+}
+
+#tts-immortal-trigger.whisper-sensing .immortal-orbit-mid,
+#tts-immortal-trigger.eavesdrop-ready .immortal-orbit-mid {
+    animation-duration: 4s !important;
+    stroke: var(--imm-jade-bright) !important;
+}
+
+@keyframes immortalWhisperFloat {
+    0%, 100% {
+        transform: translateY(-2px) scale(1.05);
+    }
+    50% {
+        transform: translateY(-6px) scale(1.1);
+    }
+}

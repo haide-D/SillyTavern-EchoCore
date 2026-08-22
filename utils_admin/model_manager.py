@@ -414,3 +414,156 @@ class ModelManager:
             "errors": error_files if error_files else None
         }
 
+    def _unbind_character_mappings(self, model_names: List[str]) -> List[str]:
+        """解除 character_mappings.json 中对指定模型的角色绑定"""
+        from config import MAPPINGS_FILE, load_json, save_json
+        unbound_characters = []
+        try:
+            mappings = load_json(MAPPINGS_FILE)
+            if not isinstance(mappings, dict):
+                return []
+            
+            models_set = set(model_names)
+            keys_to_remove = []
+            for char_name, m_name in mappings.items():
+                if m_name in models_set:
+                    keys_to_remove.append(char_name)
+                    unbound_characters.append(char_name)
+            
+            if keys_to_remove:
+                for k in keys_to_remove:
+                    del mappings[k]
+                save_json(MAPPINGS_FILE, mappings)
+        except Exception as e:
+            print(f"[ModelManager] 解绑角色映射异常: {e}")
+        return unbound_characters
+
+    def delete_model(self, model_name: str) -> Dict[str, Any]:
+        """删除指定模型目录并解除角色映射"""
+        if not model_name or not self._validate_filename(model_name):
+            return {"success": False, "error": "模型名称不合法"}
+        
+        model_path = os.path.join(self.base_dir, model_name)
+        if not self._validate_path(model_path) or not os.path.exists(model_path):
+            return {"success": False, "error": f"模型 '{model_name}' 不存在或路径非法"}
+        
+        try:
+            import shutil
+            shutil.rmtree(model_path)
+            unbound = self._unbind_character_mappings([model_name])
+            return {
+                "success": True,
+                "model_name": model_name,
+                "unbound_characters": unbound,
+                "message": f"模型 '{model_name}' 已成功删除"
+            }
+        except Exception as e:
+            return {"success": False, "error": f"删除模型失败: {str(e)}"}
+
+    def batch_delete_models(self, model_names: List[str]) -> Dict[str, Any]:
+        """批量删除多个模型目录并解除角色映射"""
+        if not model_names or not isinstance(model_names, list):
+            return {"success": False, "error": "模型列表不能为空"}
+        
+        success_list = []
+        failed_list = []
+        
+        for name in model_names:
+            res = self.delete_model(name)
+            if res.get("success"):
+                success_list.append(name)
+            else:
+                failed_list.append({"name": name, "error": res.get("error")})
+        
+        unbound = self._unbind_character_mappings(success_list)
+        return {
+            "success": True,
+            "deleted_models": success_list,
+            "failed_models": failed_list,
+            "unbound_characters": unbound,
+            "total_deleted": len(success_list)
+        }
+
+    def batch_delete_audios(self, model_name: str, relative_paths: List[str]) -> Dict[str, Any]:
+        """批量删除指定模型的参考音频"""
+        if not relative_paths or not isinstance(relative_paths, list):
+            return {"success": False, "error": "音频列表不能为空"}
+        
+        deleted_count = 0
+        error_files = []
+        
+        for rel_path in relative_paths:
+            res = self.delete_audio(model_name, rel_path)
+            if res.get("success"):
+                deleted_count += 1
+            else:
+                error_files.append({"path": rel_path, "error": res.get("error")})
+        
+        return {
+            "success": True,
+            "deleted_count": deleted_count,
+            "errors": error_files if error_files else None
+        }
+
+    def batch_update_selected_audios_emotion(self, model_name: str, relative_paths: List[str], new_emotion: str) -> Dict[str, Any]:
+        """批量修改选中的参考音频的情感前缀"""
+        if not new_emotion or not self._validate_filename(new_emotion):
+            return {"success": False, "error": "新情感标签不合法"}
+        if not relative_paths:
+            return {"success": False, "error": "未选择任何音频"}
+        
+        model_path = os.path.join(self.base_dir, model_name)
+        ref_dir = os.path.join(model_path, "reference_audios")
+        
+        updated_files = []
+        error_files = []
+        
+        for rel_path in relative_paths:
+            normalized_rel = rel_path.replace('/', os.sep)
+            old_full_path = os.path.join(ref_dir, normalized_rel)
+            
+            if not self._validate_path(old_full_path) or not os.path.exists(old_full_path):
+                error_files.append({"path": rel_path, "error": "文件不存在或路径非法"})
+                continue
+            
+            old_filename = os.path.basename(old_full_path)
+            name_without_ext = os.path.splitext(old_filename)[0]
+            ext = os.path.splitext(old_filename)[1]
+            
+            # 提取现存的 emotion
+            if '_' in name_without_ext:
+                parts = name_without_ext.split('_', 1)
+                new_filename = f"{new_emotion}_{parts[1]}{ext}"
+            else:
+                new_filename = f"{new_emotion}_{name_without_ext}{ext}"
+            
+            old_dir = os.path.dirname(old_full_path)
+            new_full_path = os.path.join(old_dir, new_filename)
+            
+            if not self._validate_path(new_full_path):
+                error_files.append({"path": rel_path, "error": "目标路径非法"})
+                continue
+            
+            if os.path.exists(new_full_path) and new_full_path != old_full_path:
+                error_files.append({"path": rel_path, "error": "目标文件名已存在"})
+                continue
+            
+            try:
+                os.rename(old_full_path, new_full_path)
+                new_rel = os.path.relpath(new_full_path, ref_dir).replace(os.sep, '/')
+                updated_files.append({
+                    "old_path": rel_path,
+                    "new_path": new_rel,
+                    "new_filename": new_filename
+                })
+            except Exception as e:
+                error_files.append({"path": rel_path, "error": str(e)})
+        
+        return {
+            "success": True,
+            "updated_count": len(updated_files),
+            "files": updated_files,
+            "errors": error_files if error_files else None
+        }
+
+

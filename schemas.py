@@ -19,6 +19,10 @@ class SettingsRequest(BaseModel):
     default_lang: Optional[str] = None
     iframe_mode: Optional[bool] = None
     bubble_style: Optional[str] = None
+    developer_mode: Optional[bool] = None
 
 class StyleRequest(BaseModel):
     style: str
+
+class ThemeRequest(BaseModel):
+    theme_id: str

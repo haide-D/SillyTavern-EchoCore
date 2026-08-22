@@ -1,0 +1,1084 @@
+/* ========================================
+   低语/灵犀感应 — Whisper Animation
+   
+   依赖: base.css
+   风格: 同来电的「符文觉醒」，但色调为深蓝紫
+   ======================================== */
+
+/* ========================================
+   1. 配色
+   ======================================== */
+:root {
+    --proto-primary-rgb: 220, 195, 130;
+    --proto-accent-rgb: 123, 47, 190;
+    --proto-text-color: #D4B86A;
+    --proto-bg-spot-rgb: 18, 18, 45;
+    --proto-bg-base: #06061a;
+    --proto-bg-mid: #0a0a24;
+    --proto-bg-dark: #0e0e30;
+    --proto-bg-end: #08081c;
+
+    --dh-gold: #D4A853;
+    --dh-gold-bright: #FFE4A0;
+    --dh-gold-rgb: 212, 168, 83;
+    --dh-silver: #C8C8E8;
+    --dh-silver-rgb: 200, 200, 232;
+
+    /* 低语专属 */
+    --wh-blue: #4A00E0;
+    --wh-purple: #7B2FBE;
+    --wh-blue-rgb: 74, 0, 224;
+    --wh-purple-rgb: 123, 47, 190;
+    --wh-deep: #1a0a3e;
+    --wh-glow: #A878FF;
+    --wh-glow-rgb: 168, 120, 255;
+    --wh-thread: #B8B8E8;
+    --wh-thread-rgb: 184, 184, 232;
+}
+
+/* ========================================
+   2. 符文容器 — 待机态
+   ======================================== */
+.dh-container {
+    width: 72px;
+    height: 72px;
+    perspective: 800px;
+    filter: drop-shadow(0 0 18px rgba(var(--dh-gold-rgb), 0.2));
+    transition: filter 0.6s ease,
+        width 1s cubic-bezier(0.22, 1, 0.36, 1),
+        height 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dh-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: dh-breathe 4.5s ease-in-out infinite, dh-float-3d 7s ease-in-out infinite;
+    transform-style: preserve-3d;
+}
+
+@keyframes dh-breathe {
+
+    0%,
+    100% {
+        transform: scale(0.96);
+        filter: brightness(0.88);
+    }
+
+    50% {
+        transform: scale(1.04);
+        filter: brightness(1.12);
+    }
+}
+
+@keyframes dh-float-3d {
+
+    0%,
+    100% {
+        transform: scale(0.96) rotateY(-4deg) rotateX(2deg);
+    }
+
+    25% {
+        transform: scale(1.0) rotateY(3deg) rotateX(-2deg);
+    }
+
+    50% {
+        transform: scale(1.04) rotateY(5deg) rotateX(2deg);
+    }
+
+    75% {
+        transform: scale(1.0) rotateY(-2deg) rotateX(-3deg);
+    }
+}
+
+.dh-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* 轨道环 */
+.dh-orbit-outer {
+    fill: none;
+    stroke: rgba(var(--dh-gold-rgb), 0.35);
+    stroke-width: 0.6;
+    stroke-dasharray: 8 12 3 12;
+    animation: orbit-spin 25s linear infinite;
+    transform-origin: 28px 28px;
+}
+
+.dh-orbit-mid {
+    fill: none;
+    stroke: rgba(var(--dh-silver-rgb), 0.2);
+    stroke-width: 0.4;
+    stroke-dasharray: 4 8 2 8;
+    animation: orbit-spin-reverse 18s linear infinite;
+    transform-origin: 28px 28px;
+}
+
+@keyframes orbit-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes orbit-spin-reverse {
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+/* 符文标记环 */
+.dh-rune-ring {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.rune-text {
+    font-family: 'Noto Sans Runic', serif;
+    fill: rgba(var(--dh-gold-rgb), 0.6);
+    filter: drop-shadow(0 0 2px rgba(var(--dh-gold-rgb), 0.4));
+    letter-spacing: 0.5px;
+}
+
+.rune-text-outer {
+    font-size: 3px;
+    fill: rgba(var(--dh-gold-rgb), 0.55);
+    animation: orbit-spin 30s linear infinite;
+    transform-origin: 28px 28px;
+}
+
+.rune-text-inner {
+    font-size: 2.4px;
+    fill: rgba(var(--dh-gold-rgb), 0.35);
+    animation: orbit-spin-reverse 22s linear infinite;
+    transform-origin: 28px 28px;
+}
+
+/* 三角/圆/线基础 */
+.dh-triangle {
+    fill: none;
+    stroke: var(--dh-silver);
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.5;
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 28px;
+}
+
+.dh-triangle-flow {
+    fill: none;
+    stroke: var(--dh-gold);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.8;
+    stroke-dasharray: 12 80;
+    animation: gold-flow-tri 6s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(var(--dh-gold-rgb), 0.6));
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 28px;
+}
+
+@keyframes gold-flow-tri {
+    to {
+        stroke-dashoffset: -200;
+    }
+}
+
+.dh-circle {
+    fill: none;
+    stroke: var(--dh-silver);
+    stroke-width: 0.8;
+    opacity: 0.45;
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 32px;
+}
+
+.dh-circle-flow {
+    fill: none;
+    stroke: var(--dh-gold);
+    stroke-width: 1;
+    opacity: 0.75;
+    stroke-dasharray: 10 56;
+    animation: gold-flow-circle 5s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(var(--dh-gold-rgb), 0.5));
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 32px;
+}
+
+@keyframes gold-flow-circle {
+    to {
+        stroke-dashoffset: -66;
+    }
+}
+
+.dh-line {
+    stroke: var(--dh-silver);
+    stroke-width: 0.8;
+    stroke-linecap: round;
+    opacity: 0.45;
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 27px;
+}
+
+.dh-line-flow {
+    stroke: var(--dh-gold-bright);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    opacity: 0.8;
+    stroke-dasharray: 6 28;
+    animation: gold-flow-line 4s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(var(--dh-gold-rgb), 0.6));
+    transition: all 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 27px;
+}
+
+@keyframes gold-flow-line {
+    to {
+        stroke-dashoffset: -34;
+    }
+}
+
+.dh-core {
+    fill: var(--dh-gold-bright);
+    opacity: 0.9;
+    animation: core-glow 2.5s ease-in-out infinite;
+    transition: fill 1s ease;
+}
+
+@keyframes core-glow {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        r: 1.5;
+    }
+
+    50% {
+        opacity: 1;
+        r: 2.5;
+    }
+}
+
+.dh-node {
+    fill: var(--dh-gold);
+    opacity: 0.6;
+    transition: all 1s ease;
+}
+
+.dh-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 15px 4px rgba(var(--dh-gold-rgb), 0.2),
+        0 0 35px 8px rgba(var(--dh-gold-rgb), 0.1);
+    animation: dh-glow-pulse 4.5s ease-in-out infinite;
+    transition: all 1s ease;
+}
+
+@keyframes dh-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 12px 3px rgba(var(--dh-gold-rgb), 0.15), 0 0 28px 6px rgba(var(--dh-gold-rgb), 0.08);
+    }
+
+    50% {
+        box-shadow: 0 0 20px 6px rgba(var(--dh-gold-rgb), 0.35), 0 0 45px 12px rgba(var(--dh-gold-rgb), 0.18);
+    }
+}
+
+.dh-shadow {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(var(--dh-gold-rgb), 0.15), transparent 70%);
+    pointer-events: none;
+    animation: dh-shadow-breathe 4.5s ease-in-out infinite;
+    transition: opacity 0.5s ease;
+}
+
+@keyframes dh-shadow-breathe {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        width: 25px;
+    }
+
+    50% {
+        opacity: 1;
+        width: 32px;
+    }
+}
+
+.g-triangle,
+.g-circle,
+.g-line {
+    transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: 28px 28px;
+}
+
+.g-circle {
+    transform-origin: 28px 32px;
+}
+
+.g-line {
+    transform-origin: 28px 27px;
+}
+
+/* ========================================
+   3. 墨色涟漪（多层嵌套 → 更华丽）
+   ======================================== */
+.ink-ripple {
+    position: fixed;
+    border-radius: 50%;
+    border: 1.5px solid rgba(var(--wh-purple-rgb), 0.4);
+    box-shadow: 0 0 20px 5px rgba(var(--wh-purple-rgb), 0.15),
+        inset 0 0 20px 5px rgba(var(--wh-blue-rgb), 0.08);
+    pointer-events: none;
+    z-index: 45;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+}
+
+.ink-ripple.fire {
+    animation: ink-expand 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ink-expand {
+    0% {
+        width: 20px;
+        height: 20px;
+        opacity: 0.8;
+    }
+
+    100% {
+        width: 180vmax;
+        height: 180vmax;
+        opacity: 0;
+    }
+}
+
+/* 内层涟漪（更亮的蓝紫光） */
+.ink-ripple-inner {
+    position: fixed;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--wh-glow-rgb), 0.5);
+    box-shadow: 0 0 30px 8px rgba(var(--wh-glow-rgb), 0.12);
+    pointer-events: none;
+    z-index: 46;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+}
+
+.ink-ripple-inner.fire {
+    animation: ink-expand-inner 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ink-expand-inner {
+    0% {
+        width: 10px;
+        height: 10px;
+        opacity: 0.9;
+    }
+
+    100% {
+        width: 120vmax;
+        height: 120vmax;
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   4. 暗幕（深蓝紫调 — 区别于来电的纯黑）
+   ======================================== */
+.dark-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 50% 45%,
+            rgba(var(--wh-purple-rgb), 0.1) 0%,
+            transparent 40%),
+        radial-gradient(ellipse at 40% 30%,
+            rgba(var(--wh-glow-rgb), 0.04) 0%,
+            transparent 35%),
+        radial-gradient(circle at 60% 65%,
+            rgba(var(--wh-blue-rgb), 0.05) 0%,
+            transparent 30%),
+        linear-gradient(180deg, #050518 0%, var(--wh-deep) 50%, #050518 100%);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1s ease;
+}
+
+.dark-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ========================================
+   5. 符文变色态（whisper-active — 蓝紫色）
+   ======================================== */
+.dh-container.whisper-active {
+    filter: drop-shadow(0 0 25px rgba(var(--wh-purple-rgb), 0.5));
+    z-index: 55;
+}
+
+.dh-container.whisper-active .dh-inner {
+    animation: dh-breathe 1.2s ease-in-out infinite;
+}
+
+.dh-container.whisper-active .dh-triangle {
+    stroke: rgba(var(--wh-purple-rgb), 0.6);
+}
+
+.dh-container.whisper-active .dh-triangle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.8);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 6px rgba(var(--wh-glow-rgb), 0.6));
+    animation: gold-flow-tri 2s linear infinite;
+}
+
+.dh-container.whisper-active .dh-circle {
+    stroke: rgba(var(--wh-purple-rgb), 0.5);
+}
+
+.dh-container.whisper-active .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.7);
+    stroke-width: 1.2;
+    filter: drop-shadow(0 0 5px rgba(var(--wh-blue-rgb), 0.5));
+    animation: gold-flow-circle 1.5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-line {
+    stroke: rgba(var(--wh-purple-rgb), 0.5);
+}
+
+.dh-container.whisper-active .dh-line-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.9);
+    stroke-width: 1.5;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(var(--wh-glow-rgb), 0.7));
+    animation: gold-flow-line 1.5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-core {
+    fill: var(--wh-glow);
+    animation: core-glow-wh 1s ease-in-out infinite;
+}
+
+@keyframes core-glow-wh {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        r: 1.5;
+        fill: rgba(var(--wh-purple-rgb), 0.8);
+    }
+
+    50% {
+        opacity: 1;
+        r: 3;
+        fill: var(--wh-glow);
+    }
+}
+
+.dh-container.whisper-active .dh-node {
+    fill: rgba(var(--wh-glow-rgb), 0.7);
+}
+
+.dh-container.whisper-active .dh-glow {
+    box-shadow: 0 0 30px 10px rgba(var(--wh-purple-rgb), 0.35),
+        0 0 60px 20px rgba(var(--wh-blue-rgb), 0.15);
+    animation: wh-glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes wh-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px 5px rgba(var(--wh-purple-rgb), 0.25), 0 0 40px 10px rgba(var(--wh-blue-rgb), 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 40px 15px rgba(var(--wh-purple-rgb), 0.5), 0 0 70px 25px rgba(var(--wh-blue-rgb), 0.25);
+    }
+}
+
+.dh-container.whisper-active .dh-orbit-outer {
+    stroke: rgba(var(--wh-purple-rgb), 0.35);
+    animation: orbit-spin 8s linear infinite;
+}
+
+.dh-container.whisper-active .dh-orbit-mid {
+    stroke: rgba(var(--wh-blue-rgb), 0.25);
+    animation: orbit-spin-reverse 5s linear infinite;
+}
+
+.dh-container.whisper-active .dh-rune-ring {
+    opacity: 1;
+}
+
+.dh-container.whisper-active .rune-text-outer {
+    fill: rgba(var(--wh-glow-rgb), 0.6);
+    filter: drop-shadow(0 0 3px rgba(var(--wh-glow-rgb), 0.5));
+}
+
+.dh-container.whisper-active .rune-text-inner {
+    fill: rgba(var(--wh-purple-rgb), 0.4);
+    filter: drop-shadow(0 0 2px rgba(var(--wh-purple-rgb), 0.3));
+}
+
+.dh-container.whisper-active .dh-shadow {
+    opacity: 0;
+}
+
+/* ========================================
+   6. 三圣器分离态（separated — 蓝紫版）
+   ======================================== */
+/* 三角形 → 极淡结界暗示 */
+.dh-container.separated .g-triangle {
+    transform: scale(2.8);
+    opacity: 0.08;
+}
+
+.dh-container.separated .dh-triangle {
+    stroke: rgba(var(--wh-purple-rgb), 0.1);
+    stroke-width: 0.3;
+}
+
+.dh-container.separated .dh-triangle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.15);
+    stroke-width: 0.3;
+    stroke-dasharray: 20 80;
+    filter: drop-shadow(0 0 4px rgba(var(--wh-purple-rgb), 0.12));
+}
+
+/* 圆 → 主角，放大成聆听镜面 */
+.dh-container.separated .g-circle {
+    transform: scale(2.6) translateY(-4px);
+}
+
+.dh-container.separated .dh-circle {
+    stroke: rgba(var(--wh-glow-rgb), 0.5);
+    stroke-width: 0.6;
+    opacity: 0.9;
+}
+
+.dh-container.separated .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.55);
+    stroke-width: 0.7;
+    stroke-dasharray: 10 56;
+    filter: drop-shadow(0 0 12px rgba(var(--wh-purple-rgb), 0.3));
+    animation: gold-flow-circle 4s linear infinite;
+}
+
+/* 竖线 → 极淡 */
+.dh-container.separated .g-line {
+    transform: scaleY(3.5);
+    opacity: 0.06;
+}
+
+.dh-container.separated .dh-line {
+    stroke: rgba(var(--wh-purple-rgb), 0.06);
+}
+
+.dh-container.separated .dh-line-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.1);
+    stroke-dasharray: 4 30;
+    filter: none;
+}
+
+/* 核心/节点 */
+.dh-container.separated .dh-core {
+    fill: var(--wh-glow);
+    animation: core-glow-wh-big 2s ease-in-out infinite;
+}
+
+@keyframes core-glow-wh-big {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        r: 2;
+    }
+
+    50% {
+        opacity: 1;
+        r: 4;
+    }
+}
+
+.dh-container.separated .dh-node {
+    opacity: 0;
+}
+
+.dh-container.separated .dh-orbit-outer {
+    stroke: rgba(var(--wh-purple-rgb), 0.1);
+    stroke-width: 0.3;
+    animation: orbit-spin 12s linear infinite;
+}
+
+.dh-container.separated .dh-orbit-mid {
+    stroke: rgba(var(--wh-blue-rgb), 0.06);
+    stroke-width: 0.2;
+    animation: orbit-spin-reverse 8s linear infinite;
+}
+
+.dh-container.separated .dh-rune-ring {
+    opacity: 0.15;
+    transform: scale(2.8);
+    transform-origin: 28px 28px;
+    animation: orbit-spin 25s linear infinite;
+}
+
+.dh-container.separated .dh-glow {
+    width: 100%;
+    height: 100%;
+    box-shadow: 0 0 30px 10px rgba(var(--wh-purple-rgb), 0.06),
+        0 0 60px 20px rgba(var(--wh-blue-rgb), 0.03);
+}
+
+/* ========================================
+   6b. 记忆涡流（冥想盆 — 分离/聆听态可见）
+   ======================================== */
+.pensieve-vortex {
+    transform-origin: 28px 32px;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+.dh-container.separated .pensieve-vortex,
+.dh-container.listening .pensieve-vortex {
+    opacity: 1;
+}
+
+/* --- 涡流底池 --- */
+.vortex-pool {
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+.dh-container.separated .vortex-pool,
+.dh-container.listening .vortex-pool {
+    animation: pool-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes pool-shimmer {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.9;
+    }
+}
+
+/* --- 涡流臂组（缓慢旋转） --- */
+.vortex-arms {
+    transform-origin: 28px 32px;
+    animation: vortex-spin 15s linear infinite;
+}
+
+@keyframes vortex-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- 记忆丝线 — 基础 --- */
+.vortex-thread {
+    fill: none;
+    stroke-linecap: round;
+    transform-origin: 28px 32px;
+}
+
+/* 内层 — 亮、快流动（蓝紫光） */
+.vt-i1,
+.vt-i2 {
+    stroke: rgba(var(--wh-glow-rgb), 0.4);
+    stroke-width: 0.3;
+    stroke-dasharray: 4 8;
+    filter: drop-shadow(0 0 2px rgba(var(--wh-glow-rgb), 0.3));
+    animation: thread-flow-fast 3s linear infinite;
+}
+
+/* 中层 — 中等 */
+.vt-m1,
+.vt-m2 {
+    stroke: rgba(var(--wh-glow-rgb), 0.28);
+    stroke-width: 0.25;
+    stroke-dasharray: 6 12;
+    filter: drop-shadow(0 0 2px rgba(var(--wh-purple-rgb), 0.2));
+    animation: thread-flow-mid 4.5s linear infinite;
+}
+
+/* 外层 — 淡、慢瓦解 */
+.vt-o1,
+.vt-o2 {
+    stroke: rgba(var(--wh-purple-rgb), 0.15);
+    stroke-width: 0.2;
+    stroke-dasharray: 8 16;
+    filter: drop-shadow(0 0 3px rgba(var(--wh-purple-rgb), 0.1));
+    animation: thread-flow-slow 6s linear infinite;
+}
+
+@keyframes thread-flow-fast {
+    to {
+        stroke-dashoffset: -18;
+    }
+}
+
+@keyframes thread-flow-mid {
+    to {
+        stroke-dashoffset: -30;
+    }
+}
+
+@keyframes thread-flow-slow {
+    to {
+        stroke-dashoffset: -40;
+    }
+}
+
+/* --- 涡旋涟漪（旋转 + 扩散） --- */
+.vortex-ripple {
+    fill: none;
+    stroke: rgba(var(--wh-glow-rgb), 0.1);
+    stroke-width: 0.2;
+    transform-origin: 28px 32px;
+    animation: vortex-ripple-expand 5s ease-out infinite;
+}
+
+.vr-2 {
+    animation-delay: 1.5s;
+}
+
+.vr-3 {
+    animation-delay: 3s;
+}
+
+@keyframes vortex-ripple-expand {
+    0% {
+        transform: scale(0.2) rotate(0deg);
+        opacity: 0.6;
+        stroke-width: 0.4;
+    }
+
+    100% {
+        transform: scale(2.5) rotate(90deg);
+        opacity: 0;
+        stroke-width: 0.1;
+    }
+}
+
+/* --- 记忆光点 --- */
+.memory-glint {
+    fill: rgba(var(--wh-glow-rgb), 0.9);
+    filter: drop-shadow(0 0 2px rgba(var(--wh-glow-rgb), 0.7));
+    opacity: 0;
+}
+
+.dh-container.separated .memory-glint,
+.dh-container.listening .memory-glint {
+    animation: glint-twinkle 3s ease-in-out infinite;
+}
+
+.mg-2 {
+    animation-delay: 1s;
+}
+
+.mg-3 {
+    animation-delay: 2s;
+}
+
+@keyframes glint-twinkle {
+
+    0%,
+    100% {
+        opacity: 0.2;
+    }
+
+    30% {
+        opacity: 0.9;
+    }
+
+    60% {
+        opacity: 0.4;
+    }
+}
+
+/* ========================================
+   7. 聆听态（listening）— 三角/线隐去，圆变聆听盆
+   ======================================== */
+.dh-container.listening .g-triangle {
+    opacity: 0;
+}
+
+.dh-container.listening .g-line {
+    opacity: 0;
+}
+
+.dh-container.listening .dh-orbit-outer {
+    opacity: 0.1;
+}
+
+.dh-container.listening .dh-orbit-mid {
+    opacity: 0.05;
+}
+
+.dh-container.listening .dh-rune-ring {
+    opacity: 0.25;
+}
+
+.dh-container.listening .g-circle {
+    transform: scale(2.8) translateY(-4px);
+}
+
+.dh-container.listening .dh-circle {
+    stroke: rgba(var(--wh-thread-rgb), 0.3);
+    stroke-width: 0.8;
+    fill: rgba(var(--wh-purple-rgb), 0.03);
+}
+
+.dh-container.listening .dh-circle-flow {
+    stroke: rgba(var(--wh-glow-rgb), 0.35);
+    stroke-width: 0.6;
+    animation: gold-flow-circle 4s linear infinite;
+}
+
+/* ========================================
+   8. 低语提示 UI
+   ======================================== */
+.whisper-info {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 40%);
+    text-align: center;
+    z-index: 65;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+    padding: 20px 40px;
+}
+
+/* 装饰角花 */
+.whisper-info::before,
+.whisper-info::after {
+    content: '⟡';
+    position: absolute;
+    font-size: 14px;
+    color: rgba(var(--wh-glow-rgb), 0.3);
+    pointer-events: none;
+}
+
+.whisper-info::before {
+    top: 0;
+    left: 8px;
+    text-shadow: 12px 0 0 rgba(var(--wh-glow-rgb), 0.15);
+}
+
+.whisper-info::after {
+    bottom: -4px;
+    right: 8px;
+    text-shadow: -12px 0 0 rgba(var(--wh-glow-rgb), 0.15);
+}
+
+.whisper-info.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.whisper-hint {
+    font-family: 'MedievalSharp', 'Lora', serif;
+    font-size: 22px;
+    font-style: normal;
+    color: rgba(var(--wh-glow-rgb), 0.9);
+    text-shadow: 0 0 15px rgba(var(--wh-purple-rgb), 0.5),
+        0 0 30px rgba(var(--wh-blue-rgb), 0.25);
+    letter-spacing: 3px;
+    margin-bottom: 32px;
+}
+
+.char-reveal {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: charReveal 0.5s ease forwards;
+}
+
+@keyframes charReveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.whisper-buttons {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.6s ease;
+}
+
+.whisper-buttons.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.wh-btn {
+    padding: 12px 32px;
+    border-radius: 4px;
+    font-family: 'MedievalSharp', 'Cinzel', serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.35s ease;
+    letter-spacing: 3px;
+    border: none;
+    outline: none;
+    position: relative;
+    text-transform: uppercase;
+}
+
+/* 双线框装饰 */
+.wh-btn::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(var(--wh-glow-rgb), 0.2);
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.wh-btn:hover {
+    transform: scale(1.06);
+    filter: brightness(1.2);
+}
+
+.wh-btn.listen {
+    background: linear-gradient(170deg, rgba(var(--wh-purple-rgb), 0.22), rgba(var(--wh-blue-rgb), 0.08));
+    border: 1.5px solid rgba(var(--wh-glow-rgb), 0.5);
+    color: var(--wh-glow);
+    box-shadow: 0 0 12px rgba(var(--wh-purple-rgb), 0.15),
+        inset 0 1px 0 rgba(var(--wh-glow-rgb), 0.08);
+    animation: wh-btn-pulse 3s ease-in-out infinite;
+}
+
+.wh-btn.listen::before {
+    border-color: rgba(var(--wh-glow-rgb), 0.15);
+}
+
+@keyframes wh-btn-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(var(--wh-purple-rgb), 0.12);
+    }
+
+    50% {
+        box-shadow: 0 0 22px rgba(var(--wh-purple-rgb), 0.35),
+            0 0 40px rgba(var(--wh-blue-rgb), 0.12);
+    }
+}
+
+.wh-btn.ignore {
+    background: rgba(var(--wh-thread-rgb), 0.04);
+    border: 1px solid rgba(var(--wh-thread-rgb), 0.18);
+    color: rgba(var(--wh-thread-rgb), 0.4);
+}
+
+.wh-btn.ignore::before {
+    border-color: rgba(var(--wh-thread-rgb), 0.08);
+}
+
+/* ========================================
+   9. 字幕（微颤手写体 — 低语独有）
+   ======================================== */
+.subtitle-area {
+    position: fixed;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 500px;
+    text-align: center;
+    z-index: 65;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.subtitle-area.visible {
+    opacity: 1;
+}
+
+.subtitle-text {
+    font-family: 'Lora', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: rgba(var(--wh-thread-rgb), 0.8);
+    line-height: 1.8;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(var(--wh-purple-rgb), 0.3);
+}
+
+.sub-char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(5px) rotate(-0.5deg);
+    animation: subTremble 0.35s ease forwards;
+}
+
+@keyframes subTremble {
+    0% {
+        opacity: 0;
+        transform: translateY(5px) rotate(-1deg);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translateY(-1px) rotate(0.5deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+}
+
+/* ========================================
+   10. 结束态 — 缩回
+   ======================================== */
+.dh-container.ending {
+    transition: all 1.5s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.dh-container.ending .g-triangle,
+.dh-container.ending .g-circle,
+.dh-container.ending .g-line {
+    transform: scale(1) translateY(0) !important;
+    opacity: 0.5;
+}

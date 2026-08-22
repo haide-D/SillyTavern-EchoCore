@@ -8,6 +8,8 @@
  * - 自动重连机制
  */
 
+import { resolveBackendUrls } from './utils.js';
+
 export const WebSocketManager = {
     // WebSocket 连接
     ws: null,
@@ -53,9 +55,12 @@ export const WebSocketManager = {
 
         this.currentCharName = charName;
 
-        // 获取 API Host
+        // 获取 API Host 并智能构造 WebSocket URL
         const apiHost = this.getApiHost();
-        const wsUrl = `ws://${apiHost.replace(/^https?:\/\//, '')}/api/ws/phone_call/${encodeURIComponent(charName)}`;
+        const isHttps = /^https:/i.test(apiHost);
+        const wsProto = isHttps ? 'wss:' : 'ws:';
+        const cleanHost = apiHost.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+        const wsUrl = `${wsProto}//${cleanHost}/api/ws/phone_call/${encodeURIComponent(charName)}`;
 
         console.log(`[WebSocketManager] 🔌 正在连接: ${wsUrl}`);
 
@@ -202,12 +207,14 @@ export const WebSocketManager = {
             return window.TTS_State.CACHE.API_URL;
         }
 
-        // 回退到默认值
-        const apiHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? '127.0.0.1'
-            : window.location.hostname;
+        let savedConfig = { useRemote: false, ip: '', port: 3000 };
+        try {
+            const raw = localStorage.getItem('tts_plugin_remote_config');
+            if (raw) savedConfig = JSON.parse(raw);
+        } catch (e) { }
 
-        return `http://${apiHost}:3000`;
+        const urls = resolveBackendUrls(savedConfig);
+        return urls.httpUrl;
     }
 };
 

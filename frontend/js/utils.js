@@ -3,11 +3,33 @@ console.log("🔵 [1] TTS_Utils.js 开始加载...");
 // 2. CSS 状态管理
 let globalStyleContent = "";
 
-// 1. 正则表达式
-export const VOICE_TAG_REGEX = /(\s*)\[TTSVoice[:：]\s*([^:：]+)\s*[:：]\s*([^:：]*)\s*[:：]\s*(.*?)\]/gi;
+// 1. 正则表达式体系
+// ElevenLabs V3 格式: [角色名, 情绪] 或 [角色名, New] 紧跟对白文本
+export const ELEVENLABS_V3_REGEX = /\[([^\],:\n]{1,30})\s*[,，]\s*([^\]\n]{1,30})\](?:\s*([^[\n<]+))?/gi;
+
+// 旧版兼容格式: [TTSVoice:角色名:情绪:对白文本]
+export const LEGACY_VOICE_TAG_REGEX = /(\s*)\[TTSVoice[:：]\s*([^:：]+)\s*[:：]\s*([^:：]*)\s*[:：]\s*(.*?)\]/gi;
+
+// 默认统一正则 (对外兼容)
+export const VOICE_TAG_REGEX = ELEVENLABS_V3_REGEX;
 
 export function getStyleContent() {
     return globalStyleContent;
+}
+
+// 动态注入/更新 <link rel="stylesheet"> 标签
+export function injectStyleLink(id, url) {
+    let $link = $(`#${id}`);
+    if ($link.length === 0) {
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = url;
+        document.head.appendChild(link);
+    } else {
+        $link.attr('href', url);
+    }
 }
 
 // 注入主页面样式
@@ -16,16 +38,16 @@ export function injectStyles() {
     $('head').append(`<style id="tts-style-injection">${globalStyleContent}</style>`);
 }
 
-// 加载 CSS (包含回调机制)
+// 加载 CSS (包含回调机制与标准 link 注入)
 export async function loadGlobalCSS(url, afterLoadCallback) {
     try {
+        // 优先使用标准 link 标签注入，保障相对路径 @import 正确寻址
+        injectStyleLink('tts-global-style-link', url);
+
         const res = await fetch(url);
         if (res.ok) {
             globalStyleContent = await res.text();
             console.log("[TTS] Style loaded successfully.");
-
-            // 立即注入主界面
-            injectStyles();
 
             // 执行回调 (通常用于处理 Iframe 穿透)
             if (afterLoadCallback) afterLoadCallback(globalStyleContent);
@@ -400,33 +422,68 @@ export function getCurrentChatBranch() {
 export function extractSpeaker(messageText) {
     if (!messageText) return null;
 
-    // 使用统一的正则表达式
-    const match = VOICE_TAG_REGEX.exec(messageText);
-    return match ? match[2] : null;  // match[2] 是说话人名称
+    // 1. 优先匹配 ElevenLabs V3 格式: [Speaker, emotion]
+    ELEVENLABS_V3_REGEX.lastIndex = 0;
+    const v3Match = ELEVENLABS_V3_REGEX.exec(messageText);
+    if (v3Match && v3Match[1]) {
+        const name = v3Match[1].trim();
+        if (name && !name.toLowerCase().startsWith('tts') && name.length <= 30) {
+            return name;
+        }
+    }
+
+    // 2. 兜底匹配旧版 [TTSVoice:Speaker:emotion:text]
+    LEGACY_VOICE_TAG_REGEX.lastIndex = 0;
+    const legacyMatch = LEGACY_VOICE_TAG_REGEX.exec(messageText);
+    return legacyMatch ? legacyMatch[2].trim() : null;
 }
 
 /**
- * 从消息列表中提取所有说话人 (去重)
+ * 从对话消息列表中全面提取所有在场 Speaker (去重)
+ * 1. 扫描 ElevenLabs V3 [Speaker, emotion] 标签
+ * 2. 兼容扫描旧版 [TTSVoice:Speaker:...] 标签
+ * 3. 提取非用户/非系统的发言人字段 msg.name
+ * 
  * @param {Array} messages - 消息列表
  * @returns {Array<string>} 去重后的说话人列表
  */
 export function extractAllSpeakers(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return [];
     const speakers = new Set();
 
     for (const msg of messages) {
-        if (msg.is_system) continue;
+        if (!msg || msg.is_system) continue;
+
+        // 1. 提取非用户的消息发送者名称 (若有)
+        if (!msg.is_user && msg.name && typeof msg.name === 'string') {
+            const trimmedName = msg.name.trim();
+            if (trimmedName && trimmedName !== 'System' && trimmedName !== 'User') {
+                speakers.add(trimmedName);
+            }
+        }
 
         const msgText = msg.mes || '';
         if (!msgText) continue;
 
-        // 重置正则表达式的 lastIndex
-        VOICE_TAG_REGEX.lastIndex = 0;
-
+        // 2. 扫描 ElevenLabs V3 格式: [Speaker, emotion]
+        ELEVENLABS_V3_REGEX.lastIndex = 0;
         let match;
-        while ((match = VOICE_TAG_REGEX.exec(msgText)) !== null) {
-            const speaker = match[2];  // 说话人名称
-            if (speaker) {
-                speakers.add(speaker);
+        while ((match = ELEVENLABS_V3_REGEX.exec(msgText)) !== null) {
+            const speaker = match[1];
+            if (speaker && speaker.trim()) {
+                const clean = speaker.trim();
+                if (!clean.toLowerCase().startsWith('tts') && clean.length <= 30) {
+                    speakers.add(clean);
+                }
+            }
+        }
+
+        // 3. 兜底扫描旧版 [TTSVoice:Speaker:...]
+        LEGACY_VOICE_TAG_REGEX.lastIndex = 0;
+        while ((match = LEGACY_VOICE_TAG_REGEX.exec(msgText)) !== null) {
+            const speaker = match[2];
+            if (speaker && speaker.trim()) {
+                speakers.add(speaker.trim());
             }
         }
     }
@@ -528,7 +585,79 @@ export function extractAndFilter(text, extractTag, filterTags) {
         processed = applyFilterTags(processed, filterTags);
     }
 
-    return processed;
+/**
+ * 标准解析后端 Manager API 与 WebSocket 连接地址 (彻底修复 Issue #2 反向代理 HTTPS 支持)
+ * @param {Object} remoteConfig - { useRemote: boolean, ip: string, port: number }
+ * @returns {{ httpUrl: string, wsUrl: (path: string) => string, adminUrl: string, isHttps: boolean }}
+ */
+export function resolveBackendUrls(remoteConfig = {}) {
+    const isRemote = !!remoteConfig.useRemote;
+    const rawIp = (remoteConfig.ip || '').trim();
+    const portVal = parseInt(remoteConfig.port) || 3000;
+
+    // 1. 本地/自动探测
+    if (!isRemote || !rawIp) {
+        const current = window.location.hostname;
+        const isLanOrIPv6 = /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[0-1])\.|:/.test(current);
+        let host = '127.0.0.1';
+        if (current === 'localhost' || current === '127.0.0.1') {
+            host = '127.0.0.1';
+        } else if (isLanOrIPv6) {
+            host = current;
+        }
+
+        if (host.includes(':') && !host.startsWith('[')) {
+            host = `[${host}]`;
+        }
+
+        const httpUrl = `http://${host}:${portVal}`;
+        return {
+            httpUrl,
+            wsUrl: (path) => `ws://${host}:${portVal}${path.startsWith('/') ? path : '/' + path}`,
+            adminUrl: `${httpUrl}/admin`,
+            isHttps: false
+        };
+    }
+
+    // 2. 远程模式：用户填入完整 http:// 或 https:// URL
+    if (/^https?:\/\//i.test(rawIp)) {
+        const cleanUrl = rawIp.replace(/\/+$/, '');
+        const isHttps = /^https:/i.test(cleanUrl);
+        const wsProto = isHttps ? 'wss:' : 'ws:';
+        const hostAndPath = cleanUrl.replace(/^https?:\/\//i, '');
+        return {
+            httpUrl: cleanUrl,
+            wsUrl: (path) => `${wsProto}//${hostAndPath}${path.startsWith('/') ? path : '/' + path}`,
+            adminUrl: `${cleanUrl}/admin`,
+            isHttps
+        };
+    }
+
+    // 3. 远程模式：用户填入裸 IP 或域名 (如 192.168.1.100 或 tts.example.com 或 192.168.1.5:8000)
+    let host = rawIp;
+    let port = portVal;
+
+    // 如果包含端口 (非 IPv6)
+    if (!host.startsWith('[') && host.includes(':')) {
+        const parts = host.split(':');
+        if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+            host = parts[0];
+            port = parseInt(parts[1]);
+        }
+    }
+
+    if (host.includes(':') && !host.startsWith('[')) {
+        host = `[${host}]`;
+    }
+
+    const httpUrl = `http://${host}:${port}`;
+    return {
+        httpUrl,
+        wsUrl: (path) => `ws://${host}:${port}${path.startsWith('/') ? path : '/' + path}`,
+        adminUrl: `${httpUrl}/admin`,
+        isHttps: false
+    };
 }
 
 console.log("🟢 [2] TTS_Utils.js 执行完毕");
+

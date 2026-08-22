@@ -1,0 +1,231 @@
+/* =========================================================
+   夜之城·边缘行者 (cyberpunk_edgerunners) - 全屏沉浸式脑机通讯与深网潜行 (fullscreen_call.css)
+   终端极客风格：全屏黑客控制台 · 0 模糊 · 极高清晰度 · 等宽实时字幕 · 战术切角控制
+   ========================================================= */
+
+#cyber-fullscreen-call,
+#cyber-fullscreen-eavesdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #03060B;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #CBD5E1;
+    overflow: hidden;
+    animation: cyberCallFadeIn 0.2s ease-out;
+}
+
+@keyframes cyberCallFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 背景战术水印 */
+.cyber-bg-watermark {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.15;
+}
+
+.cyber-call-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+}
+
+/* ==================== 1. 全息脑机头像光环 ==================== */
+.cyber-call-avatar-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cyber-call-avatar-img {
+    width: 86px;
+    height: 86px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #00F0FF;
+    background: #080C14;
+    position: relative;
+    z-index: 2;
+}
+
+.cyber-call-avatar-ring {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 230, 0, 0.75);
+    animation: cyberRingSpin 14s linear infinite;
+    z-index: 1;
+}
+
+.cyber-call-avatar-ring.outer {
+    width: 116px;
+    height: 116px;
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    border-top-color: #00F0FF;
+    border-bottom-color: #FFE600;
+    animation: cyberRingSpinReverse 18s linear infinite;
+}
+
+@keyframes cyberRingSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes cyberRingSpinReverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+/* 角色名称与状态 */
+.cyber-call-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #F8FAFC;
+    margin: 0 0 6px 0;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.cyber-call-status {
+    font-size: 11.5px;
+    color: #FFE600;
+    letter-spacing: 1.5px;
+    margin: 0 0 16px 0;
+    font-weight: 700;
+}
+
+/* ==================== 2. 赛博等离子电平跳动条 ==================== */
+.cyber-call-wave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 28px;
+    margin-bottom: 16px;
+}
+
+.cyber-wave-bar {
+    width: 3.5px;
+    background: #00F0FF;
+    border-radius: 1px;
+    animation: cyberWaveJump 1.2s ease-in-out infinite alternate;
+}
+
+.cyber-wave-bar:nth-child(1) { height: 12px; animation-delay: 0.1s; background: #00F0FF; }
+.cyber-wave-bar:nth-child(2) { height: 22px; animation-delay: 0.3s; background: #FFE600; }
+.cyber-wave-bar:nth-child(3) { height: 16px; animation-delay: 0.5s; background: #00F0FF; }
+.cyber-wave-bar:nth-child(4) { height: 26px; animation-delay: 0.2s; background: #FFE600; }
+.cyber-wave-bar:nth-child(5) { height: 14px; animation-delay: 0.4s; background: #00F0FF; }
+
+@keyframes cyberWaveJump {
+    0% { transform: scaleY(0.3); }
+    100% { transform: scaleY(1.4); }
+}
+
+/* ==================== 3. 终端实时字幕流 ==================== */
+.cyber-subtitle {
+    width: 100%;
+    min-height: 52px;
+    max-height: 84px;
+    background: #060A12;
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-left: 3px solid #00F0FF;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #E2E8F0;
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.cyber-subtitle .subtitle-speaker {
+    color: #FFE600;
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.cyber-subtitle .subtitle-text {
+    color: #38BDF8;
+}
+
+/* ==================== 4. 终端战术动作按钮 ==================== */
+.cyber-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+}
+
+.cyber-btn-action {
+    width: 52px;
+    height: 52px;
+    background: #080D16;
+    border: 1.5px solid #64748B;
+    color: #CBD5E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+    transition: all 0.15s ease;
+}
+
+.cyber-btn-action.answer {
+    border-color: #00F0FF;
+    color: #00F0FF;
+    background: rgba(0, 240, 255, 0.12);
+}
+
+.cyber-btn-action.answer:hover {
+    background: #00F0FF;
+    color: #04070D;
+    transform: scale(1.08);
+}
+
+.cyber-btn-action.hangup {
+    border-color: #FF003C;
+    color: #FF003C;
+    background: rgba(255, 0, 60, 0.12);
+}
+
+.cyber-btn-action.hangup:hover {
+    background: #FF003C;
+    color: #FFFFFF;
+    transform: scale(1.08);
+}
+
+.cyber-btn-action.inject:hover {
+    background: #FFE600 !important;
+    color: #04070D !important;
+    border-color: #FFE600 !important;
+    transform: scale(1.08);
+}

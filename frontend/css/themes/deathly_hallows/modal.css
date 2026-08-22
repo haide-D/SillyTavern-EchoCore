@@ -1,0 +1,880 @@
+/**
+ * 死亡圣器主题 - 专属暗金手机与工坊模态框覆盖 (Deathly Hallows Dark Gold Modal)
+ */
+.dh-magic-app-container {
+    background: transparent !important;
+    color: #e5e7eb !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* --- 顶部选项卡 Tabs (剧本工坊 / 电话 / 窃听) --- */
+#tts-dh-modal .ws-tabs-bar,
+#tts-dh-modal .pc-nav-tabs,
+#tts-dh-modal .ed-nav-tabs {
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.2) !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+#tts-dh-modal .ws-tab-btn,
+#tts-dh-modal .pc-nav-tab-btn,
+#tts-dh-modal .ed-nav-tab-btn {
+    flex: 1 !important;
+    padding: 7px 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: rgba(220, 200, 150, 0.65) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+}
+
+#tts-dh-modal .ws-tab-btn:hover,
+#tts-dh-modal .pc-nav-tab-btn:hover,
+#tts-dh-modal .ed-nav-tab-btn:hover {
+    color: rgba(220, 200, 150, 0.95) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+#tts-dh-modal .ws-tab-btn.active,
+#tts-dh-modal .pc-nav-tab-btn.active,
+#tts-dh-modal .ed-nav-tab-btn.active {
+    background: rgba(196, 155, 79, 0.18) !important;
+    border-color: rgba(196, 155, 79, 0.45) !important;
+    color: #fde047 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 10px rgba(196, 155, 79, 0.2) !important;
+}
+
+/* --- 搜索与过滤工具栏 --- */
+#tts-dh-modal .ws-toolbar,
+#tts-dh-modal .pc-search-row,
+#tts-dh-modal .ed-search-row {
+    padding: 8px 12px !important;
+}
+
+#tts-dh-modal .ws-search-input,
+#tts-dh-modal .pc-search-input,
+#tts-dh-modal .ed-search-input {
+    width: 100% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    border-radius: 8px !important;
+    padding: 7px 10px 7px 30px !important;
+    font-size: 12px !important;
+    color: #fff !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s !important;
+}
+
+#tts-dh-modal .ws-search-input:focus,
+#tts-dh-modal .pc-search-input:focus,
+#tts-dh-modal .ed-search-input:focus {
+    border-color: #fde047 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    box-shadow: 0 0 10px rgba(253, 224, 71, 0.25) !important;
+}
+
+#tts-dh-modal .ws-search-icon,
+#tts-dh-modal .pc-search-icon,
+#tts-dh-modal .ed-search-icon {
+    color: rgba(196, 155, 79, 0.7) !important;
+}
+
+/* --- 状态统计栏与快捷按钮 --- */
+#tts-dh-modal .ws-batch-bar {
+    font-size: 11px !important;
+    color: rgba(220, 200, 150, 0.75) !important;
+}
+
+#tts-dh-modal .ws-batch-highlight {
+    color: #fef08a !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0 6px rgba(254, 240, 138, 0.4) !important;
+}
+
+#tts-dh-modal .ws-batch-btn {
+    color: rgba(220, 200, 150, 0.8) !important;
+}
+
+#tts-dh-modal .ws-batch-btn:hover {
+    color: #fde047 !important;
+}
+
+/* --- 卡片与内容区 (剧本工坊卡片 / 通话卡片 / 密谈卡片) --- */
+#tts-dh-modal .ws-preset-card,
+#tts-dh-modal .pc-card,
+#tts-dh-modal .ed-card {
+    background: rgba(24, 18, 36, 0.8) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+#tts-dh-modal .ws-preset-card:hover,
+#tts-dh-modal .pc-card:hover,
+#tts-dh-modal .ed-card:hover {
+    border-color: rgba(196, 155, 79, 0.5) !important;
+    background: rgba(30, 22, 44, 0.9) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(196, 155, 79, 0.15) !important;
+}
+
+#tts-dh-modal .ws-preset-card.is-active,
+#tts-dh-modal .pc-card.highlight,
+#tts-dh-modal .ed-card.highlight {
+    border-color: rgba(234, 179, 8, 0.75) !important;
+    box-shadow: 0 0 18px rgba(234, 179, 8, 0.25) !important;
+    background: linear-gradient(135deg, rgba(38, 28, 54, 0.9), rgba(24, 18, 34, 0.95)) !important;
+}
+
+#tts-dh-modal .pc-card.is-playing,
+#tts-dh-modal .ed-card.is-playing {
+    border-color: #fde047 !important;
+    box-shadow: 0 0 20px rgba(253, 224, 71, 0.35) !important;
+    background: linear-gradient(135deg, rgba(42, 30, 60, 0.95), rgba(26, 18, 38, 0.98)) !important;
+}
+
+#tts-dh-modal .ws-card-title,
+#tts-dh-modal .pc-caller-name,
+#tts-dh-modal .ed-speakers-tag {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fef08a !important;
+    text-shadow: 0 0 8px rgba(196, 155, 79, 0.4) !important;
+}
+
+#tts-dh-modal .ws-card-author,
+#tts-dh-modal .pc-time,
+#tts-dh-modal .ed-time {
+    font-size: 11px !important;
+    color: rgba(220, 200, 160, 0.6) !important;
+}
+
+#tts-dh-modal .ws-active-badge {
+    background: rgba(234, 179, 8, 0.2) !important;
+    border: 1px solid rgba(234, 179, 8, 0.45) !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-card-desc {
+    font-size: 12.5px !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+    line-height: 1.5 !important;
+}
+
+#tts-dh-modal .pc-reason,
+#tts-dh-modal .ed-theme {
+    font-size: 11.5px !important;
+    color: rgba(220, 200, 160, 0.9) !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    padding: 5px 9px !important;
+    border-radius: 6px !important;
+    border-left: 3px solid #eab308 !important;
+}
+
+#tts-dh-modal .pc-dialog-preview,
+#tts-dh-modal .ed-dialog-preview {
+    font-size: 11.5px !important;
+    color: #d1d5db !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(196, 155, 79, 0.15) !important;
+    line-height: 1.5 !important;
+}
+
+#tts-dh-modal .pc-dialog-preview div.pc-segment-line.active-segment,
+#tts-dh-modal .ed-dialog-preview div.ed-segment-line.active-segment {
+    color: #fde047 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0 10px rgba(234, 179, 8, 0.5) !important;
+    padding-left: 6px !important;
+    border-left: 3px solid #eab308 !important;
+    background: rgba(234, 179, 8, 0.12) !important;
+}
+
+/* --- 操作按钮 --- */
+#tts-dh-modal .ws-act-btn,
+#tts-dh-modal .pc-action-btn,
+#tts-dh-modal .ed-action-btn,
+#tts-dh-modal .ws-act-icon-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+    border-radius: 6px !important;
+    padding: 5px 9px !important;
+    font-size: 11.5px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-dh-modal .ws-act-btn:hover,
+#tts-dh-modal .pc-action-btn:hover,
+#tts-dh-modal .ed-action-btn:hover,
+#tts-dh-modal .ws-act-icon-btn:hover {
+    background: rgba(196, 155, 79, 0.18) !important;
+    color: #fef08a !important;
+    border-color: rgba(196, 155, 79, 0.5) !important;
+}
+
+#tts-dh-modal .ws-act-directed,
+#tts-dh-modal .pc-action-btn.play,
+#tts-dh-modal .ed-action-btn.play {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)) !important;
+    color: #fef08a !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3) !important;
+}
+
+#tts-dh-modal .ws-tool-btn-primary {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)) !important;
+    color: #fef08a !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
+}
+
+#tts-dh-modal .pc-action-btn.inject,
+#tts-dh-modal .ed-action-btn.inject {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: #6ee7b7 !important;
+}
+
+#tts-dh-modal .pc-action-btn.immersive,
+#tts-dh-modal .ed-action-btn.immersive {
+    background: rgba(168, 85, 247, 0.18) !important;
+    border-color: rgba(168, 85, 247, 0.4) !important;
+    color: #d8b4fe !important;
+}
+
+/* --- 模态框与面板 --- */
+#tts-dh-modal .ws-modal {
+    background: linear-gradient(145deg, #1b172a, #13101f) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(196, 155, 79, 0.15) !important;
+    color: #fff !important;
+}
+
+#tts-dh-modal .ws-modal-header {
+    background: rgba(0, 0, 0, 0.25) !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.2) !important;
+}
+
+#tts-dh-modal .ws-modal-title {
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-section-box {
+    background: rgba(14, 11, 22, 0.65) !important;
+    border: 1px solid rgba(196, 155, 79, 0.22) !important;
+}
+
+#tts-dh-modal .ws-section-title {
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-form-input,
+#tts-dh-modal .ws-form-select,
+#tts-dh-modal .pc-form-input,
+#tts-dh-modal .pc-form-select,
+#tts-dh-modal .ed-form-input,
+#tts-dh-modal .ed-form-select {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: #fff !important;
+}
+
+#tts-dh-modal .ws-textarea {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: #e5e7eb !important;
+}
+
+#tts-dh-modal .ws-slot-btn {
+    background: rgba(196, 155, 79, 0.12) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: #fde047 !important;
+}
+
+#tts-dh-modal .ws-quick-tag,
+#tts-dh-modal .pc-quick-tag,
+#tts-dh-modal .ed-quick-tag {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.2) !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+}
+
+/**
+ * 死亡圣器主题 - 专属暗金手机与工坊模态框覆盖 (Deathly Hallows Dark Gold Modal)
+ */
+#tts-dh-modal .ws-container,
+#tts-dh-modal .pc-app-container,
+#tts-dh-modal .ed-app-container,
+.dh-magic-app-container {
+    background: transparent !important;
+    color: #e5e7eb !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* --- 顶部选项卡 Tabs (剧本工坊 / 电话 / 窃听) --- */
+#tts-dh-modal .ws-tabs-bar,
+#tts-dh-modal .pc-nav-tabs,
+#tts-dh-modal .ed-nav-tabs {
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.2) !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+#tts-dh-modal .ws-tab-btn,
+#tts-dh-modal .pc-nav-tab-btn,
+#tts-dh-modal .ed-nav-tab-btn {
+    flex: 1 !important;
+    padding: 7px 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: rgba(220, 200, 150, 0.65) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+}
+
+#tts-dh-modal .ws-tab-btn:hover,
+#tts-dh-modal .pc-nav-tab-btn:hover,
+#tts-dh-modal .ed-nav-tab-btn:hover {
+    color: rgba(220, 200, 150, 0.95) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+#tts-dh-modal .ws-tab-btn.active,
+#tts-dh-modal .pc-nav-tab-btn.active,
+#tts-dh-modal .ed-nav-tab-btn.active {
+    background: rgba(196, 155, 79, 0.18) !important;
+    border-color: rgba(196, 155, 79, 0.45) !important;
+    color: #fde047 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 10px rgba(196, 155, 79, 0.2) !important;
+}
+
+/* --- 搜索与过滤工具栏 --- */
+#tts-dh-modal .ws-toolbar,
+#tts-dh-modal .pc-search-row,
+#tts-dh-modal .ed-search-row {
+    padding: 8px 12px !important;
+}
+
+#tts-dh-modal .ws-search-input,
+#tts-dh-modal .pc-search-input,
+#tts-dh-modal .ed-search-input {
+    width: 100% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    border-radius: 8px !important;
+    padding: 7px 10px 7px 30px !important;
+    font-size: 12px !important;
+    color: #fff !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s !important;
+}
+
+#tts-dh-modal .ws-search-input:focus,
+#tts-dh-modal .pc-search-input:focus,
+#tts-dh-modal .ed-search-input:focus {
+    border-color: #fde047 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    box-shadow: 0 0 10px rgba(253, 224, 71, 0.25) !important;
+}
+
+#tts-dh-modal .ws-search-icon,
+#tts-dh-modal .pc-search-icon,
+#tts-dh-modal .ed-search-icon {
+    color: rgba(196, 155, 79, 0.7) !important;
+}
+
+/* --- 状态统计栏与快捷按钮 --- */
+#tts-dh-modal .ws-batch-bar {
+    font-size: 11px !important;
+    color: rgba(220, 200, 150, 0.75) !important;
+}
+
+#tts-dh-modal .ws-batch-highlight {
+    color: #fef08a !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0 6px rgba(254, 240, 138, 0.4) !important;
+}
+
+#tts-dh-modal .ws-batch-btn {
+    color: rgba(220, 200, 150, 0.8) !important;
+}
+
+#tts-dh-modal .ws-batch-btn:hover {
+    color: #fde047 !important;
+}
+
+/* --- 卡片与内容区 (剧本工坊卡片 / 通话卡片 / 密谈卡片) --- */
+#tts-dh-modal .ws-preset-card,
+#tts-dh-modal .pc-card,
+#tts-dh-modal .ed-card {
+    background: rgba(24, 18, 36, 0.8) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+#tts-dh-modal .ws-preset-card:hover,
+#tts-dh-modal .pc-card:hover,
+#tts-dh-modal .ed-card:hover {
+    border-color: rgba(196, 155, 79, 0.5) !important;
+    background: rgba(30, 22, 44, 0.9) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(196, 155, 79, 0.15) !important;
+}
+
+#tts-dh-modal .ws-preset-card.is-active,
+#tts-dh-modal .pc-card.highlight,
+#tts-dh-modal .ed-card.highlight {
+    border-color: rgba(234, 179, 8, 0.75) !important;
+    box-shadow: 0 0 18px rgba(234, 179, 8, 0.25) !important;
+    background: linear-gradient(135deg, rgba(38, 28, 54, 0.9), rgba(24, 18, 34, 0.95)) !important;
+}
+
+#tts-dh-modal .pc-card.is-playing,
+#tts-dh-modal .ed-card.is-playing {
+    border-color: #fde047 !important;
+    box-shadow: 0 0 20px rgba(253, 224, 71, 0.35) !important;
+    background: linear-gradient(135deg, rgba(42, 30, 60, 0.95), rgba(26, 18, 38, 0.98)) !important;
+}
+
+#tts-dh-modal .ws-card-title,
+#tts-dh-modal .pc-caller-name,
+#tts-dh-modal .ed-speakers-tag {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fef08a !important;
+    text-shadow: 0 0 8px rgba(196, 155, 79, 0.4) !important;
+}
+
+#tts-dh-modal .ws-card-author,
+#tts-dh-modal .pc-time,
+#tts-dh-modal .ed-time {
+    font-size: 11px !important;
+    color: rgba(220, 200, 160, 0.6) !important;
+}
+
+#tts-dh-modal .ws-active-badge {
+    background: rgba(234, 179, 8, 0.2) !important;
+    border: 1px solid rgba(234, 179, 8, 0.45) !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-card-desc {
+    font-size: 12.5px !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+    line-height: 1.5 !important;
+}
+
+#tts-dh-modal .pc-reason,
+#tts-dh-modal .ed-theme {
+    font-size: 11.5px !important;
+    color: rgba(220, 200, 160, 0.9) !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    padding: 5px 9px !important;
+    border-radius: 6px !important;
+    border-left: 3px solid #eab308 !important;
+}
+
+#tts-dh-modal .pc-dialog-preview,
+#tts-dh-modal .ed-dialog-preview {
+    font-size: 11.5px !important;
+    color: #d1d5db !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(196, 155, 79, 0.15) !important;
+    line-height: 1.5 !important;
+}
+
+#tts-dh-modal .pc-dialog-preview div.pc-segment-line.active-segment,
+#tts-dh-modal .ed-dialog-preview div.ed-segment-line.active-segment {
+    color: #fde047 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0 10px rgba(234, 179, 8, 0.5) !important;
+    padding-left: 6px !important;
+    border-left: 3px solid #eab308 !important;
+    background: rgba(234, 179, 8, 0.12) !important;
+}
+
+/* --- 操作按钮 --- */
+#tts-dh-modal .ws-act-btn,
+#tts-dh-modal .pc-action-btn,
+#tts-dh-modal .ed-action-btn,
+#tts-dh-modal .ws-act-icon-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+    border-radius: 6px !important;
+    padding: 5px 9px !important;
+    font-size: 11.5px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-dh-modal .ws-act-btn:hover,
+#tts-dh-modal .pc-action-btn:hover,
+#tts-dh-modal .ed-action-btn:hover,
+#tts-dh-modal .ws-act-icon-btn:hover {
+    background: rgba(196, 155, 79, 0.18) !important;
+    color: #fef08a !important;
+    border-color: rgba(196, 155, 79, 0.5) !important;
+}
+
+#tts-dh-modal .ws-act-directed,
+#tts-dh-modal .pc-action-btn.play,
+#tts-dh-modal .ed-action-btn.play {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)) !important;
+    color: #fef08a !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3) !important;
+}
+
+#tts-dh-modal .ws-tool-btn-primary {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)) !important;
+    color: #fef08a !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
+}
+
+#tts-dh-modal .pc-action-btn.inject,
+#tts-dh-modal .ed-action-btn.inject {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: #6ee7b7 !important;
+}
+
+#tts-dh-modal .pc-action-btn.immersive,
+#tts-dh-modal .ed-action-btn.immersive {
+    background: rgba(168, 85, 247, 0.18) !important;
+    border-color: rgba(168, 85, 247, 0.4) !important;
+    color: #d8b4fe !important;
+}
+
+/* --- 死亡圣器专属: 模态框与面板 (Dark Gold Obsidian Magic Scroll) --- */
+.ws-theme-dh.ws-modal-overlay {
+    background: rgba(4, 2, 8, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+#tts-dh-modal .ws-modal,
+.ws-theme-dh .ws-modal {
+    background: linear-gradient(145deg, #171224 0%, #0d0a16 100%) !important;
+    border: 1.5px solid rgba(196, 155, 79, 0.5) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(196, 155, 79, 0.2) !important;
+    color: #f3f4f6 !important;
+    border-radius: 16px !important;
+}
+
+#tts-dh-modal .ws-modal-header,
+.ws-theme-dh .ws-modal-header {
+    background: rgba(0, 0, 0, 0.45) !important;
+    border-bottom: 1px solid rgba(196, 155, 79, 0.3) !important;
+}
+
+#tts-dh-modal .ws-modal-title,
+.ws-theme-dh .ws-modal-title {
+    color: #fef08a !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 10px rgba(254, 240, 138, 0.3) !important;
+}
+
+#tts-dh-modal .ws-modal-close,
+.ws-theme-dh .ws-modal-close {
+    color: rgba(220, 200, 160, 0.8) !important;
+}
+
+#tts-dh-modal .ws-modal-close:hover,
+.ws-theme-dh .ws-modal-close:hover {
+    color: #fef08a !important;
+    background: rgba(196, 155, 79, 0.2) !important;
+}
+
+#tts-dh-modal .ws-modal-body > *,
+.ws-theme-dh .ws-modal-body > * {
+    flex-shrink: 0 !important;
+}
+
+#tts-dh-modal .ws-section-box,
+.ws-theme-dh .ws-section-box {
+    background: rgba(14, 11, 22, 0.75) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    border-radius: 10px !important;
+}
+
+#tts-dh-modal .ws-ai-gen-box,
+.ws-theme-dh .ws-ai-gen-box {
+    background: linear-gradient(135deg, rgba(30, 20, 48, 0.85) 0%, rgba(18, 12, 30, 0.9) 100%) !important;
+    border: 1px solid rgba(196, 155, 79, 0.45) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(196, 155, 79, 0.08) !important;
+}
+
+#tts-dh-modal .ws-ai-gen-title,
+.ws-theme-dh .ws-ai-gen-title {
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-ai-chip,
+.ws-theme-dh .ws-ai-chip {
+    background: rgba(196, 155, 79, 0.12) !important;
+    border: 1px solid rgba(196, 155, 79, 0.3) !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-ai-chip:hover,
+.ws-theme-dh .ws-ai-chip:hover {
+    background: rgba(196, 155, 79, 0.35) !important;
+    border-color: #fef08a !important;
+    color: #ffffff !important;
+}
+
+#tts-dh-modal .ws-ai-chips-label,
+#tts-dh-modal .ws-ai-context-row,
+.ws-theme-dh .ws-ai-chips-label,
+.ws-theme-dh .ws-ai-context-row {
+    color: rgba(220, 200, 160, 0.85) !important;
+}
+
+#tts-dh-modal .ws-section-title,
+.ws-theme-dh .ws-section-title {
+    color: #fef08a !important;
+    font-weight: 700 !important;
+}
+
+#tts-dh-modal .ws-section-subtitle,
+.ws-theme-dh .ws-section-subtitle {
+    color: rgba(220, 200, 160, 0.75) !important;
+}
+
+#tts-dh-modal .ws-form-label,
+#tts-dh-modal .pc-form-label,
+#tts-dh-modal .ed-form-label,
+.ws-theme-dh .ws-form-label {
+    color: rgba(220, 200, 160, 0.9) !important;
+    font-weight: 600 !important;
+}
+
+#tts-dh-modal .ws-form-input,
+#tts-dh-modal .ws-form-select,
+#tts-dh-modal .pc-form-input,
+#tts-dh-modal .pc-form-select,
+#tts-dh-modal .ed-form-input,
+#tts-dh-modal .ed-form-select,
+.ws-theme-dh .ws-form-input,
+.ws-theme-dh .ws-form-select {
+    background: rgba(8, 6, 14, 0.85) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: #fef08a !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+}
+
+#tts-dh-modal .ws-form-input:focus,
+#tts-dh-modal .ws-form-select:focus,
+.ws-theme-dh .ws-form-input:focus,
+.ws-theme-dh .ws-form-select:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+#tts-dh-modal .ws-form-select option,
+.ws-theme-dh .ws-form-select option {
+    background: #171224 !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-textarea,
+.ws-theme-dh .ws-textarea {
+    background: rgba(8, 6, 14, 0.85) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: #fef08a !important;
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+    border-radius: 8px !important;
+}
+
+#tts-dh-modal .ws-textarea:focus,
+.ws-theme-dh .ws-textarea:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+#tts-dh-modal .ws-slot-btn,
+.ws-theme-dh .ws-slot-btn {
+    background: rgba(196, 155, 79, 0.15) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: #fde047 !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+}
+
+#tts-dh-modal .ws-slot-btn:hover,
+.ws-theme-dh .ws-slot-btn:hover {
+    background: rgba(196, 155, 79, 0.3) !important;
+    border-color: #f59e0b !important;
+    color: #ffffff !important;
+}
+
+#tts-dh-modal .ws-quick-tag,
+#tts-dh-modal .pc-quick-tag,
+#tts-dh-modal .ed-quick-tag,
+.ws-theme-dh .ws-quick-tag {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+}
+
+#tts-dh-modal .ws-quick-tag:hover,
+.ws-theme-dh .ws-quick-tag:hover {
+    background: rgba(196, 155, 79, 0.2) !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-check-label,
+.ws-theme-dh .ws-check-label {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(196, 155, 79, 0.25) !important;
+    color: rgba(220, 200, 160, 0.8) !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+}
+
+#tts-dh-modal .ws-check-label.checked,
+.ws-theme-dh .ws-check-label.checked {
+    background: rgba(196, 155, 79, 0.25) !important;
+    border-color: #f59e0b !important;
+    color: #fef08a !important;
+    font-weight: 600 !important;
+}
+
+#tts-dh-modal .ws-modal-footer,
+.ws-theme-dh .ws-modal-footer {
+    background: rgba(0, 0, 0, 0.45) !important;
+    border-top: 1px solid rgba(196, 155, 79, 0.3) !important;
+}
+
+#tts-dh-modal .ws-tool-btn-secondary,
+.ws-theme-dh .ws-tool-btn-secondary,
+.ws-theme-dh #ws-modal-cancel-btn,
+.ws-theme-dh #ws-import-cancel-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(196, 155, 79, 0.3) !important;
+    color: rgba(220, 200, 160, 0.85) !important;
+}
+
+#tts-dh-modal .ws-tool-btn-secondary:hover,
+.ws-theme-dh .ws-tool-btn-secondary:hover,
+.ws-theme-dh #ws-modal-cancel-btn:hover,
+.ws-theme-dh #ws-import-cancel-btn:hover {
+    background: rgba(196, 155, 79, 0.18) !important;
+    color: #fff !important;
+}
+
+#tts-dh-modal .ws-tool-btn-primary,
+.ws-theme-dh .ws-tool-btn-primary,
+.ws-theme-dh #ws-modal-save-btn,
+.ws-theme-dh #ws-import-confirm-btn,
+.ws-theme-dh #ws-directed-launch-btn {
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    color: #fef08a !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4) !important;
+}
+
+#tts-dh-modal .ws-tool-btn-primary:hover,
+.ws-theme-dh .ws-tool-btn-primary:hover,
+.ws-theme-dh #ws-modal-save-btn:hover,
+.ws-theme-dh #ws-import-confirm-btn:hover,
+.ws-theme-dh #ws-directed-launch-btn:hover {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+}
+
+#tts-dh-modal .ws-auto-context-tip,
+.ws-theme-dh .ws-auto-context-tip {
+    background: rgba(196, 155, 79, 0.12) !important;
+    border: 1px solid rgba(196, 155, 79, 0.3) !important;
+    color: #fef08a !important;
+}
+
+/* --- 空状态 Empty State (死亡圣器魔幻暗金) --- */
+#tts-dh-modal .pc-empty-state,
+#tts-dh-modal .ed-empty-state {
+    color: rgba(220, 200, 160, 0.7) !important;
+    padding: 40px 20px !important;
+    text-align: center !important;
+}
+
+#tts-dh-modal .pc-empty-title,
+#tts-dh-modal .ed-empty-title {
+    color: #fef08a !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+}
+
+#tts-dh-modal .pc-empty-desc,
+#tts-dh-modal .ed-empty-desc {
+    color: rgba(220, 200, 160, 0.6) !important;
+    font-size: 11.5px !important;
+}
+
+#tts-dh-modal .pc-empty-btn,
+#tts-dh-modal .ed-empty-btn,
+#tts-dh-modal .pc-go-all-btn,
+#tts-dh-modal .ed-go-all-btn {
+    background: rgba(217, 119, 6, 0.2) !important;
+    border: 1px solid rgba(217, 119, 6, 0.5) !important;
+    color: #fde047 !important;
+    border-radius: 8px !important;
+    padding: 7px 16px !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+    margin-top: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+#tts-dh-modal .pc-empty-btn:hover,
+#tts-dh-modal .ed-empty-btn:hover,
+#tts-dh-modal .pc-go-all-btn:hover,
+#tts-dh-modal .ed-go-all-btn:hover {
+    background: rgba(217, 119, 6, 0.35) !important;
+}

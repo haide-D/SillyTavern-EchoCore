@@ -1,0 +1,9 @@
+{
+  "id": "cyberpunk_edgerunners",
+  "name": "⚡ 夜之城·边缘行者 (Cyberpunk: Edgerunners)",
+  "version": "1.0.0",
+  "author": "Antigravity",
+  "description": "夜之城霓虹故障与斯安威逊极速美学：战术 HUD · 脑机直连 · 深网破冰 · 3D 赛博光子火花物理系统 · 100% 细线矢量",
+  "entry_js": "index.js",
+  "entry_css": "/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/cyberpunk_edgerunners.css"
+}

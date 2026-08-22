@@ -1,0 +1,113 @@
+/* ==========================================================================
+   📱 手机 App 基础容器与导航栏 (Mobile App Container & Navbar)
+   ========================================================================== */
+
+/* 手机 App 容器样式 */
+.app-container {
+    background-color: #f2f2f7 !important;
+    display: flex;
+    flex-direction: column;
+    padding-top: 0 !important;
+}
+
+/* 顶部导航栏 */
+.mobile-app-navbar {
+    flex-shrink: 0;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    padding-top: 15px;
+    font-size: 16px;
+    color: #000;
+    z-index: 100;
+    position: sticky;
+    top: 0;
+}
+
+.nav-left {
+    color: #007aff;
+    cursor: pointer;
+    font-weight: 500;
+    min-width: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-title {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.nav-right {
+    min-width: 60px;
+}
+
+/* =========================================
+   🌈 主题色覆盖
+   ========================================= */
+
+#mobile-screen-content .tts-panel,
+#mobile-screen-content #tts-dashboard,
+.app-container {
+    background: var(--s-load-bg) !important;
+    color: var(--s-load-color) !important;
+}
+
+#mobile-screen-content .tts-card {
+    background: var(--s-wait-bg) !important;
+    border: var(--s-ready-border) !important;
+    color: var(--s-wait-color) !important;
+    box-shadow: none !important;
+}
+
+#mobile-screen-content .tts-input-label,
+#mobile-screen-content .tts-switch-label,
+#mobile-screen-content .col-name,
+#mobile-screen-content .sheet-header,
+#mobile-screen-content .nav-title {
+    color: var(--s-load-color) !important;
+    opacity: 0.9;
+}
+
+#mobile-screen-content .tts-modern-input,
+#mobile-screen-content select {
+    background: rgba(128, 128, 128, 0.15) !important;
+    border: 1px solid rgba(128, 128, 128, 0.2) !important;
+    color: inherit !important;
+}
+
+.mobile-app-navbar {
+    background: var(--s-ready-bg) !important;
+    color: var(--s-ready-color) !important;
+    border-bottom: var(--s-ready-border) !important;
+}
+
+.nav-left {
+    color: inherit !important;
+    opacity: 0.7;
+}
+
+#mobile-screen-content .tts-list-item .col-model {
+    color: inherit !important;
+    opacity: 0.6;
+}
+
+#mobile-screen-content .select-options {
+    background: var(--s-load-bg) !important;
+    color: var(--s-load-color) !important;
+    border: 1px solid var(--s-ready-border) !important;
+}
+
+#mobile-screen-content .sheet-item {
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
+}
+
+#mobile-screen-content .sheet-item:active {
+    background: var(--s-play-bg) !important;
+    color: var(--s-play-color) !important;
+}

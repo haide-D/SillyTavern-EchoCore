@@ -1,0 +1,343 @@
+/* =========================================================
+   夜之城·边缘行者 (cyberpunk_edgerunners) - 修长飘逸光刃字母 V (trigger.css)
+   修长锋利 · 飘逸流线 · 来电呼叫暴走警报 · 深网破冰雷达律动 · 锋芒屏闪
+   ========================================================= */
+
+:root {
+    --cyber-yellow: #FFE600;
+    --cyber-yellow-rgb: 255, 230, 0;
+
+    --cyber-cyan: #00F0FF;
+    --cyber-cyan-rgb: 0, 240, 255;
+
+    --cyber-red: #FF003C;
+    --cyber-red-rgb: 255, 0, 60;
+}
+
+/* ==================== 1. 悬浮入口容器 (纯粹透明 · 自由悬浮) ==================== */
+#tts-cyber-trigger.cyber-edgerunners-trigger,
+#tts-cyber-trigger {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    cursor: pointer;
+    z-index: 9999;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 10px rgba(var(--cyber-yellow-rgb), 0.7)) drop-shadow(0 0 18px rgba(var(--cyber-cyan-rgb), 0.35));
+    transition: filter 0.25s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+#tts-cyber-trigger:hover {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 20px rgba(var(--cyber-yellow-rgb), 0.95)) drop-shadow(0 0 16px rgba(var(--cyber-cyan-rgb), 0.85));
+}
+
+/* ==================== 2. 内层结构 ==================== */
+.cyber-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+/* ==================== 3. 矢量 SVG 图元分层 ==================== */
+.cyber-trigger-svg {
+    width: 58px;
+    height: 58px;
+    overflow: visible;
+    display: block;
+}
+
+.cyber-v-root {
+    transform-origin: 32px 32px;
+    animation: cyberBladeFlicker 5s infinite;
+}
+
+/* ① 修长主光刃 */
+.cyber-v-blade-main {
+    filter: drop-shadow(0 0 6px #FFE600);
+    animation: cyberBladeGlitch 4.2s infinite;
+}
+
+/* ② 飞掠残影线条 */
+.cyber-v-speed-trail {
+    animation: cyberTrailPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes cyberTrailPulse {
+    0% { opacity: 0.5; transform: translateX(0); }
+    100% { opacity: 0.95; transform: translateX(1px); }
+}
+
+/* ③ RGB 故障色散层 */
+.cyber-v-rgb-layer {
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+.cyber-v-rgb-red {
+    fill: #FF003C;
+    animation: cyberBladeGlitchRed 4.2s infinite;
+}
+
+.cyber-v-rgb-cyan {
+    fill: #00F0FF;
+    animation: cyberBladeGlitchCyan 4.2s infinite;
+}
+
+/* ==================== 4. 悬停暴走动效 ==================== */
+#tts-cyber-trigger:hover .cyber-v-root {
+    animation: cyberBladeFlickerHover 0.7s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-blade-main {
+    animation: cyberBladeGlitchHover 0.5s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-rgb-red {
+    animation: cyberBladeGlitchRedHover 0.5s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-rgb-cyan {
+    animation: cyberBladeGlitchCyanHover 0.5s infinite;
+}
+
+/* ==================== 5. 基础 Glitch 动画帧 ==================== */
+
+@keyframes cyberBladeFlicker {
+    0%, 88%, 93%, 96%, 100% {
+        opacity: 1;
+        transform: scale(1) skew(0deg);
+    }
+    89% {
+        opacity: 0.3;
+        transform: scale(1.04) skew(-5deg);
+    }
+    94% {
+        opacity: 0.7;
+        transform: scale(0.97) skew(4deg);
+    }
+}
+
+@keyframes cyberBladeFlickerHover {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    15% { opacity: 0.35; transform: scale(1.06) skew(-7deg); }
+    40% { opacity: 0.95; transform: scale(0.96) skew(5deg); }
+    65% { opacity: 0.3; transform: scale(1.04); }
+    85% { opacity: 1; transform: skew(-3deg); }
+}
+
+@keyframes cyberBladeGlitch {
+    0%, 86%, 92%, 96%, 100% {
+        transform: translate(0, 0) skew(0deg);
+    }
+    87% {
+        transform: translate(-3px, 1px) skew(-8deg);
+    }
+    88% {
+        transform: translate(3px, -1px) skew(6deg);
+    }
+    93% {
+        transform: translate(-2px, -1px) skew(-4deg);
+    }
+    95% {
+        transform: translate(2px, 1px) skew(5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchHover {
+    0%, 100% { transform: translate(0, 0) skew(0deg); }
+    10% { transform: translate(-3.5px, 2px) skew(-10deg); }
+    25% { transform: translate(3.5px, -2px) skew(8deg); }
+    45% { transform: translate(-2.5px, -1px) skew(-6deg); }
+    70% { transform: translate(3px, 1.5px) skew(7deg); }
+    85% { transform: translate(-2px, 2px) skew(-4deg); }
+}
+
+@keyframes cyberBladeGlitchRed {
+    0%, 86%, 92%, 96%, 100% {
+        opacity: 0;
+        transform: translate(0, 0);
+    }
+    87% {
+        opacity: 0.95;
+        transform: translate(-4px, 2px) skew(-8deg);
+    }
+    88% {
+        opacity: 0.85;
+        transform: translate(2.5px, -1.5px);
+    }
+    93% {
+        opacity: 0.9;
+        transform: translate(-3px, -1px) skew(5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchRedHover {
+    0%, 100% { opacity: 0; transform: translate(0, 0); }
+    12% { opacity: 0.95; transform: translate(-4.5px, 2.5px) skew(-10deg); }
+    30% { opacity: 0.85; transform: translate(3.5px, -2px); }
+    55% { opacity: 1; transform: translate(-4px, -1.5px) skew(7deg); }
+    80% { opacity: 0.9; transform: translate(3px, 1px); }
+}
+
+@keyframes cyberBladeGlitchCyan {
+    0%, 86%, 92%, 96%, 100% {
+        opacity: 0;
+        transform: translate(0, 0);
+    }
+    87% {
+        opacity: 0.95;
+        transform: translate(4px, -2px) skew(8deg);
+    }
+    88% {
+        opacity: 0.85;
+        transform: translate(-2.5px, 2px);
+    }
+    93% {
+        opacity: 0.9;
+        transform: translate(3.5px, 1px) skew(-5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchCyanHover {
+    0%, 100% { opacity: 0; transform: translate(0, 0); }
+    12% { opacity: 0.95; transform: translate(4.5px, -2.5px) skew(10deg); }
+    30% { opacity: 0.85; transform: translate(-3.5px, 2px); }
+    55% { opacity: 1; transform: translate(4px, 1.5px) skew(-7deg); }
+    80% { opacity: 0.9; transform: translate(-3px, -1px); }
+}
+
+/* ==================== 6. 专属通知动画：来电 / 窃听 / 播放 ==================== */
+
+/* ─── A. 触发来电 (is-calling): 荒坂绯红过载警报暴走 ─── */
+#tts-cyber-trigger.is-calling {
+    transform: scale(1.16);
+    filter: drop-shadow(0 0 24px rgba(255, 0, 60, 1)) drop-shadow(0 0 16px rgba(255, 230, 0, 0.9));
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-root {
+    animation: cyberVCallAlarmShake 0.45s infinite;
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-blade-main {
+    fill: #FF003C;
+    filter: drop-shadow(0 0 10px #FF003C);
+    animation: cyberVCallBladeFlash 0.45s infinite alternate;
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-rgb-red {
+    opacity: 1;
+    animation: cyberVCallGlitchRed 0.3s infinite;
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-rgb-cyan {
+    opacity: 0.9;
+    animation: cyberVCallGlitchCyan 0.3s infinite;
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-speed-trail {
+    stroke: #FF003C;
+    animation: cyberVCallTrailSpark 0.25s infinite alternate;
+}
+
+@keyframes cyberVCallAlarmShake {
+    0%, 100% { transform: translate(0, 0) skew(0deg); }
+    20% { transform: translate(-3px, 2px) skew(-8deg) scale(1.05); }
+    40% { transform: translate(3px, -2px) skew(6deg) scale(0.98); }
+    60% { transform: translate(-2px, -1px) skew(-5deg) scale(1.04); }
+    80% { transform: translate(2px, 1px) skew(4deg) scale(1); }
+}
+
+@keyframes cyberVCallBladeFlash {
+    0% { fill: #FFE600; filter: drop-shadow(0 0 12px #FFE600); }
+    100% { fill: #FF003C; filter: drop-shadow(0 0 18px #FF003C); }
+}
+
+@keyframes cyberVCallGlitchRed {
+    0%, 100% { transform: translate(-5px, 3px) skew(-12deg); }
+    50% { transform: translate(4px, -3px) skew(10deg); }
+}
+
+@keyframes cyberVCallGlitchCyan {
+    0%, 100% { transform: translate(5px, -3px) skew(10deg); }
+    50% { transform: translate(-4px, 3px) skew(-12deg); }
+}
+
+@keyframes cyberVCallTrailSpark {
+    0% { opacity: 0.4; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1.2) translateX(2px); }
+}
+
+/* ─── B. 触发窃听 (is-ready): 深网赛博青雷达声呐探寻 ─── */
+#tts-cyber-trigger.is-ready {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 24px rgba(0, 240, 255, 0.95)) drop-shadow(0 0 14px rgba(56, 189, 248, 0.8));
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-root {
+    animation: cyberVSniffBreathe 1.8s ease-in-out infinite;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-blade-main {
+    fill: #00F0FF;
+    filter: drop-shadow(0 0 10px #00F0FF);
+    animation: cyberVSniffBladeGlow 1.8s ease-in-out infinite alternate;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-rgb-cyan {
+    opacity: 0.85;
+    animation: cyberVSniffRadarWave 1.8s ease-out infinite;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-speed-trail {
+    stroke: #00F0FF;
+    animation: cyberVSniffTrailFlow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes cyberVSniffBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes cyberVSniffBladeGlow {
+    0% { filter: drop-shadow(0 0 6px #00F0FF); }
+    100% { filter: drop-shadow(0 0 18px #00F0FF) drop-shadow(0 0 28px #38BDF8); }
+}
+
+@keyframes cyberVSniffRadarWave {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes cyberVSniffTrailFlow {
+    0% { opacity: 0.4; stroke-width: 0.6; }
+    100% { opacity: 1; stroke-width: 1.4; }
+}
+
+/* ─── C. 正在播放 (is-playing): 明黄音波节奏律动 ─── */
+#tts-cyber-trigger.is-playing {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(255, 230, 0, 0.95));
+}
+
+#tts-cyber-trigger.is-playing .cyber-v-root {
+    animation: cyberVPlayWave 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes cyberVPlayWave {
+    0% { transform: scale(0.96) translateY(1px); }
+    100% { transform: scale(1.06) translateY(-2px); }
+}

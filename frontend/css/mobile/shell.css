@@ -1,0 +1,136 @@
+/* ==========================================================================
+   📱 手机硬件外壳与物理边框 (Mobile Hardware Shell & Frame)
+   ========================================================================== */
+
+/* 手机根容器 */
+#tts-mobile-root {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    height: 640px;
+    background: #000;
+    border-radius: 45px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 8px solid #333;
+    z-index: 2147483647 !important;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: bottom right;
+}
+
+#tts-mobile-root.minimized {
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 边框和 3D 质感 */
+#tts-mobile-root {
+    border: 6px solid #1a1a1a;
+    overflow: visible !important;
+    transform-style: preserve-3d;
+}
+
+/* 📱 屏幕区域 */
+.mobile-screen {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2b1055, #7597de);
+    position: relative;
+    overflow: hidden;
+    color: white;
+    border-radius: 35px;
+    width: calc(100% - 10px);
+    height: calc(100% - 10px);
+    margin: 5px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 📱 顶部状态栏 & 灵动岛 */
+.mobile-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 25px;
+    background: #000;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    z-index: 10;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 📱 底部 Home 条 */
+.mobile-home-bar {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 20;
+}
+
+.mobile-home-bar:hover {
+    background: white;
+}
+
+/* 📱 侧边按键 */
+
+/* 红色电源键 */
+#tts-mobile-power-btn {
+    position: absolute;
+    right: -6px;
+    top: 100px;
+    width: 6px;
+    height: 40px;
+    background: #ef4444;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    cursor: pointer;
+    z-index: -1;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s;
+}
+
+#tts-mobile-power-btn:hover {
+    background: #dc2626;
+}
+
+#tts-mobile-power-btn:active {
+    transform: scale(0.95);
+}
+
+/* 音量键 */
+.side-btn {
+    position: absolute;
+    left: -6px;
+    width: 6px;
+    height: 30px;
+    background: #4b5563;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    z-index: -1;
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.4);
+}
+
+.side-btn.volume-up {
+    top: 80px;
+}
+
+.side-btn.volume-down {
+    top: 120px;
+}

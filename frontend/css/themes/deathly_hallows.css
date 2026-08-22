@@ -1,0 +1,5 @@
+/**
+ * 死亡圣器主题样式 (Deathly Hallows Theme Bundle)
+ * 本文件已模块化拆分至 frontend/css/themes/deathly_hallows/ 目录
+ */
+@import './deathly_hallows/index.css';

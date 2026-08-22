@@ -1,0 +1,254 @@
+/* =========================================================
+   平安京·落樱雅境 (sakura_elegance) - 落樱折扇 3D 悬浮结界 (trigger.css)
+   平安风雅：3D 悬浮空间透视 · 双向结界天轨 · 莫兰迪薄樱 · 流光折扇 · 柔润呼吸
+   ========================================================= */
+
+:root {
+    --sakura-pink: #F4A6B8;
+    --sakura-pink-rgb: 244, 166, 184;
+
+    --sakura-pink-light: #FFF0F5;
+    --sakura-pink-deep: #D48C9E;
+    --sakura-pink-deep-rgb: 212, 140, 158;
+
+    --sakura-gold: #F5D0A9;
+    --sakura-gold-rgb: 245, 208, 169;
+
+    --sakura-mizuhiki: #E5A696;
+    --sakura-mizuhiki-rgb: 229, 166, 150;
+
+    --sakura-bg-dark: #1f141a;
+    --sakura-paper-bg: rgba(255, 245, 247, 0.85);
+}
+
+/* ==================== 1. 3D 悬浮结界容器 ==================== */
+#tts-sakura-trigger.sakura-elegance-trigger,
+#tts-sakura-trigger {
+    position: fixed;
+    width: 68px;
+    height: 68px;
+    perspective: 800px;
+    cursor: pointer;
+    z-index: 9999;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 16px rgba(var(--sakura-pink-rgb), 0.35)) drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+    transition: filter 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#tts-sakura-trigger:hover {
+    filter: drop-shadow(0 0 26px rgba(var(--sakura-pink-rgb), 0.6)) drop-shadow(0 0 14px rgba(var(--sakura-gold-rgb), 0.45));
+}
+
+/* ==================== 2. 内层 3D 漂浮与轻柔呼吸 ==================== */
+.sakura-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-style: preserve-3d;
+    animation:
+        sakura-breathe 4.2s ease-in-out infinite,
+        sakura-float-3d 6.8s ease-in-out infinite;
+}
+
+@keyframes sakura-breathe {
+    0%, 100% {
+        transform: scale(0.96);
+        filter: brightness(0.94);
+    }
+    50% {
+        transform: scale(1.04);
+        filter: brightness(1.12);
+    }
+}
+
+@keyframes sakura-float-3d {
+    0%, 100% {
+        transform: scale(0.96) rotateY(-3deg) rotateX(2deg);
+    }
+    25% {
+        transform: scale(1.0) rotateY(3deg) rotateX(-2deg);
+    }
+    50% {
+        transform: scale(1.04) rotateY(4deg) rotateX(2deg);
+    }
+    75% {
+        transform: scale(1.0) rotateY(-2deg) rotateX(-3deg);
+    }
+}
+
+/* ==================== 3. 落樱折扇 SVG 几何分层 ==================== */
+.sakura-ougi-trigger-svg {
+    width: 58px;
+    height: 58px;
+    overflow: visible;
+    display: block;
+}
+
+/* --- Layer 1: 双层反向自转结界天轨 --- */
+.sakura-orbit-outer {
+    fill: none;
+    stroke: rgba(var(--sakura-gold-rgb), 0.45);
+    stroke-width: 0.6;
+    stroke-dasharray: 6 12 2 12;
+    animation: sakura-orbit-spin 28s linear infinite;
+    transform-origin: 32px 32px;
+}
+
+.sakura-orbit-mid {
+    fill: none;
+    stroke: rgba(var(--sakura-pink-rgb), 0.35);
+    stroke-width: 0.5;
+    stroke-dasharray: 14 6 4 6;
+    animation: sakura-orbit-counter-spin 22s linear infinite;
+    transform-origin: 32px 32px;
+}
+
+@keyframes sakura-orbit-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes sakura-orbit-counter-spin {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+/* --- Layer 2: 星位刻度与微型花瓣 --- */
+.sakura-rune-ring {
+    opacity: 0.85;
+}
+
+.sakura-mini-petal {
+    fill: rgba(var(--sakura-pink-rgb), 0.7);
+    stroke: rgba(var(--sakura-gold-rgb), 0.5);
+    stroke-width: 0.3;
+}
+
+.sakura-star-dot {
+    fill: rgba(var(--sakura-gold-rgb), 0.7);
+}
+
+/* --- Layer 3: 描金折扇架构 --- */
+.sakura-fan-rim {
+    fill: rgba(255, 240, 245, 0.18);
+    stroke: rgba(var(--sakura-gold-rgb), 0.75);
+    stroke-width: 0.7;
+    backdrop-filter: blur(2px);
+}
+
+.sakura-fan-rib {
+    stroke: rgba(var(--sakura-gold-rgb), 0.6);
+    stroke-width: 0.5;
+    stroke-linecap: round;
+}
+
+.sakura-fan-pivot {
+    fill: #F5D0A9;
+    stroke: rgba(var(--sakura-mizuhiki-rgb), 0.8);
+    stroke-width: 0.4;
+}
+
+.sakura-fan-pivot-ring {
+    fill: none;
+    stroke: rgba(var(--sakura-gold-rgb), 0.5);
+    stroke-width: 0.4;
+    stroke-dasharray: 1, 1.5;
+}
+
+.sakura-floating-petal {
+    fill: rgba(var(--sakura-pink-rgb), 0.8);
+    stroke: rgba(var(--sakura-gold-rgb), 0.4);
+    stroke-width: 0.3;
+    animation: sakura-petal-flutter 3.5s ease-in-out infinite alternate;
+}
+
+.sakura-floating-petal.p2 {
+    animation-delay: 0.7s;
+}
+
+.sakura-floating-petal.p3 {
+    animation-delay: 1.4s;
+}
+
+@keyframes sakura-petal-flutter {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+    100% { transform: translateY(-1.5px) rotate(8deg); opacity: 0.95; }
+}
+
+/* --- Layer 4: 晴明结界五芒印 (工笔纯净细线 · 极简风雅) --- */
+.seimei-star {
+    fill: none;
+    stroke: rgba(var(--sakura-gold-rgb), 0.55);
+    stroke-width: 0.6;
+    stroke-linejoin: round;
+    opacity: 0.85;
+}
+
+/* --- Layer 5: 水引同心结与流苏 --- */
+.sakura-tassel-knot {
+    fill: rgba(var(--sakura-mizuhiki-rgb), 0.8);
+    stroke: rgba(var(--sakura-gold-rgb), 0.6);
+    stroke-width: 0.4;
+}
+
+.sakura-tassel-cord {
+    stroke: rgba(var(--sakura-mizuhiki-rgb), 0.7);
+    stroke-width: 0.6;
+    stroke-linecap: round;
+    animation: sakura-tassel-sway 3.2s ease-in-out infinite alternate;
+    transform-origin: 32px 48px;
+}
+
+.sakura-tassel-cord.right {
+    animation-delay: 0.5s;
+}
+
+@keyframes sakura-tassel-sway {
+    0% { transform: rotate(-3deg); }
+    100% { transform: rotate(3deg); }
+}
+
+/* ==================== 4. 状态指示光环 (Status Halos) ==================== */
+.sakura-status-ring {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: all 0.4s ease;
+    opacity: 0;
+}
+
+.sakura-status-ring.ready {
+    opacity: 0.75;
+    box-shadow: 0 0 14px rgba(var(--sakura-pink-rgb), 0.5), inset 0 0 8px rgba(var(--sakura-pink-rgb), 0.3);
+}
+
+.sakura-status-ring.calling {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(var(--sakura-gold-rgb), 0.8), inset 0 0 10px rgba(var(--sakura-gold-rgb), 0.5);
+    animation: sakura-calling-pulse 1.2s ease-in-out infinite;
+}
+
+.sakura-status-ring.playing {
+    opacity: 0.9;
+    box-shadow: 0 0 18px rgba(var(--sakura-pink-deep-rgb), 0.7), inset 0 0 10px rgba(var(--sakura-pink-deep-rgb), 0.4);
+    animation: sakura-playing-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes sakura-calling-pulse {
+    0%, 100% { transform: scale(0.98); opacity: 0.8; }
+    50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes sakura-playing-pulse {
+    0%, 100% { transform: scale(1.0); opacity: 0.7; }
+    50% { transform: scale(1.05); opacity: 0.95; }
+}

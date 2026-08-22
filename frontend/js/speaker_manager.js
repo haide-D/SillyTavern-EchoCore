@@ -68,8 +68,19 @@ export const SpeakerManager = {
                 return;
             }
 
-            // 提取说话人
-            const speakers = window.TTS_Utils.extractAllSpeakers(context.chat);
+            // 提取对话中所有说话人
+            const extractedSpeakers = window.TTS_Utils.extractAllSpeakers(context.chat);
+            const speakerSet = new Set(extractedSpeakers);
+
+            // 补充当前选中的主角色卡名称 (若有)
+            if (context.characters && context.characterId !== undefined) {
+                const charObj = context.characters[context.characterId];
+                if (charObj && charObj.name && charObj.name.trim()) {
+                    speakerSet.add(charObj.name.trim());
+                }
+            }
+
+            const speakers = Array.from(speakerSet);
             const mesid = context.chat.length - 1;
 
             // 检查是否需要更新 (数据未变化则跳过)
@@ -95,6 +106,11 @@ export const SpeakerManager = {
             this.lastUpdate = { chatBranch, speakers, mesid };
 
             console.log(`[SpeakerManager] ✅ 已更新说话人列表 (${speakers.length}): ${speakers.join(', ')}`);
+
+            // 联动刷新 Prompt 注入器
+            if (window.TTS_PromptInjector && window.TTS_PromptInjector.refreshAndInject) {
+                window.TTS_PromptInjector.refreshAndInject();
+            }
 
         } catch (error) {
             console.warn('[SpeakerManager] ⚠️ 更新失败:', error);

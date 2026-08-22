@@ -2,6 +2,16 @@ import os
 import wave
 from config import load_json, save_json, MAX_CACHE_SIZE_MB
 
+def safe_print(msg):
+    """安全输出日志,兼容各种终端编码"""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        try:
+            print(msg.encode('ascii', 'replace').decode('ascii'))
+        except Exception:
+            pass
+
 def get_audio_duration(file_path):
     """获取音频文件时长(秒)"""
     try:
@@ -11,7 +21,7 @@ def get_audio_duration(file_path):
             duration = frames / float(rate)
             return duration
     except Exception as e:
-        print(f"⚠️ 无法读取音频时长: {file_path}, 错误: {e}")
+        safe_print(f"[Audio] 无法读取音频时长: {file_path}, 错误: {e}")
         return None
 
 def pad_audio_to_duration(input_path, target_duration=3.0):
@@ -44,11 +54,11 @@ def pad_audio_to_duration(input_path, target_duration=3.0):
         
         # 删除备份
         os.remove(backup_path)
-        print(f"✅ 音频已自动填充: {os.path.basename(input_path)} ({current_duration:.2f}s → {target_duration:.2f}s)")
+        safe_print(f"[Audio] 音频已自动填充: {os.path.basename(input_path)} ({current_duration:.2f}s -> {target_duration:.2f}s)")
         return True
         
     except Exception as e:
-        print(f"❌ 音频填充失败: {input_path}, 错误: {e}")
+        safe_print(f"[Audio] 音频填充失败: {input_path}, 错误: {e}")
         # 恢复备份
         if os.path.exists(backup_path):
             import shutil
@@ -71,17 +81,17 @@ def scan_audio_files(directory):
             duration = get_audio_duration(full_path)
             
             if duration is None:
-                warnings.append(f"⚠️ 无法读取: {f}")
+                warnings.append(f"[WARN] 无法读取: {f}")
                 continue
             
             # 检查时长范围 (3-10秒)
             if duration < 2.99:  # 使用 2.99 避免浮点数精度问题
-                warnings.append(f"⚠️ 音频过短 ({duration:.2f}s < 3s): {f}")
-                print(f"⚠️ 跳过过短音频: {f} ({duration:.2f}秒)")
+                warnings.append(f"[WARN] 音频过短 ({duration:.2f}s < 3s): {f}")
+                print(f"[WARN] 跳过过短音频: {f} ({duration:.2f}秒)")
                 continue
             elif duration > 10.01:  # 使用 10.01 避免浮点数精度问题
-                warnings.append(f"⚠️ 音频过长 ({duration:.2f}s > 10s): {f}")
-                print(f"⚠️ 跳过过长音频: {f} ({duration:.2f}秒)")
+                warnings.append(f"[WARN] 音频过长 ({duration:.2f}s > 10s): {f}")
+                print(f"[WARN] 跳过过长音频: {f} ({duration:.2f}秒)")
                 continue
             
             # 正常音频,添加到列表
@@ -96,12 +106,12 @@ def scan_audio_files(directory):
     
     # 如果有警告,打印汇总
     if warnings:
-        print(f"\n⚠️ 发现 {len(warnings)} 个不合格的参考音频:")
+        print(f"\n[WARN] 发现 {len(warnings)} 个不合格的参考音频:")
         for warning in warnings[:5]:  # 只显示前5个
             print(f"  {warning}")
         if len(warnings) > 5:
             print(f"  ... 还有 {len(warnings) - 5} 个")
-        print("💡 提示: 请在管理页面重新上传这些音频,系统会自动处理时长问题\n")
+        print("[INFO] 提示: 请在管理页面重新上传这些音频,系统会自动处理时长问题\n")
     
     return refs
 

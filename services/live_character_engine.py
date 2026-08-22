@@ -37,15 +37,25 @@ class LiveCharacterEngine:
         
         print(f"[LiveCharacterEngine] 初始化完成 - 阈值: {self.threshold}")
     
-    def build_analysis_prompt(self, context: List[Dict], speakers: List[str], call_history: List[Dict] = None, chat_branch: str = None) -> str:
+    def build_analysis_prompt(
+        self, 
+        context: List[Dict], 
+        speakers: List[str], 
+        call_history: List[Dict] = None, 
+        chat_branch: str = None,
+        character_persona: str = "",
+        world_info: str = ""
+    ) -> str:
         """
-        构建开放式角色状态分析的LLM Prompt (含触发建议)
+        构建开放式角色状态分析的LLM Prompt (深度融合世界书、角色人设与前情总结)
         
         Args:
             context: 对话上下文
             speakers: 说话人列表
             call_history: 近期通话历史（可选）
             chat_branch: 对话分支ID（用于查询触发历史）
+            character_persona: 角色卡人设设定 (从SillyTavern自动注入)
+            world_info: 世界书/世界观设定 (从SillyTavern自动注入)
             
         Returns:
             LLM Prompt
@@ -59,9 +69,9 @@ class LiveCharacterEngine:
         extract_tag = msg_processing.get("extract_tag", "")
         filter_tags = msg_processing.get("filter_tags", "")
         
-        # 构建上下文文本（应用过滤）
+        # 构建上下文文本（应用过滤，轻量化取最近10条）
         context_lines = []
-        for msg in context[-10:]:  # 只取最近10条
+        for msg in context[-10:]:
             name = msg.get('name', '未知')
             content = msg.get('mes', '')
             # 应用消息过滤
@@ -70,18 +80,25 @@ class LiveCharacterEngine:
             context_lines.append(f"{name}: {content}")
         
         context_text = "\n".join(context_lines)
-        
         speakers_list = "、".join(speakers)
         
-        # ✅ 获取已绑定 TTS 模型的角色列表
+        # 从数据库中拉取前情剧情总结与场景摘要 (轻量长程记忆)
+        fingerprints = []
+        for msg in context:
+            fp = msg.get("fingerprint") or msg.get("fp")
+            if fp:
+                fingerprints.append(fp)
+
+        summary_ctx = self.db.get_latest_summary_context(chat_branch=chat_branch, fingerprints=fingerprints)
+        summary_text = summary_ctx.get("formatted", "无历史剧情总结")
+        
+        # 获取已绑定 TTS 模型的角色列表
         from config import get_bound_characters
         bound_characters = get_bound_characters()
         
-        # 计算 speakers 中哪些角色有绑定模型
         bound_speakers = [s for s in speakers if s in bound_characters]
         unbound_speakers = [s for s in speakers if s not in bound_characters]
         
-        # 构建可用语音角色说明
         if bound_speakers:
             voice_available_text = f"以下角色有语音功能，可以打电话: {', '.join(bound_speakers)}"
         else:
@@ -94,10 +111,8 @@ class LiveCharacterEngine:
         call_history_text = "无近期通话记录"
         if call_history:
             history_lines = []
-            for call in call_history[:5]:  # 最多5条
+            for call in call_history[:5]:
                 caller = call.get("char_name", "未知")
-                created_at = call.get("created_at", "")
-                # 提取通话内容摘要
                 segments = call.get("segments", [])
                 if isinstance(segments, str):
                     import json
@@ -112,21 +127,13 @@ class LiveCharacterEngine:
                 history_lines.append(f"- {caller}：{content_preview}...")
             call_history_text = "\n".join(history_lines)
         
-        # ✅ 查询触发历史（用于多样性判断）- 使用指纹而非分支
+        # 触发历史
         trigger_history_text = "无历史触发记录"
         diversity_guidance = ""
-        
-        # 从 context 中提取指纹列表
-        fingerprints = []
-        for msg in context:
-            fp = msg.get("fingerprint") or msg.get("fp")
-            if fp:
-                fingerprints.append(fp)
         
         if fingerprints:
             trigger_history = self.db.get_recent_trigger_history(fingerprints=fingerprints, limit=5)
             if trigger_history:
-                # 格式化触发历史
                 history_items = []
                 phone_call_count = 0
                 eavesdrop_count = 0
@@ -148,32 +155,49 @@ class LiveCharacterEngine:
                 
                 trigger_history_text = "最近触发: " + ", ".join(history_items)
                 
-                # 根据历史生成多样性指导（电话严格，偷听宽松）
                 if phone_call_count >= 2:
-                    diversity_guidance = """⛔ 【强制规则】最近已触发 {phone_call_count} 次电话，必须遵守：
-- 禁止再次触发 phone_call
-- 优先选择 eavesdrop 或 none
-- 只有剧情出现重大转折（如：生命危险、重大误会、极端情绪爆发）才可例外"""
-                elif phone_call_count >= 1:
-                    diversity_guidance = """🔒 【限制规则】刚触发过电话，请谨慎考虑：
-- 除非场景有明显变化，否则优先选择 none
-- 🎭 eavesdrop 是很好的替代选择！如果2+角色在场且可能有私下交流，推荐触发"""
-                elif eavesdrop_count >= 3:
-                    diversity_guidance = """💡 【多样性建议】最近已触发 {eavesdrop_count} 次偷听：
-- 建议考虑 phone_call 或 none 增加多样性
-- 但如果场景特别适合偷听（如：角色间有显著秘密/张力），仍可触发"""
-                elif eavesdrop_count >= 2:
-                    # 2次偷听还可以接受，只是提醒
-                    diversity_guidance = "💡 最近有过偷听体验，可以考虑其他触发类型，但 eavesdrop 仍是可接受的选择"
-                elif none_count >= 4:
-                    diversity_guidance = "🌟 最近较少触发事件，当前是很好的触发时机！优先推荐 eavesdrop（惊喜感强）"
-                elif eavesdrop_count == 0 and phone_call_count == 0 and len(trigger_history) >= 2:
-                    diversity_guidance = "🌟 近期无任何触发，特别推荐触发 eavesdrop（如果场景合适），可给用户带来惊喜体验！"
-        
-        prompt = f"""
-请以JSON格式分析当前场景中每个角色的状态，并判断是否应该触发特殊事件。
+                    diversity_guidance = "⛔ 最近已多次触发电话，请优先选择 eavesdrop (窃听) 或 none。"
+                elif none_count >= 3:
+                    diversity_guidance = "🌟 最近较少触发事件，当前是绝佳时机！若多人在场优先推荐 eavesdrop。"
 
-# 对话上下文
+        # 动态获取工坊生效剧本池
+        from services.preset_service import PresetService
+        phone_call_cfg = settings.get("phone_call", {})
+        active_call_ids = phone_call_cfg.get("active_preset_ids") or [phone_call_cfg.get("active_preset_id") or "standard_call"]
+        active_eavesdrop_ids = phone_call_cfg.get("active_eavesdrop_preset_ids") or [phone_call_cfg.get("active_eavesdrop_preset_id") or "standard_eavesdrop"]
+        
+        all_phone_presets = PresetService.list_presets("phone_call")
+        all_eavesdrop_presets = PresetService.list_presets("eavesdrop")
+
+        active_call_presets = [p for p in all_phone_presets if p.get("id") in active_call_ids] or all_phone_presets[:1]
+        active_eavesdrop_presets = [p for p in all_eavesdrop_presets if p.get("id") in active_eavesdrop_ids] or all_eavesdrop_presets[:1]
+
+        call_presets_text = "\n".join([
+            f"- id: \"{p.get('id')}\" | 剧本: 「{p.get('name')}」 | 场景特征: {p.get('description', '无')}"
+            for p in active_call_presets
+        ])
+        eavesdrop_presets_text = "\n".join([
+            f"- id: \"{p.get('id')}\" | 剧本: 「{p.get('name')}」 | 场景特征: {p.get('description', '无')}"
+            for p in active_eavesdrop_presets
+        ])
+
+        # 组装世界书与人设段落
+        world_persona_section = ""
+        if character_persona or world_info or summary_text:
+            wp_parts = []
+            if character_persona:
+                wp_parts.append(f"## 角色卡设定 (Character Persona):\n{character_persona}")
+            if world_info:
+                wp_parts.append(f"## 世界书背景 (World Info):\n{world_info}")
+            if summary_text and summary_text != "无历史剧情总结":
+                wp_parts.append(f"## 历史剧情总结 (Story Memory):\n{summary_text}")
+            world_persona_section = "\n\n# 世界观设定与角色档案 (World Info & Personas)\n" + "\n\n".join(wp_parts)
+
+        prompt = f"""
+请以JSON格式分析当前场景中每个角色的状态，并判断是否应该触发特殊事件。你同时扮演【剧情总导演】，根据当前对话氛围、人物性格与世界书背景，从剧本池中挑选最适合当前剧情的剧本。
+{world_persona_section}
+
+# 对话上下文 (最近对话)
 {context_text}
 
 # 需分析的角色
@@ -185,6 +209,13 @@ class LiveCharacterEngine:
 # 触发历史（多样性参考）
 {trigger_history_text}
 {diversity_guidance}
+
+# 剧本工坊 - 可选剧本池 (Workshop Presets)
+## 候选来电剧本 (若触发 phone_call，请依据剧情张力从中挑选最契合的一项):
+{call_presets_text}
+
+## 候选窃听剧本 (若触发 eavesdrop，请依据剧情张力从中挑选最契合的一项):
+{eavesdrop_presets_text}
 
 # 分析要求
 对每个角色,请提供以下维度的分析:
@@ -220,27 +251,18 @@ class LiveCharacterEngine:
 ## 电话触发判断
 判断是否有角色想给用户打电话，**不限于离场场景**。以下情况都可能触发：
 - 角色离场后想联系用户
-- 角色在场但有特别想说的话（叮嘱、表白、倾诉）
+- 角色在场但有特别想说的话（叮嘱、表白、倾诉、警告）
 - 角色突然想起重要的事情
 - 角色想分享心情或轻松聊天
 - 角色处于强烈情绪中想要倾诉
-
-综合考虑：
-1. 当前场景是否适合来电
-2. 角色是否有话想说（不限类型）
-3. 参考上面的通话历史，避免相同角色短时间内重复打电话
-4. 如果多个角色都想打，选择当前场景下最合适的那个
 
 ## 偷听触发判断（重要！这是独特体验）
 当2+有语音功能的角色在场时，考虑触发 eavesdrop（用户"偷听"角色私下对话）。
 适合触发的场景：
 - 角色间有未说出口的心思或秘密
 - 角色在讨论与用户相关的事情
-- 角色之间有戏剧张力（争执、八卦、密谋）
+- 角色之间有戏剧张力（争执、八卦、密谋、吃醋）
 - 用户刚离开，角色开始私下交流
-- 场景有"关上门后的对话"氛围
-
-⚠️ eavesdrop 是让用户获得"上帝视角"的特殊体验，不要轻易放过合适的场景！
 
 # 输出格式
 {{
@@ -263,12 +285,16 @@ class LiveCharacterEngine:
         "phone_call_details": {{
             "caller": "打电话的角色名",
             "call_reason": "为什么要打这个电话（自然语言描述）",
-            "call_tone": "通话氛围（如：轻松闲聊、温柔叮嘱、深情倾诉、兴奋分享、担心关切等）"
+            "call_tone": "通话氛围（如：轻松闲聊、温柔叮嘱、深情倾诉、兴奋分享、担心关切、傲娇醉酒等）",
+            "selected_preset": "从上述来电剧本候选池中挑选的最优 id (必填)",
+            "preset_reason": "简要说明选择该剧本的剧情理由"
         }},
         
         // 偷听配置（仅当 suggested_action 为 "eavesdrop" 时填写）
         "eavesdrop_config": {{
             "conversation_theme": "对话的核心主题",
+            "selected_preset": "从上述窃听剧本候选池中挑选的最优 id (必填)",
+            "preset_reason": "简要说明选择该剧本的剧情理由",
             "conversation_outline": ["对话阶段1", "对话阶段2", "对话阶段3"],
             "dramatic_tension": "戏剧张力描述",
             "hidden_information": "对话中可能透露的用户不知道的信息",
@@ -284,6 +310,7 @@ class LiveCharacterEngine:
 4. 确保所有括号正确闭合
 
 请保持分析的自然性和灵活性,不要受固定模式限制。
+
 """
         return prompt
 

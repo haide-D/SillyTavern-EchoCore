@@ -65,10 +65,12 @@ class ContinuousAnalyzer:
         speakers: List[str],
         context_fingerprint: str,
         user_name: str = None,
-        char_name: str = None  # 主角色卡名称，用于 WebSocket 路由
+        char_name: str = None,  # 主角色卡名称，用于 WebSocket 路由
+        character_persona: str = "",
+        world_info: str = ""
     ) -> Optional[Dict]:
         """
-        执行分析并记录到数据库 (新版 - 使用LiveCharacterEngine)
+        执行分析并记录到数据库 (新版 - 使用LiveCharacterEngine，深度融合世界书与人设)
         
         Args:
             chat_branch: 对话分支ID
@@ -77,6 +79,9 @@ class ContinuousAnalyzer:
             speakers: 说话人列表
             context_fingerprint: 上下文指纹
             user_name: 用户名称
+            char_name: 主角色卡名称
+            character_persona: 角色卡设定
+            world_info: 世界书设定
             
         Returns:
             分析结果或 None
@@ -105,12 +110,19 @@ class ContinuousAnalyzer:
                     print(f"[ContinuousAnalyzer] 📞 根据分支查询到 {len(call_history)} 条通话历史")
             
             # 查询历史分析记录（获取离场角色等信息）
-            last_analysis = self.db.get_latest_analysis(chat_branch)
+            last_analysis = self.db.get_latest_analysis(chat_branch, fingerprints=fingerprints)
             if last_analysis:
                 print(f"[ContinuousAnalyzer] 📊 查询到最近分析记录: 楼层={last_analysis.get('floor')}")
             
-            # 使用LiveCharacterEngine构建Prompt（传入通话历史和分支ID）
-            prompt = self.live_engine.build_analysis_prompt(context, speakers, call_history, chat_branch)
+            # 使用LiveCharacterEngine构建Prompt（传入通话历史、分支ID、角色人设与世界书）
+            prompt = self.live_engine.build_analysis_prompt(
+                context=context, 
+                speakers=speakers, 
+                call_history=call_history, 
+                chat_branch=chat_branch,
+                character_persona=character_persona,
+                world_info=world_info
+            )
             
             print(f"[ContinuousAnalyzer] 活人感分析Prompt已构建,等待 LLM 响应...")
             
@@ -304,9 +316,21 @@ class ContinuousAnalyzer:
                 # 提取 eavesdrop 配置（由分析 LLM 提供的对话主题和框架）
                 eavesdrop_config = scene_trigger.get("eavesdrop_config", {})
                 
+                # 提取大模型剧情总导演选中的剧本 ID 与理由 (支持任意用户自制花活预设)
+                selected_preset = None
+                preset_reason = ""
+                if suggested_action == "phone_call":
+                    selected_preset = phone_call_details.get("selected_preset") or scene_trigger.get("selected_preset")
+                    preset_reason = phone_call_details.get("preset_reason", "")
+                elif suggested_action == "eavesdrop":
+                    selected_preset = eavesdrop_config.get("selected_preset") or scene_trigger.get("selected_preset")
+                    preset_reason = eavesdrop_config.get("preset_reason", "")
+
                 print(f"[ContinuousAnalyzer] 📍 在场角色: {characters_present}")
                 if eavesdrop_config:
                     print(f"[ContinuousAnalyzer] 🎭 对话主题: {eavesdrop_config.get('conversation_theme', '未指定')}")
+                if selected_preset:
+                    print(f"[ContinuousAnalyzer] 🎬 【AI 剧情总导演决策】: 选中剧本 [{selected_preset}] | 理由: {preset_reason or '符合当前剧情'}")
                 
                 # 状态已保存，触发逻辑由上层 (routers/continuous_analysis.py) 根据 scene_trigger 处理
                 # 不在这里遍历触发每个角色的 potential_actions
@@ -321,11 +345,14 @@ class ContinuousAnalyzer:
                     "caller": caller,  # 打电话的角色（新格式或兼容旧格式）
                     "call_reason": call_reason,  # 打电话原因
                     "call_tone": call_tone,  # 通话氛围
+                    "selected_preset": selected_preset,  # ✅ AI 剧情总导演选中的剧本 ID
+                    "preset_reason": preset_reason,  # ✅ 选拔理由
                     "trigger_reason": trigger_reason,
                     "present_characters": characters_present,
                     "character_left": character_left,  # ✅ 修复: 添加离场角色
                     "eavesdrop_config": eavesdrop_config
                 }
+
             else:
                 print(f"[ContinuousAnalyzer] ⚠️ 记录已存在或保存失败: 楼层={floor}")
                 return {"success": False, "error": "记录已存在或保存失败"}

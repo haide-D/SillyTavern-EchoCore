@@ -353,6 +353,8 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
+
+    create_auto_call = add_auto_phone_call
     
     def is_auto_call_generated(self, chat_branch: str, context_fingerprint: str) -> bool:
         """
@@ -499,6 +501,31 @@ class DatabaseManager:
                 ORDER BY created_at DESC 
                 LIMIT ?
             ''', (chat_branch, limit))
+            rows = cursor.fetchall()
+            return [self._auto_call_row_to_dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_all_auto_phone_calls(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        获取所有自动电话历史记录 (全量)
+        
+        Args:
+            limit: 返回记录数量限制
+            
+        Returns:
+            全量记录列表,按创建时间倒序
+        """
+        conn = self._get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                SELECT * FROM auto_phone_calls 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            ''', (limit,))
             rows = cursor.fetchall()
             return [self._auto_call_row_to_dict(row) for row in rows]
         finally:
@@ -651,7 +678,10 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
-    
+
+    # 兼容别名
+    create_eavesdrop = add_eavesdrop_record
+
     def is_eavesdrop_generated(self, chat_branch: str, context_fingerprint: str) -> bool:
         """
         检查指定上下文指纹是否已成功生成过对话追踪
@@ -712,19 +742,27 @@ class DatabaseManager:
         finally:
             conn.close()
     
-    def get_eavesdrop_history(self, chat_branch: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """获取对话追踪历史记录"""
+    def get_eavesdrop_history(self, chat_branch: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """获取对话追踪历史记录 (支持分支过滤或全量查询)"""
         conn = self._get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
         try:
-            cursor.execute('''
-                SELECT * FROM eavesdrop_records 
-                WHERE chat_branch = ? AND status = 'completed'
-                ORDER BY created_at DESC 
-                LIMIT ?
-            ''', (chat_branch, limit))
+            if chat_branch:
+                cursor.execute('''
+                    SELECT * FROM eavesdrop_records 
+                    WHERE chat_branch = ? AND status = 'completed'
+                    ORDER BY created_at DESC 
+                    LIMIT ?
+                ''', (chat_branch, limit))
+            else:
+                cursor.execute('''
+                    SELECT * FROM eavesdrop_records 
+                    WHERE status = 'completed'
+                    ORDER BY created_at DESC 
+                    LIMIT ?
+                ''', (limit,))
             rows = cursor.fetchall()
             return [self._eavesdrop_row_to_dict(row) for row in rows]
         finally:
@@ -880,6 +918,32 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
+
+    def get_latest_summary_context(self, chat_branch: str = None, fingerprints: List[str] = None) -> Dict[str, str]:
+        """
+        获取最新的剧情总结和场景摘要文本
+        
+        Returns:
+            {"summary": str, "scene_summary": str, "formatted": str}
+        """
+        latest = self.get_latest_analysis(chat_branch=chat_branch, fingerprints=fingerprints)
+        if not latest:
+            return {"summary": "", "scene_summary": "", "formatted": ""}
+        
+        summary = (latest.get("summary") or "").strip()
+        scene_summary = (latest.get("scene_summary") or "").strip()
+        
+        parts = []
+        if summary:
+            parts.append(f"【前情剧情总结】: {summary}")
+        if scene_summary:
+            parts.append(f"【当前场景背景】: {scene_summary}")
+            
+        return {
+            "summary": summary,
+            "scene_summary": scene_summary,
+            "formatted": "\n".join(parts)
+        }
     
     def get_character_history(self, character_name: str, limit: int = 20, 
                               chat_branch: str = None, fingerprints: List[str] = None) -> List[Dict[str, Any]]:

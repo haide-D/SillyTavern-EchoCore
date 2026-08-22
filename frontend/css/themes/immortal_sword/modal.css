@@ -1,0 +1,602 @@
+/* =========================================================
+   仙途凌霄 (immortal_sword) - 模态框与子应用全景深度定制 (modal.css)
+   中国仙侠风节 · 去浮华渐变 · 存水墨风骨 · 玄墨素玉 · 留白沉静
+   ========================================================= */
+
+/* ==================== 1. 模态框基础容器 ==================== */
+#tts-immortal-modal {
+    position: fixed;
+    z-index: 10000;
+    overflow: visible;
+    background: transparent;
+    display: none;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+    color: #e2e8f0;
+    animation: immortalScrollUnroll 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes immortalScrollUnroll {
+    from { opacity: 0; transform: scale(0.95) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* 仙风灵牒时差浮动动效 */
+@keyframes immortalSlipFloat {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* 卷轴 SVG 框架 */
+.immortal-scroll-svg {
+    position: absolute;
+    inset: -6px -6px -6px -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* 场景内容挂载区 */
+#tts-immortal-scene-content {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px 16px 14px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 自定义水墨滚动条 */
+#tts-immortal-scene-content::-webkit-scrollbar,
+#tts-immortal-modal *::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+}
+#tts-immortal-scene-content::-webkit-scrollbar-thumb,
+#tts-immortal-modal *::-webkit-scrollbar-thumb {
+    background: rgba(140, 181, 174, 0.25);
+    border-radius: 2px;
+}
+#tts-immortal-scene-content::-webkit-scrollbar-thumb:hover,
+#tts-immortal-modal *::-webkit-scrollbar-thumb:hover {
+    background: rgba(194, 166, 117, 0.5);
+}
+
+/* 极简水墨关闭按钮 */
+.immortal-close-btn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    color: #8a9ba8;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1115;
+    border: 0.8px solid rgba(194, 166, 117, 0.35);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.immortal-close-btn:hover {
+    transform: rotate(90deg);
+    border-color: #c2a675;
+    color: #f1f5f9;
+}
+
+/* ==================== 2. 全局通用顶部导航栏 (NavBar) ==================== */
+#tts-immortal-modal .default-navbar,
+#tts-immortal-modal .tts-navbar,
+#tts-immortal-modal .ws-navbar,
+#tts-immortal-modal .ed-navbar,
+#tts-immortal-modal .immortal-navbar {
+    background: rgba(14, 18, 22, 0.85) !important;
+    border-bottom: 0.8px solid rgba(194, 166, 117, 0.2) !important;
+    color: #f1f5f9 !important;
+    padding: 10px 14px !important;
+    border-radius: 4px 4px 0 0 !important;
+    flex-shrink: 0 !important;
+}
+
+#tts-immortal-modal .nav-title,
+#tts-immortal-modal .navbar-title,
+#tts-immortal-modal .ws-nav-title {
+    color: #f1f5f9 !important;
+    font-weight: 400 !important;
+    letter-spacing: 1.5px !important;
+    font-size: 14px !important;
+    text-shadow: none !important;
+}
+
+#tts-immortal-modal .nav-left,
+#tts-immortal-modal .navbar-btn-back,
+#tts-immortal-modal .ws-btn-back {
+    color: #8a9ba8 !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 12px !important;
+    letter-spacing: 1px !important;
+    transition: color 0.2s ease !important;
+}
+
+#tts-immortal-modal .nav-left:hover,
+#tts-immortal-modal .navbar-btn-back:hover,
+#tts-immortal-modal .ws-btn-back:hover {
+    color: #f1f5f9 !important;
+    transform: none !important;
+}
+
+/* ==================== 3. 顶部三子选项卡 (Tabs) ==================== */
+#tts-immortal-modal .ws-tabs-bar,
+#tts-immortal-modal .pc-nav-tabs,
+#tts-immortal-modal .ed-nav-tabs,
+#tts-immortal-modal .fav-tabs,
+#tts-immortal-modal div[style*="display:flex; padding:10px 15px; gap:10px;"] {
+    display: flex !important;
+    flex-direction: row !important;
+    background: rgba(10, 14, 17, 0.7) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.15) !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    border-radius: 6px !important;
+    margin: 8px 6px 12px 6px !important;
+    box-sizing: border-box !important;
+}
+
+#tts-immortal-modal .ws-tab-btn,
+#tts-immortal-modal .pc-nav-tab-btn,
+#tts-immortal-modal .ed-nav-tab-btn,
+#tts-immortal-modal .fav-tab {
+    flex: 1 !important;
+    padding: 6px 4px !important;
+    border-radius: 4px !important;
+    border: 0.8px solid transparent !important;
+    background: transparent !important;
+    color: #8a9ba8 !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0.5px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .ws-tab-btn:hover,
+#tts-immortal-modal .pc-nav-tab-btn:hover,
+#tts-immortal-modal .ed-nav-tab-btn:hover,
+#tts-immortal-modal .fav-tab:hover {
+    color: #e2e8f0 !important;
+}
+
+#tts-immortal-modal .ws-tab-btn.active,
+#tts-immortal-modal .pc-nav-tab-btn.active,
+#tts-immortal-modal .ed-nav-tab-btn.active,
+#tts-immortal-modal .fav-tab.active {
+    background: rgba(92, 141, 137, 0.18) !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.45) !important;
+    color: #f1f5f9 !important;
+    font-weight: 400 !important;
+    box-shadow: none !important;
+}
+
+/* ==================== 4. 空状态 (Empty States) ==================== */
+#tts-immortal-modal .pc-empty-state,
+#tts-immortal-modal .ed-empty-state,
+#tts-immortal-modal .ws-empty-state,
+#tts-immortal-modal [data-bubble-style] > div:only-child,
+#tts-immortal-modal div[style*="padding:40px 20px; text-align:center; opacity:0.6; font-size:14px;"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 40px 16px !important;
+    margin: auto 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    color: #8a9ba8 !important;
+    font-size: 12.5px !important;
+    line-height: 1.8 !important;
+    letter-spacing: 1px !important;
+}
+
+#tts-immortal-modal .pc-empty-state svg,
+#tts-immortal-modal .ed-empty-state svg,
+#tts-immortal-modal .ws-empty-state svg {
+    width: 36px !important;
+    height: 36px !important;
+    color: #8cb5ae !important;
+    opacity: 0.6 !important;
+    margin: 0 auto 12px auto !important;
+    display: block !important;
+}
+
+#tts-immortal-modal .pc-empty-title,
+#tts-immortal-modal .ed-empty-title {
+    color: #f1f5f9 !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    letter-spacing: 1.5px !important;
+    margin: 0 0 6px 0 !important;
+    text-shadow: none !important;
+}
+
+#tts-immortal-modal .pc-empty-desc,
+#tts-immortal-modal .ed-empty-desc {
+    color: #8a9ba8 !important;
+    font-size: 11.5px !important;
+    line-height: 1.6 !important;
+    max-width: 260px !important;
+    margin: 0 auto 16px auto !important;
+}
+
+#tts-immortal-modal .pc-empty-btn,
+#tts-immortal-modal .ed-empty-btn,
+#tts-immortal-modal .pc-go-all-btn {
+    background: rgba(18, 24, 29, 0.9) !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.5) !important;
+    color: #f1f5f9 !important;
+    padding: 6px 18px !important;
+    border-radius: 16px !important;
+    font-size: 11.5px !important;
+    letter-spacing: 1px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .pc-empty-btn:hover,
+#tts-immortal-modal .ed-empty-btn:hover,
+#tts-immortal-modal .pc-go-all-btn:hover {
+    border-color: #c2a675 !important;
+    background: rgba(28, 36, 42, 0.95) !important;
+    transform: none !important;
+}
+
+/* ==================== 5. 灵宝道藏 (收藏夹 Favorites) ==================== */
+#tts-immortal-modal .fav-item {
+    background: rgba(18, 24, 29, 0.65) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.18) !important;
+    border-left: 2px solid rgba(194, 166, 117, 0.65) !important;
+    border-radius: 6px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 10px !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .fav-item:hover {
+    border-color: rgba(194, 166, 117, 0.4) !important;
+    background: rgba(24, 32, 38, 0.8) !important;
+    transform: none !important;
+}
+
+#tts-immortal-modal .fav-item-name {
+    color: #f1f5f9 !important;
+    font-size: 13.5px !important;
+    letter-spacing: 1px !important;
+    font-weight: 400 !important;
+}
+
+#tts-immortal-modal .fav-item-date {
+    color: #718096 !important;
+    font-size: 10.5px !important;
+}
+
+#tts-immortal-modal .fav-context-box {
+    background: rgba(10, 14, 17, 0.5) !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    color: #8a9ba8 !important;
+    font-size: 11px !important;
+    margin: 4px 0 6px 0 !important;
+    border-left: 2px solid #5c8d89 !important;
+}
+
+#tts-immortal-modal .fav-text-content {
+    color: #e2e8f0 !important;
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    padding: 2px 0 !important;
+}
+
+#tts-immortal-modal .fav-play-bubble {
+    background: rgba(92, 141, 137, 0.15) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 4px 10px !important;
+}
+
+#tts-immortal-modal .fav-play-bubble:hover {
+    border-color: #c2a675 !important;
+}
+
+#tts-immortal-modal .fav-download-btn,
+#tts-immortal-modal .fav-del-btn {
+    background: rgba(14, 18, 22, 0.6) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .fav-download-btn:hover {
+    border-color: #8cb5ae !important;
+    color: #f1f5f9 !important;
+}
+
+#tts-immortal-modal .fav-del-btn:hover {
+    border-color: #f87171 !important;
+    color: #f87171 !important;
+}
+
+/* ==================== 6. 万象幻境 (主题工坊 Theme Store) ==================== */
+#tts-immortal-modal .theme-store-container {
+    background: transparent !important;
+    padding: 6px 2px !important;
+}
+
+#tts-immortal-modal .ts-header-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+}
+
+#tts-immortal-modal .ts-btn {
+    border-radius: 6px !important;
+    padding: 8px 6px !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.8px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .ts-btn-upload {
+    background: rgba(92, 141, 137, 0.15) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.4) !important;
+    color: #8cb5ae !important;
+}
+
+#tts-immortal-modal .ts-btn-upload:hover {
+    background: rgba(92, 141, 137, 0.28) !important;
+    border-color: #c2a675 !important;
+    color: #f1f5f9 !important;
+}
+
+#tts-immortal-modal .ts-btn-import {
+    background: rgba(18, 24, 29, 0.85) !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.35) !important;
+    color: #e2e8f0 !important;
+}
+
+#tts-immortal-modal .ts-btn-import:hover {
+    background: rgba(28, 36, 42, 0.95) !important;
+    border-color: #c2a675 !important;
+    color: #ffffff !important;
+}
+
+#tts-immortal-modal .ts-card {
+    background: rgba(18, 24, 29, 0.65) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.18) !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .ts-card:hover {
+    border-color: rgba(194, 166, 117, 0.45) !important;
+    background: rgba(24, 32, 38, 0.8) !important;
+    transform: none !important;
+}
+
+#tts-immortal-modal .ts-card.active-theme {
+    border: 0.8px solid #c2a675 !important;
+    background: rgba(24, 32, 38, 0.85) !important;
+}
+
+#tts-immortal-modal .ts-card-cover {
+    background: rgba(10, 14, 17, 0.5) !important;
+    border-bottom: 0.8px solid rgba(140, 181, 174, 0.15) !important;
+}
+
+#tts-immortal-modal .ts-cover-icon {
+    color: #8cb5ae !important;
+}
+
+#tts-immortal-modal .ts-active-badge {
+    background: #5c8d89 !important;
+    color: #ffffff !important;
+    font-size: 10px !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    border: none !important;
+}
+
+#tts-immortal-modal .ts-builtin-badge {
+    background: rgba(10, 14, 17, 0.6) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    color: #8a9ba8 !important;
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+}
+
+#tts-immortal-modal .ts-card-title {
+    color: #f1f5f9 !important;
+    font-size: 13.5px !important;
+    font-weight: 400 !important;
+    letter-spacing: 1px !important;
+}
+
+#tts-immortal-modal .ts-card-desc {
+    color: #8a9ba8 !important;
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+}
+
+#tts-immortal-modal .ts-action-use {
+    background: rgba(92, 141, 137, 0.2) !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.45) !important;
+    color: #f1f5f9 !important;
+    border-radius: 4px !important;
+}
+
+#tts-immortal-modal .ts-action-use:hover {
+    background: rgba(92, 141, 137, 0.35) !important;
+    border-color: #c2a675 !important;
+}
+
+#tts-immortal-modal .ts-action-export {
+    background: rgba(14, 18, 22, 0.6) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+    color: #8a9ba8 !important;
+    border-radius: 4px !important;
+}
+
+#tts-immortal-modal .ts-action-delete {
+    background: rgba(220, 38, 38, 0.1) !important;
+    border: 0.8px solid rgba(220, 38, 38, 0.3) !important;
+    color: #f87171 !important;
+    border-radius: 4px !important;
+}
+
+/* ==================== 7. 通用卡片与表单 (Cards & Form) ==================== */
+#tts-immortal-modal .ws-preset-card,
+#tts-immortal-modal .pc-card,
+#tts-immortal-modal .ed-card,
+#tts-immortal-modal .tts-card {
+    background: rgba(18, 24, 29, 0.65) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.18) !important;
+    border-left: 2px solid rgba(194, 166, 117, 0.65) !important;
+    border-radius: 6px !important;
+    padding: 10px 12px !important;
+    color: #e2e8f0 !important;
+    margin-bottom: 10px !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .pc-card:hover,
+#tts-immortal-modal .ed-card:hover,
+#tts-immortal-modal .ws-preset-card:hover {
+    border-color: rgba(194, 166, 117, 0.4) !important;
+    background: rgba(24, 32, 38, 0.8) !important;
+    transform: none !important;
+}
+
+#tts-immortal-modal .ws-card-title,
+#tts-immortal-modal .pc-card-name,
+#tts-immortal-modal .ed-card-title {
+    color: #f1f5f9 !important;
+    font-size: 13.5px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.8px !important;
+    margin-bottom: 3px !important;
+}
+
+#tts-immortal-modal .ws-card-desc {
+    color: #8a9ba8 !important;
+    font-size: 11.5px !important;
+    line-height: 1.45 !important;
+}
+
+#tts-immortal-modal .ws-badge {
+    background: rgba(194, 166, 117, 0.15) !important;
+    border: 0.6px solid rgba(194, 166, 117, 0.4) !important;
+    color: #c2a675 !important;
+    border-radius: 3px !important;
+    font-size: 9.5px !important;
+    padding: 1px 4px !important;
+}
+
+#tts-immortal-modal .ws-card-actions,
+#tts-immortal-modal .pc-card-actions,
+#tts-immortal-modal .ed-card-actions {
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+#tts-immortal-modal .ws-action-btn,
+#tts-immortal-modal .ws-card-action-btn,
+#tts-immortal-modal .pc-action-btn,
+#tts-immortal-modal .ed-action-btn {
+    background: rgba(14, 18, 22, 0.7) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.22) !important;
+    color: #8a9ba8 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .ws-action-btn:hover,
+#tts-immortal-modal .pc-action-btn:hover,
+#tts-immortal-modal .ed-action-btn:hover {
+    background: rgba(92, 141, 137, 0.2) !important;
+    border-color: #c2a675 !important;
+    color: #f1f5f9 !important;
+}
+
+/* 搜索与输入框 */
+#tts-immortal-modal .ws-toolbar,
+#tts-immortal-modal .pc-search-row,
+#tts-immortal-modal .ed-search-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+    padding: 0 6px !important;
+}
+
+#tts-immortal-modal .ws-search-input,
+#tts-immortal-modal .pc-search-input,
+#tts-immortal-modal .ed-search-input,
+#tts-immortal-modal .tts-input-text,
+#tts-immortal-modal input[type="text"],
+#tts-immortal-modal input[type="search"] {
+    width: 100% !important;
+    background: rgba(10, 14, 17, 0.8) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+    border-radius: 4px !important;
+    color: #f1f5f9 !important;
+    padding: 6px 10px 6px 28px !important;
+    font-size: 11.5px !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.2s ease !important;
+}
+
+#tts-immortal-modal .ws-search-input:focus,
+#tts-immortal-modal .pc-search-input:focus,
+#tts-immortal-modal .ed-search-input:focus,
+#tts-immortal-modal input[type="text"]:focus {
+    border-color: #c2a675 !important;
+    background: rgba(14, 18, 22, 0.95) !important;
+}

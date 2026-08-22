@@ -1,0 +1,97 @@
+/* ==========================================================================
+   📱 移动端真实视口响应式适配 (Mobile Real Viewport Responsive Overrides)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+
+    /* 悬浮球 */
+    #tts-mobile-trigger {
+        width: 40px !important;
+        height: 40px !important;
+        top: 50% !important;
+        right: 10px !important;
+        bottom: auto !important;
+        left: auto !important;
+        transform: translateY(-50%) !important;
+        z-index: 2147483647 !important;
+        display: flex !important;
+        touch-action: none;
+        animation: none !important;
+        /* 禁用动画避免 transform 冲突 */
+    }
+
+    /* 手机外壳 */
+    #tts-mobile-root {
+        position: fixed !important;
+        top: 10vh !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        bottom: auto !important;
+
+        width: 90vw !important;
+        height: 80vh !important;
+        max-height: 800px !important;
+
+        background: var(--s-load-bg, #1a1a1a) !important;
+        border: 2px solid var(--s-play-color, #444) !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8) !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        z-index: 2147483647 !important;
+
+        font-family: inherit !important;
+    }
+
+    #tts-mobile-root.minimized {
+        display: none !important;
+    }
+
+    /* 状态栏 */
+    .status-bar {
+        flex: 0 0 35px !important;
+        background: rgba(0, 0, 0, 0.2) !important;
+        color: var(--s-play-color, #fff) !important;
+        font-weight: bold;
+        opacity: 0.9;
+        font-size: 12px;
+        padding: 0 15px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 屏幕区域 */
+    .mobile-screen {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        background: transparent !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* 滚动容器 */
+    #mobile-screen-content,
+    .mobile-settings-content,
+    .app-container {
+        width: 100% !important;
+        height: 100% !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* 隐藏装饰元素 */
+    .side-btn,
+    #tts-mobile-power-btn,
+    .mobile-notch,
+    .mobile-home-bar {
+        display: none !important;
+    }
+
+    .app-grid {
+        padding: 20px 10px !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}

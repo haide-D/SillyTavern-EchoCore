@@ -177,7 +177,29 @@ export const ChatEventListener = {
             } else {
                 console.log('[ChatEventListener] ⏭️ 非聊天切换场景,跳过');
             }
+
+            // 聊天加载后刷新 Prompt 注入
+            if (window.TTS_PromptInjector && window.TTS_PromptInjector.refreshAndInject) {
+                window.TTS_PromptInjector.refreshAndInject();
+            }
         });
+
+        // 监听消息滑动 (Swipe)、删除 (Delete)、编辑 (Edit) 事件，确保 Speaker 状态严格一致
+        const onChatStateChanged = () => {
+            const context = window.SillyTavern.getContext();
+            const chatBranch = context.chatId || 'default';
+            SpeakerManager.updateSpeakers(context, chatBranch, 200);
+        };
+
+        if (event_types.MESSAGE_SWIPED) {
+            eventSource.on(event_types.MESSAGE_SWIPED, () => onChatStateChanged());
+        }
+        if (event_types.MESSAGE_DELETED) {
+            eventSource.on(event_types.MESSAGE_DELETED, () => onChatStateChanged());
+        }
+        if (event_types.MESSAGE_EDITED) {
+            eventSource.on(event_types.MESSAGE_EDITED, () => onChatStateChanged());
+        }
 
         console.log('[ChatEventListener] ✅ SillyTavern 事件监听已绑定');
     },

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪄 Patronus UI — Wand Prototype</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap"
+        rel="stylesheet">
+
+    <!-- 共享基础样式 -->
+    <link rel="stylesheet" href="base.css">
+
+    <style>
+        /* ========================================
+           覆盖配色 → 暖金色调
+           ======================================== */
+        :root {
+            --proto-primary-rgb: 212, 168, 83;
+            --proto-accent-rgb: 180, 130, 55;
+            --proto-text-color: #D4A853;
+
+            --proto-bg-spot-rgb: 50, 35, 15;
+
+            --proto-whisper-border: rgba(123, 47, 190, 0.4);
+            --proto-whisper-bg: rgba(123, 47, 190, 0.08);
+            --proto-whisper-text-color: rgba(200, 180, 240, 0.85);
+            --proto-whisper-text-shadow: rgba(123, 47, 190, 0.4);
+
+            /* 魔杖特有 */
+            --wand-wood: #5C3A1E;
+            --wand-wood-light: #8B5E3C;
+            --wand-wood-dark: #3A2210;
+            --wand-handle: #4A2E15;
+            --wand-core-glow: rgba(255, 220, 130, 0.7);
+            --wand-tip-spark: #FFE4A0;
+        }
+
+        /* ========================================
+           魔杖容器
+           ======================================== */
+        .wand-container {
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 12px rgba(212, 168, 83, 0.15));
+            transition: filter 0.3s ease;
+        }
+
+        .wand-container:hover {
+            filter: drop-shadow(0 0 20px rgba(212, 168, 83, 0.3));
+        }
+
+        /* 内层 — 3D漂浮 + 微呼吸 */
+        .wand-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation:
+                wand-breathe 5s ease-in-out infinite,
+                wand-float-3d 7s ease-in-out infinite;
+            transform-style: preserve-3d;
+        }
+
+        @keyframes wand-breathe {
+
+            0%,
+            100% {
+                filter: brightness(0.92);
+            }
+
+            50% {
+                filter: brightness(1.08);
+            }
+        }
+
+        @keyframes wand-float-3d {
+
+            0%,
+            100% {
+                transform: rotateZ(-35deg) rotateY(-3deg) rotateX(1deg);
+            }
+
+            25% {
+                transform: rotateZ(-33deg) rotateY(2deg) rotateX(-2deg);
+            }
+
+            50% {
+                transform: rotateZ(-35deg) rotateY(4deg) rotateX(1deg);
+            }
+
+            75% {
+                transform: rotateZ(-37deg) rotateY(-1deg) rotateX(-1deg);
+            }
+        }
+
+        /* ========================================
+           魔杖本体 SVG
+           ======================================== */
+        .wand-svg {
+            width: 150px;
+            height: 30px;
+            overflow: visible;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        }
+
+        /* ========================================
+           杖尖光效
+           ======================================== */
+        .wand-tip-glow {
+            position: absolute;
+            top: 15%;
+            right: 85%;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                    rgba(255, 235, 180, 0.6) 0%,
+                    rgba(212, 168, 83, 0.3) 40%,
+                    transparent 70%);
+            pointer-events: none;
+            animation: tip-idle-pulse 3s ease-in-out infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes tip-idle-pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(0.7);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* 杖尖微小火花 — Canvas 绘制，这里只放 CSS 的辅助光 */
+        .wand-tip-spark {
+            position: absolute;
+            top: 15%;
+            right: 85%;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--wand-tip-spark);
+            pointer-events: none;
+            box-shadow: 0 0 6px 2px rgba(255, 228, 160, 0.8),
+                0 0 12px 4px rgba(212, 168, 83, 0.4);
+            animation: spark-twinkle 2s ease-in-out infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spark-twinkle {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.3);
+            }
+
+            60% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+
+        /* 杖身内部魔力核心流动光带 */
+        .wand-core-flow {
+            position: absolute;
+            top: 50%;
+            left: 12%;
+            right: 18%;
+            height: 3px;
+            transform: translateY(-50%) rotateZ(0deg);
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 220, 130, 0.0) 10%,
+                    rgba(255, 220, 130, 0.4) 30%,
+                    rgba(255, 220, 130, 0.6) 50%,
+                    rgba(255, 220, 130, 0.4) 70%,
+                    rgba(255, 220, 130, 0.0) 90%,
+                    transparent 100%);
+            border-radius: 2px;
+            pointer-events: none;
+            opacity: 0;
+            animation: core-flow-sweep 4s ease-in-out infinite;
+        }
+
+        @keyframes core-flow-sweep {
+
+            0%,
+            65%,
+            100% {
+                opacity: 0;
+                transform: translateY(-50%) translateX(-5%);
+            }
+
+            70%,
+            90% {
+                opacity: 0.6;
+            }
+
+            95% {
+                opacity: 0;
+                transform: translateY(-50%) translateX(5%);
+            }
+        }
+
+        /* ========================================
+           微事件样式
+           ======================================== */
+
+        /* Lumos 闪光 */
+        .wand-inner.lumos .wand-tip-glow {
+            animation: lumos-burst 1s ease-out forwards;
+        }
+
+        @keyframes lumos-burst {
+            0% {
+                opacity: 0.7;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(4);
+            }
+
+            100% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(0.7);
+            }
+        }
+
+        .wand-inner.lumos .wand-tip-spark {
+            animation: lumos-spark 1s ease-out forwards;
+        }
+
+        @keyframes lumos-spark {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 6px 2px rgba(255, 228, 160, 0.8);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(2);
+                box-shadow: 0 0 20px 8px rgba(255, 255, 220, 1), 0 0 60px 20px rgba(212, 168, 83, 0.5);
+            }
+
+            100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 6px 2px rgba(255, 228, 160, 0.8);
+            }
+        }
+
+        /* 魔杖抖动（收到信号） */
+        .wand-inner.twitch {
+            animation: wand-twitch 0.4s ease-in-out !important;
+        }
+
+        @keyframes wand-twitch {
+
+            0%,
+            100% {
+                transform: rotateZ(-35deg);
+            }
+
+            20% {
+                transform: rotateZ(-30deg) translateX(3px);
+            }
+
+            40% {
+                transform: rotateZ(-38deg) translateX(-2px);
+            }
+
+            60% {
+                transform: rotateZ(-33deg) translateX(1px);
+            }
+
+            80% {
+                transform: rotateZ(-36deg);
+            }
+        }
+
+        /* ========================================
+           低语态 — 杖尖变紫
+           ======================================== */
+        .wand-container.whisper-sensing .wand-tip-glow {
+            background: radial-gradient(circle,
+                    rgba(123, 47, 190, 0.6) 0%,
+                    rgba(74, 0, 224, 0.3) 40%,
+                    transparent 70%);
+            animation: tip-whisper-pulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes tip-whisper-pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.8);
+            }
+        }
+
+        .wand-container.whisper-sensing .wand-tip-spark {
+            background: #9B5DE5;
+            box-shadow: 0 0 6px 2px rgba(123, 47, 190, 0.8),
+                0 0 15px 5px rgba(74, 0, 224, 0.4);
+            animation: spark-twinkle 0.8s ease-in-out infinite;
+        }
+
+        .wand-container.whisper-sensing .wand-inner {
+            animation: wand-whisper-tremble 0.1s ease-in-out infinite alternate,
+                wand-float-3d 7s ease-in-out infinite;
+        }
+
+        @keyframes wand-whisper-tremble {
+            0% {
+                translate: -1px -0.5px;
+            }
+
+            100% {
+                translate: 1px 0.5px;
+            }
+        }
+
+        /* ========================================
+           来电态 — 剧烈发光
+           ======================================== */
+        .wand-container.incoming-call .wand-tip-glow {
+            animation: tip-call-flash 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes tip-call-flash {
+            0% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(3.5);
+                background: radial-gradient(circle,
+                        rgba(232, 232, 255, 0.9) 0%,
+                        rgba(192, 192, 255, 0.5) 30%,
+                        transparent 60%);
+            }
+        }
+
+        .wand-container.incoming-call .wand-tip-spark {
+            background: #fff;
+            box-shadow: 0 0 10px 4px rgba(255, 255, 255, 0.9),
+                0 0 30px 10px rgba(192, 192, 255, 0.5);
+            animation: spark-twinkle 0.3s ease-in-out infinite;
+        }
+
+        .wand-container.incoming-call .wand-core-flow {
+            animation: core-call-flow 1s ease-in-out infinite;
+            opacity: 0.8;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(232, 232, 255, 0.0) 10%,
+                    rgba(232, 232, 255, 0.5) 30%,
+                    rgba(255, 255, 255, 0.7) 50%,
+                    rgba(232, 232, 255, 0.5) 70%,
+                    rgba(232, 232, 255, 0.0) 90%,
+                    transparent 100%);
+        }
+
+        @keyframes core-call-flow {
+            0% {
+                transform: translateY(-50%) translateX(-20%);
+                opacity: 0;
+            }
+
+            30% {
+                opacity: 0.8;
+            }
+
+            70% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(-50%) translateX(10%);
+                opacity: 0;
+            }
+        }
+
+        .wand-container.incoming-call .wand-inner {
+            animation: wand-incoming-vibrate 0.08s linear infinite alternate;
+        }
+
+        @keyframes wand-incoming-vibrate {
+            0% {
+                translate: -1.5px -1px;
+                rotate: -36deg;
+            }
+
+            100% {
+                translate: 1.5px 1px;
+                rotate: -34deg;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="title-watermark">Patronus UI — Wand</div>
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ====== 魔杖主体 ====== -->
+    <div class="proto-element wand-container" id="wandContainer">
+        <div class="wand-inner" id="wandInner">
+
+            <!-- 杖尖光效层 -->
+            <div class="wand-tip-glow"></div>
+            <div class="wand-tip-spark"></div>
+
+            <!-- 魔杖 SVG -->
+            <svg class="wand-svg" viewBox="0 0 160 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- 木质渐变 -->
+                    <linearGradient id="woodGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#8B5E3C" />
+                        <stop offset="30%" stop-color="#6B4226" />
+                        <stop offset="50%" stop-color="#5C3A1E" />
+                        <stop offset="70%" stop-color="#6B4226" />
+                        <stop offset="100%" stop-color="#4A2E15" />
+                    </linearGradient>
+                    <!-- 杖柄渐变（更深） -->
+                    <linearGradient id="handleGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#6B4226" />
+                        <stop offset="50%" stop-color="#3A2210" />
+                        <stop offset="100%" stop-color="#4A2E15" />
+                    </linearGradient>
+                    <!-- 高光 -->
+                    <linearGradient id="shineGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="rgba(255,235,180,0.3)" />
+                        <stop offset="50%" stop-color="rgba(255,235,180,0)" />
+                    </linearGradient>
+                    <!-- 木纹纹理 -->
+                    <pattern id="woodGrain" patternUnits="userSpaceOnUse" width="160" height="4">
+                        <line x1="0" y1="1" x2="160" y2="1.5" stroke="rgba(139,94,60,0.15)" stroke-width="0.5" />
+                        <line x1="0" y1="3" x2="160" y2="2.8" stroke="rgba(58,34,16,0.1)" stroke-width="0.3" />
+                    </pattern>
+                </defs>
+
+                <!-- 杖身 (从左杖尖到右杖柄，逐渐变粗) -->
+                <!-- 主杖身 -->
+                <path d="M8,14 L8,16 Q60,17 110,19 L130,20 Q140,21 145,22 L145,8 Q140,9 130,10 L110,11 Q60,13 8,14 Z"
+                    fill="url(#woodGrad)" stroke="rgba(90,55,25,0.6)" stroke-width="0.5" />
+
+                <!-- 木纹叠加 -->
+                <path d="M8,14 L8,16 Q60,17 110,19 L130,20 Q140,21 145,22 L145,8 Q140,9 130,10 L110,11 Q60,13 8,14 Z"
+                    fill="url(#woodGrain)" opacity="0.7" />
+
+                <!-- 高光条 -->
+                <path d="M10,14 Q60,13.5 110,11.5 L130,10.5 Q140,9.5 144,9" stroke="rgba(255,235,180,0.15)"
+                    stroke-width="1" fill="none" stroke-linecap="round" />
+
+                <!-- 杖柄装饰 — 球状握柄 -->
+                <ellipse cx="148" cy="15" rx="8" ry="10" fill="url(#handleGrad)" stroke="rgba(90,55,25,0.5)"
+                    stroke-width="0.5" />
+                <!-- 握柄高光 -->
+                <ellipse cx="146" cy="12" rx="3" ry="4" fill="rgba(255,235,180,0.08)" />
+
+                <!-- 杖柄与杖身交界的金属环 -->
+                <rect x="137" y="8" width="4" height="14" rx="1" fill="rgba(212,168,83,0.5)"
+                    stroke="rgba(212,168,83,0.3)" stroke-width="0.5" />
+                <!-- 金属环高光 -->
+                <rect x="137" y="8" width="4" height="5" rx="1" fill="rgba(255,235,180,0.15)" />
+
+                <!-- 杖尖 — 细锥形 -->
+                <path d="M8,14.5 L2,15 L8,15.5" fill="#5C3A1E" stroke="rgba(139,94,60,0.4)" stroke-width="0.3" />
+
+                <!-- 杖尖的微小金属尖端 -->
+                <circle cx="2" cy="15" r="1" fill="rgba(212,168,83,0.7)" />
+            </svg>
+
+            <!-- 杖身内部魔力流动光 -->
+            <div class="wand-core-flow"></div>
+
+            <!-- 涟漪（低语用） -->
+            <div class="whisper-ripple" id="ripple1"></div>
+            <div class="whisper-ripple" id="ripple2"></div>
+            <div class="whisper-ripple" id="ripple3"></div>
+        </div>
+    </div>
+
+    <!-- 低语 UI -->
+    <div class="whisper-ui" id="whisperUI">
+        <div class="whisper-text">「魔杖感应到远方的低语……」</div>
+        <div class="whisper-buttons">
+            <button class="whisper-btn primary" onclick="enterListening()">Legilimens 👁️</button>
+            <button class="whisper-btn dismiss" onclick="dismissWhisper()">Silencio 🤫</button>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo">FPS: --</div>
+
+    <!-- 调试栏 -->
+    <div class="debug-bar">
+        <button class="debug-btn active" id="btnIdle" onclick="switchState('idle')">🪄 待机</button>
+        <button class="debug-btn" id="btnWhisper" onclick="switchState('whisper')">🔮 低语触发</button>
+        <button class="debug-btn" id="btnCall" onclick="switchState('call')">⚡ 来电</button>
+        <button class="debug-btn" id="btnReset" onclick="switchState('reset')">↻ 重置</button>
+    </div>
+
+    <!-- 共享引擎 -->
+    <script src="base.js"></script>
+
+    <script>
+        // ============================================
+        // 魔杖原型配置
+        // ============================================
+        const wandInner = document.getElementById('wandInner');
+        const wandContainer = document.getElementById('wandContainer');
+
+        const proto = new PrototypeBase({
+            elementId: 'wandContainer',
+            elementSize: 160,
+
+            // 暖金色粒子
+            colors: {
+                dustRGB: '180, 150, 90',
+                dustGlowRGB: '212, 168, 83',
+                trailHue: [35, 50],
+                trailSat: 65,
+                trailLight: 65,
+                whisperHue: [270, 290],
+                whisperSat: 60,
+                whisperLight: 55,
+                goldHue: [38, 48],
+                goldSat: 75,
+                goldLight: 70,
+            },
+
+            // 漂浮参数（魔杖更稳，幅度更小）
+            float: {
+                baseX: 0.72,
+                baseY: 0.48,
+                floatAmplitudeX: 4,
+                floatAmplitudeY: 3,
+                floatFreqX: 0.0006,
+                floatFreqY: 0.0008,
+                floatSecondaryX: 0.0015,
+                floatSecondaryY: 0.0013,
+                floatSecondaryAmpX: 2,
+                floatSecondaryAmpY: 1.5,
+            },
+
+            // 粒子
+            particles: {
+                trailMaxParticles: 15,
+                trailEmitChance: 0.18,
+                trailLifespan: 2500,
+                ambientParticles: 5,
+            },
+
+            // 微事件
+            microEvents: [
+                {
+                    name: 'lumos', weight: 30,
+                    fn(done, p) {
+                        wandInner.classList.add('lumos');
+                        p.burstParticles(8, 'gold');
+                        setTimeout(() => { wandInner.classList.remove('lumos'); done(); }, 1200);
+                    }
+                },
+                {
+                    name: 'spark-shower', weight: 30,
+                    fn(done, p) {
+                        // 从杖尖持续喷出火花
+                        let count = 0;
+                        const interval = setInterval(() => {
+                            p.emitTrailParticle(true, 'gold');
+                            p.emitTrailParticle(true, 'gold');
+                            count++;
+                            if (count >= 8) {
+                                clearInterval(interval);
+                                done();
+                            }
+                        }, 80);
+                    }
+                },
+                {
+                    name: 'twitch', weight: 25,
+                    fn(done, p) {
+                        wandInner.classList.add('twitch');
+                        p.burstParticles(3);
+                        setTimeout(() => { wandInner.classList.remove('twitch'); done(); }, 500);
+                    }
+                },
+                {
+                    name: 'core-surge', weight: 15,
+                    fn(done, p) {
+                        // 魔力核心涌动 — 增强 core-flow 可见度
+                        const coreFlow = document.querySelector('.wand-core-flow');
+                        coreFlow.style.opacity = '0.7';
+                        coreFlow.style.animation = 'core-call-flow 0.8s ease-in-out';
+                        p.burstParticles(4, 'gold');
+                        setTimeout(() => {
+                            coreFlow.style.opacity = '';
+                            coreFlow.style.animation = '';
+                            done();
+                        }, 1000);
+                    }
+                },
+            ],
+
+            // 状态回调
+            onEnterState(state) {
+                if (state === 'whisper') wandContainer.classList.add('whisper-sensing');
+                if (state === 'call') wandContainer.classList.add('incoming-call');
+            },
+            onLeaveState(state) {
+                wandContainer.classList.remove('whisper-sensing', 'incoming-call');
+                wandInner.classList.remove('lumos', 'twitch');
+            },
+        });
+
+        proto.start();
+    </script>
+
+</body>
+
+</html>

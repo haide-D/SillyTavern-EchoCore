@@ -1,6 +1,5 @@
 import os
 import hashlib
-import requests
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -53,7 +52,7 @@ async def proxy_set_gpt_weights(weights_path: str):
     from services.model_weight_service import model_weight_service
     
     async with model_weight_service.acquire_lock("set_gpt_weights"):
-        result = model_weight_service.set_gpt_weights(weights_path, skip_if_same=False)
+        result = await model_weight_service.set_gpt_weights(weights_path, skip_if_same=False)
     
     if not result["success"]:
         if "不存在" in result["message"]:
@@ -75,7 +74,7 @@ async def proxy_set_sovits_weights(weights_path: str):
     from services.model_weight_service import model_weight_service
     
     async with model_weight_service.acquire_lock("set_sovits_weights"):
-        result = model_weight_service.set_sovits_weights(weights_path, skip_if_same=False)
+        result = await model_weight_service.set_sovits_weights(weights_path, skip_if_same=False)
     
     if not result["success"]:
         if "不存在" in result["message"]:
@@ -178,14 +177,9 @@ async def tts_proxy(
             }
 
             try:
-                # 去掉 stream=True，增加超时时间,禁用代理
-                r = requests.get(
-                    url, 
-                    params=params, 
-                    timeout=120,
-                    proxies={'http': None, 'https': None}
-                )
-            except requests.exceptions.RequestException:
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    r = await client.get(url, params=params)
+            except (httpx.ConnectError, httpx.RequestError):
                 raise HTTPException(status_code=503, detail="无法连接到 SoVITS 服务，请检查 9880 端口")
 
             if r.status_code != 200:

@@ -1,0 +1,212 @@
+/* =========================================================
+   仙途凌霄 (immortal_sword) - 全屏通话与神识探查样式 (fullscreen_call.css)
+   仙侠风节 · 玄黑天幕 · 孤高白描 · 清冷声波
+   ========================================================= */
+
+#immortal-fullscreen-call,
+#immortal-fullscreen-eavesdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+    background: #090c0f;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: immortalScreenFadeIn 0.35s ease-out both;
+}
+
+@keyframes immortalScreenFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 背景水墨剑印水印 */
+.immortal-bg-watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: rgba(241, 245, 249, 0.035);
+}
+
+.immortal-bg-watermark svg {
+    width: min(65vw, 65vh);
+    height: min(65vw, 65vh);
+}
+
+/* 内容层 */
+.immortal-call-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 24px;
+    text-align: center;
+}
+
+/* 头像外圈光环 (极细白描) */
+.immortal-call-avatar-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin-bottom: 24px;
+}
+
+.immortal-call-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 0.8px solid rgba(140, 181, 174, 0.4);
+    animation: immortalRingPulse 3.5s ease-in-out infinite;
+}
+
+.immortal-call-avatar-ring.outer {
+    inset: -10px;
+    border-color: rgba(194, 166, 117, 0.25);
+    animation-delay: 0.8s;
+}
+
+@keyframes immortalRingPulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.04); opacity: 0.8; }
+}
+
+.immortal-call-avatar-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #0d1115;
+    border: 1px solid rgba(194, 166, 117, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.immortal-call-name {
+    font-size: clamp(22px, 4.5vw, 28px);
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: #f1f5f9;
+    margin: 0 0 6px 0;
+}
+
+.immortal-call-status {
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 2.5px;
+    color: #8cb5ae;
+    margin-bottom: 40px;
+}
+
+/* 操作按键组 */
+.immortal-call-actions {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    z-index: 2;
+}
+
+.immortal-action-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.immortal-action-label {
+    font-size: 11.5px;
+    font-weight: 300;
+    letter-spacing: 1.5px;
+    color: #8a9ba8;
+}
+
+.immortal-action-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    outline: none;
+}
+
+.immortal-action-btn:active {
+    transform: scale(0.92);
+}
+
+.immortal-action-btn.reject, .immortal-action-btn.hangup {
+    background: rgba(220, 38, 38, 0.12);
+    border: 0.8px solid rgba(248, 113, 113, 0.35);
+}
+
+.immortal-action-btn.reject:hover, .immortal-action-btn.hangup:hover {
+    background: rgba(220, 38, 38, 0.22);
+    border-color: #f87171;
+}
+
+.immortal-action-btn.answer {
+    background: rgba(92, 141, 137, 0.18);
+    border: 0.8px solid rgba(140, 181, 174, 0.4);
+}
+
+.immortal-action-btn.answer:hover {
+    background: rgba(92, 141, 137, 0.3);
+    border-color: #c2a675;
+}
+
+/* 灵脉波形可视化 (素玉细线) */
+.immortal-waveform {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 36px;
+    margin: 0 0 28px 0;
+}
+
+.immortal-waveform-bar {
+    width: 2.5px;
+    border-radius: 1px;
+    background: #8cb5ae;
+    opacity: 0.7;
+    animation: immortalWaveAnim 1.6s ease-in-out infinite alternate;
+}
+
+.immortal-waveform-bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+.immortal-waveform-bar:nth-child(2) { height: 20px; animation-delay: 0.3s; }
+.immortal-waveform-bar:nth-child(3) { height: 30px; animation-delay: 0.5s; }
+.immortal-waveform-bar:nth-child(4) { height: 16px; animation-delay: 0.2s; }
+.immortal-waveform-bar:nth-child(5) { height: 26px; animation-delay: 0.4s; }
+.immortal-waveform-bar:nth-child(6) { height: 18px; animation-delay: 0.6s; }
+.immortal-waveform-bar:nth-child(7) { height: 32px; animation-delay: 0.25s; }
+.immortal-waveform-bar:nth-child(8) { height: 14px; animation-delay: 0.45s; }
+.immortal-waveform-bar:nth-child(9) { height: 22px; animation-delay: 0.15s; }
+
+@keyframes immortalWaveAnim {
+    0% { transform: scaleY(0.4); opacity: 0.3; }
+    100% { transform: scaleY(1); opacity: 0.85; }
+}
+
+/* 字幕区 */
+.immortal-subtitle {
+    max-width: 440px;
+    padding: 0 16px;
+    margin-bottom: 32px;
+    text-align: center;
+    color: #f1f5f9;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 0.8px;
+}

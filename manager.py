@@ -8,7 +8,10 @@ from fastapi.responses import JSONResponse
 
 # 导入配置和路由
 from config import FRONTEND_DIR, init_settings, get_manager_port
-from routers import data, tts, system, admin, phone_call, speakers, eavesdrop, continuous_analysis, sovits_installer
+from routers import (
+    data, tts, system, admin, phone_call, speakers,
+    eavesdrop, continuous_analysis, sovits_installer, themes, workshop
+)
 
 # 导入自定义日志中间件
 from middleware.logging_middleware import LoggingMiddleware
@@ -35,13 +38,13 @@ app.add_middleware(
 # 添加验证错误处理器
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    print(f"\n[ValidationError] ❌ 请求验证失败:")
-    print(f"  - URL: {request.url}")
-    print(f"  - Method: {request.method}")
-    print(f"  - 错误详情: {exc.errors()}")
     try:
+        print(f"\n[ValidationError] 请求验证失败:")
+        print(f"  - URL: {request.url}")
+        print(f"  - Method: {request.method}")
+        print(f"  - 错误详情: {exc.errors()}")
         body = await request.body()
-        print(f"  - 请求体: {body.decode('utf-8')}")
+        print(f"  - 请求体: {body.decode('utf-8', errors='replace')}")
     except:
         pass
     
@@ -66,6 +69,14 @@ else:
 
 os.makedirs("data/favorites_audio", exist_ok=True)
 app.mount("/favorites", StaticFiles(directory="data/favorites_audio"), name="favorites")
+
+# 挂载主题资源目录
+os.makedirs("data/themes", exist_ok=True)
+app.mount("/api/themes/assets", StaticFiles(directory="data/themes"), name="themes_assets")
+
+# 挂载角色自定义本地头像目录
+os.makedirs("data/avatars", exist_ok=True)
+app.mount("/avatars", StaticFiles(directory="data/avatars"), name="avatars")
 
 # 挂载主动电话音频目录 - 使用自定义路由处理中文路径
 from config import init_settings
@@ -136,16 +147,23 @@ async def serve_eavesdrop_audio(filename: str):
         }
     )
 
-# 3. 注册路由
+# 3. 注册路由 (同时支持根路径与 /api 前缀)
 app.include_router(data.router, tags=["Data Management"])
+app.include_router(data.router, prefix="/api", tags=["Data Management (API)"])
 app.include_router(tts.router, tags=["TTS Core"])
+app.include_router(tts.router, prefix="/api", tags=["TTS Core (API)"])
 app.include_router(system.router, tags=["System Settings"])
+app.include_router(system.router, prefix="/api", tags=["System Settings (API)"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin Panel"])
 app.include_router(phone_call.router, prefix="/api", tags=["Phone Call"])
 app.include_router(speakers.router, prefix="/api", tags=["Speakers Management"])
 app.include_router(eavesdrop.router, prefix="/api/eavesdrop", tags=["Eavesdrop Tracking"])
 app.include_router(continuous_analysis.router, prefix="/api", tags=["Continuous Analysis"])
 app.include_router(sovits_installer.router, tags=["GPT-SoVITS Installation"])
+app.include_router(themes.router, prefix="/api/themes", tags=["Themes Management"])
+app.include_router(workshop.router, prefix="/api", tags=["Presets Workshop"])
+app.include_router(workshop.router, prefix="/api/workshop", tags=["Creative Workshop"])
+
 
 
 # GPT-SoVITS 自动启动检查

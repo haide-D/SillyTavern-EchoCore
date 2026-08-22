@@ -1,0 +1,9 @@
+{
+  "id": "immortal_sword",
+  "name": "⚔️ 仙途凌霄",
+  "version": "1.0.0",
+  "author": "Antigravity",
+  "description": "水墨玄青与青玉金纹修真主题，配备全套灵气剑意粒子系统与水墨开卷动效",
+  "entry_js": "index.js",
+  "entry_css": "style.css"
+}

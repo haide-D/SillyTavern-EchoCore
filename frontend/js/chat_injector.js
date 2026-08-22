@@ -62,14 +62,13 @@ export const ChatInjector = {
      */
     async injectAsMessage(options) {
         const {
-            segments = [],
             type = 'phone_call',
-            callerName = '',
-            speakers = [],
-            callId = '',
-            audioUrl = '',
-            sceneDescription = ''
+            callId = options.callId || options.call_id || options.id || '',
+            audioUrl = options.audioUrl || options.audio_url || '',
+            sceneDescription = options.sceneDescription || options.scene_description || options.callReason || options.reason || ''
         } = options;
+
+        const segments = options.segments || [];
 
         if (!segments || segments.length === 0) {
             console.warn('[ChatInjector] ⚠️ 没有可注入的对话片段');
@@ -84,9 +83,32 @@ export const ChatInjector = {
             }
 
             const { addOneMessage, chat, name1 } = context;
-            // saveChat 是 saveChatConditional 在 context 中的名称
             const saveChat = context.saveChat;
-            const userName = name1 || '用户';
+            const userName = options.target || options.userName || options.user_name || name1 || '用户';
+
+            // 智能解析 callerName，多层兜底
+            let callerName = options.callerName || options.caller || options.char_name || options.selected_speaker || '';
+            if (!callerName && context.characters && context.characterId !== undefined && context.characters[context.characterId]) {
+                callerName = context.characters[context.characterId].name || '';
+            } else if (!callerName && context.name2) {
+                callerName = context.name2;
+            }
+            if (!callerName) {
+                callerName = '神秘角色';
+            }
+
+            let speakers = options.speakers || (options.speaker ? [options.speaker] : []);
+            if (speakers.length === 0 && type === 'eavesdrop') {
+                const foundInSegs = new Set();
+                for (const seg of segments) {
+                    if (seg.speaker && seg.speaker.trim()) foundInSegs.add(seg.speaker.trim());
+                }
+                if (foundInSegs.size > 0) {
+                    speakers = Array.from(foundInSegs);
+                } else {
+                    speakers = [callerName];
+                }
+            }
 
             // 构建消息内容
             let messageContent = '';
@@ -140,11 +162,13 @@ export const ChatInjector = {
      * @private
      */
     _formatPhoneCallMessage(callerName, userName, segments, sceneDescription) {
+        const effectiveCaller = (callerName && String(callerName).trim()) ? String(callerName).trim() : '神秘角色';
+        const effectiveUser = (userName && String(userName).trim()) ? String(userName).trim() : '你';
+
         // 构建对话内容
-        // 注意：callerName 现在是后端传递的 selected_speaker（LLM 选择的打电话人）
         const dialogueContent = segments.map(seg => {
             // 对于多人通话，使用 segment 中的 speaker；单人电话使用 callerName
-            const speaker = seg.speaker || callerName;
+            const speaker = (seg.speaker && String(seg.speaker).trim()) ? String(seg.speaker).trim() : effectiveCaller;
             const text = seg.text || seg.content || '';
             const emotion = seg.emotion ? ` [${seg.emotion}]` : '';
             return `**${speaker}**${emotion}: "${text}"`;
@@ -155,7 +179,7 @@ export const ChatInjector = {
 
         const message = `<st-tts-call>
 <details>
-<summary>📞 <strong>${callerName}</strong> 给 <strong>${userName}</strong> 打了一个电话 <em>(点击展开)</em></summary>
+<summary>📞 <strong>${effectiveCaller}</strong> 给 <strong>${effectiveUser}</strong> 打了一个电话 <em>(点击展开)</em></summary>
 ${sceneDesc}
 
 ---
@@ -176,11 +200,22 @@ ${dialogueContent}
      * @private
      */
     _formatEavesdropMessage(speakers, segments, sceneDescription) {
-        const speakersText = speakers.join(' 和 ') || '角色们';
+        let validSpeakers = Array.isArray(speakers) ? speakers.filter(s => s && String(s).trim()).map(s => String(s).trim()) : [];
+        if (validSpeakers.length === 0) {
+            const foundInSegs = new Set();
+            for (const seg of segments) {
+                if (seg.speaker && String(seg.speaker).trim()) foundInSegs.add(String(seg.speaker).trim());
+            }
+            if (foundInSegs.size > 0) {
+                validSpeakers = Array.from(foundInSegs);
+            }
+        }
+        const speakersText = validSpeakers.length > 0 ? validSpeakers.join(' 和 ') : '角色们';
+        const defaultSpeaker = validSpeakers[0] || '角色';
 
         // 构建对话内容
         const dialogueContent = segments.map(seg => {
-            const speaker = seg.speaker || '???';
+            const speaker = (seg.speaker && String(seg.speaker).trim()) ? String(seg.speaker).trim() : defaultSpeaker;
             const text = seg.text || seg.content || '';
             const emotion = seg.emotion ? ` [${seg.emotion}]` : '';
             return `**${speaker}**${emotion}: "${text}"`;
@@ -249,13 +284,9 @@ ${dialogueContent}
      * @private
      */
     async _doAppend(options) {
-        const {
-            segments = [],
-            type = 'phone_call',
-            callerName = '',
-            speakers = [],
-            sceneDescription = ''
-        } = options;
+        const type = options.type || 'phone_call';
+        const segments = options.segments || [];
+        const sceneDescription = options.sceneDescription || options.scene_description || options.callReason || options.reason || '';
 
         if (!segments || segments.length === 0) {
             console.warn('[ChatInjector] ⚠️ 没有可追加的对话片段');
@@ -271,13 +302,43 @@ ${dialogueContent}
 
             const { chat, chatMetadata, updateMessageBlock, name1, saveMetadata } = context;
             const saveChat = context.saveChat;
-            const userName = name1 || '用户';
+            const userName = options.target || options.userName || options.user_name || name1 || '用户';
+
+            // 智能解析 callerName，多层兜底
+            let callerName = options.callerName || options.caller || options.char_name || options.selected_speaker || '';
+            if (!callerName && context.characters && context.characterId !== undefined && context.characters[context.characterId]) {
+                callerName = context.characters[context.characterId].name || '';
+            } else if (!callerName && context.name2) {
+                callerName = context.name2;
+            }
+            if (!callerName) {
+                callerName = '神秘角色';
+            }
+
+            let speakers = options.speakers || (options.speaker ? [options.speaker] : []);
+            if (speakers.length === 0 && type === 'eavesdrop') {
+                const foundInSegs = new Set();
+                for (const seg of segments) {
+                    if (seg.speaker && seg.speaker.trim()) foundInSegs.add(seg.speaker.trim());
+                }
+                if (foundInSegs.size > 0) {
+                    speakers = Array.from(foundInSegs);
+                } else {
+                    speakers = [callerName];
+                }
+            }
 
             // 找到最后一条 AI 消息的索引
             const lastAIIndex = this._findLastAIMessageIndex(chat);
             if (lastAIIndex === -1) {
                 console.warn('[ChatInjector] ⚠️ 未找到可追加的 AI 消息，回退到创建新消息');
-                return this.injectAsMessage(options);
+                return this.injectAsMessage({
+                    ...options,
+                    callerName,
+                    speakers,
+                    userName,
+                    sceneDescription
+                });
             }
 
             // 格式化电话/窃听内容

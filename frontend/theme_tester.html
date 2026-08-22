@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ST Direct TTS - Theme & Mobile App Tester</title>
+    <!-- 引入 jQuery (ST 环境依赖) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 引入 Toastr (ST 通知依赖) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+            overflow: hidden; /* 让主题特效占满屏幕，不被滚动条影响 */
+        }
+        
+        .tester-panel {
+            background: rgba(34, 34, 34, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 350px;
+            z-index: 999999; /* 保证控制台在最上层 */
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            border: 1px solid #555;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #4CAF50;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        button:hover {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .btn-danger:hover {
+            background: #f44336;
+            border-color: #f44336;
+        }
+        
+        .btn-warning:hover {
+            background: #ff9800;
+            border-color: #ff9800;
+        }
+        
+        hr {
+            border: 0;
+            height: 1px;
+            background: #444;
+            margin: 15px 0;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="tester-panel" id="tester-panel">
+        <h3>🛠️ 主题与 UI 测试台</h3>
+        
+        <div class="btn-group">
+            <button id="btn-load-dh">1. ⚡ 加载 Deathly Hallows 主题</button>
+        </div>
+        
+        <hr>
+        
+        <div class="btn-group">
+            <button id="btn-incoming-call">📞 触发模拟: 来电 (Harry)</button>
+            <button id="btn-eavesdrop" class="btn-warning">🎧 触发模拟: 窃听 (Snape & Dumbledore)</button>
+            <button id="btn-call-ended" class="btn-danger">🛑 触发模拟: 通话/窃听结束</button>
+        </div>
+
+        <hr>
+
+        <div class="btn-group">
+            <button id="btn-open-panel">📱 打开/关闭 主应用面板</button>
+            <button id="btn-toggle-tester" style="text-align: center; background: transparent; border: 1px dashed #555;">👀 隐藏测试面板</button>
+        </div>
+
+        <div class="hint">
+            <strong>注意:</strong> 请确保通过服务器环境访问 (如 VSCode Live Server 或 Python http.server)，或者在 SillyTavern 启动后访问:<br>
+            <code>http://127.0.0.1:8000/scripts/extensions/third-party/st-direct-tts/frontend/theme_tester.html</code>
+        </div>
+    </div>
+
+    <!-- 最小化测试台时的按钮 -->
+    <button id="btn-show-tester" style="display: none; position: absolute; top: 20px; left: 20px; z-index: 999999; background: rgba(34,34,34,0.9); border-radius: 50%; width: 40px; height: 40px; text-align: center; padding: 0;">🛠️</button>
+
+    <!-- 模拟 ST 运行环境的核心脚本 -->
+    <script type="module">
+        import { ThemeEngine } from './js/theme_engine.js';
+        
+        // 动态引入主题
+        import DeathlyHallowsTheme from './js/themes/deathly_hallows/index.js';
+
+        // 模拟全局必要变量
+        window.TTS_Apps = window.TTS_Apps || {};
+
+        $(document).ready(() => {
+            // 设置 Toastr 参数
+            toastr.options = {
+                "positionClass": "toast-top-right",
+                "timeOut": "3000",
+            };
+
+            // 修正 CSS 路径以适配纯本地环境
+            DeathlyHallowsTheme.cssUrl = './css/themes/deathly_hallows.css';
+
+            // 注册一些模拟的 App，以便主面板能显示它们
+            ThemeEngine.registerApp({ id: 'phone_call', defaultName: '来电', defaultIcon: '📱' });
+            ThemeEngine.registerApp({ id: 'eavesdrop_history', defaultName: '对话追踪', defaultIcon: '🎧' });
+            ThemeEngine.registerApp({ id: 'favorites', defaultName: '收藏夹', defaultIcon: '⭐' });
+            ThemeEngine.registerApp({ id: 'settings', defaultName: '系统设置', defaultIcon: '⚙️' });
+            ThemeEngine.registerApp({ id: 'theme_store', defaultName: '主题工坊', defaultIcon: '🎨' });
+
+            // 注册主题到引擎
+            ThemeEngine.registerTheme(DeathlyHallowsTheme);
+
+            // 1. 加载主题
+            $('#btn-load-dh').click(async () => {
+                const success = await ThemeEngine.switchTheme('deathly_hallows', false);
+                if (success) {
+                    toastr.success('✅ Deathly Hallows 主题已加载');
+                }
+            });
+
+            // 2. 触发来电
+            $('#btn-incoming-call').click(() => {
+                if (!ThemeEngine.getCurrentThemeId()) {
+                    toastr.error('请先加载一个主题！');
+                    return;
+                }
+                const mockData = { 
+                    char_name: '哈利·波特 (Harry Potter)',
+                    audio_url: '' // 模拟可选音频
+                };
+                window.TTS_IncomingCall = mockData;
+                ThemeEngine.notify('incoming_call', mockData);
+            });
+
+            // 3. 触发窃听
+            $('#btn-eavesdrop').click(() => {
+                if (!ThemeEngine.getCurrentThemeId()) {
+                    toastr.error('请先加载一个主题！');
+                    return;
+                }
+                const mockData = { 
+                    speakers: ['西弗勒斯·斯内普', '阿不思·邓布利多'], 
+                    notification_text: '检测到远处的低语...'
+                };
+                window.TTS_EavesdropReady = mockData;
+                window.TTS_EavesdropData = mockData;
+                ThemeEngine.notify('eavesdrop_ready', mockData);
+            });
+
+            // 4. 触发通话/窃听结束
+            $('#btn-call-ended').click(() => {
+                ThemeEngine.notify('call_ended', {});
+                
+                // 清理全局状态
+                window.TTS_IncomingCall = null;
+                window.TTS_EavesdropReady = null;
+                window.TTS_EavesdropData = null;
+
+                if (ThemeEngine.isOpen()) {
+                    ThemeEngine.close();
+                }
+                toastr.info('通话/窃听状态已复位');
+            });
+
+            // 5. 打开/关闭主面板
+            $('#btn-open-panel').click(() => {
+                if (!ThemeEngine.getCurrentThemeId()) {
+                    toastr.error('请先加载一个主题！');
+                    return;
+                }
+                ThemeEngine.toggle();
+            });
+
+            // 面板隐藏显示逻辑
+            $('#btn-toggle-tester').click(() => {
+                $('#tester-panel').fadeOut(200, () => {
+                    $('#btn-show-tester').fadeIn(200);
+                });
+            });
+
+            $('#btn-show-tester').click(() => {
+                $('#btn-show-tester').fadeOut(200, () => {
+                    $('#tester-panel').fadeIn(200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
