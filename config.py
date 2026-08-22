@@ -491,7 +491,7 @@ def get_security_settings() -> dict:
 
 def verify_auth_token(token: str) -> bool:
     """
-    校验给定的 Token 或密码是否合法
+    校验给定的 Token 或密码是否合法 (支持 URL 编码及特殊符号解码比对)
     """
     sec = get_security_settings()
     if not sec["enabled"] and not sec["admin_password"] and not sec["api_token"]:
@@ -501,12 +501,16 @@ def verify_auth_token(token: str) -> bool:
     if not clean_token:
         return False
 
-    valid_tokens = []
+    valid_tokens = set()
     if sec["admin_password"]:
-        valid_tokens.append(sec["admin_password"].strip())
+        p = sec["admin_password"].strip()
+        valid_tokens.add(p)
+        valid_tokens.add(unquote(p))
     if sec["api_token"]:
-        valid_tokens.append(sec["api_token"].strip())
+        t = sec["api_token"].strip()
+        valid_tokens.add(t)
+        valid_tokens.add(unquote(t))
 
-    return clean_token in valid_tokens
+    return clean_token in valid_tokens or unquote(clean_token) in valid_tokens
 
 

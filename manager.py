@@ -22,11 +22,7 @@ init_settings()
 
 app = FastAPI()
 
-# 0. 添加中间件 (日志 + 鉴权防护)
-app.add_middleware(LoggingMiddleware)
-app.add_middleware(AuthMiddleware)
-
-# 1. 强力 CORS 支持 (带自定义 CORS 静态文件与全局兜底)
+# 1. 强力 CORS 静态文件支持
 class CORSStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
         response = await super().get_response(path, scope)
@@ -35,30 +31,23 @@ class CORSStaticFiles(StaticFiles):
         response.headers["Access-Control-Allow-Headers"] = "*"
         return response
 
+# 2. 中间件注册 (FastAPI 注册顺序: 越后注册越外层，最先执行)
+# 最内层: 日志
+app.add_middleware(LoggingMiddleware)
+
+# 中间层: 安全鉴权防护
+app.add_middleware(AuthMiddleware)
+
+# 最外层: 全局 CORS 跨域支持 (最先捕获 preflight OPTIONS 并注入响应头)
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"^https?://.*",
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Audio-Filename", "Content-Type", "Content-Length"]
 )
-
-# 全局 CORS 响应头兜底中间件
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    if request.method == "OPTIONS":
-        response = JSONResponse(content={"status": "ok"}, status_code=200)
-    else:
-        response = await call_next(request)
-    
-    origin = request.headers.get("origin")
-    response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Expose-Headers"] = "X-Audio-Filename, Content-Type, Content-Length"
-    return response
 
 # 添加验证错误处理器
 @app.exception_handler(RequestValidationError)
