@@ -83,6 +83,11 @@ git clone -b V3.0.0 https://github.com/haide-D/SillyTavern-GPT-SoVITS.git st-dir
 2. 配置 GPT-SoVITS 整合包安装路径，或在「模型管理」中创建角色并上传 `.pth` / `.ckpt` 与参考音频。
 3. 在酒馆页面右下角点击悬浮球，即可畅享沉浸式语音与多场景交互！
 
+### 🔄 如何轻松升级至 V3.0.0
+* **方式 1（首推·最简单）**：访问管理面板 `http://localhost:3000/admin`，在仪表盘点击 **「⬇️ 立即更新」** 按钮；
+* **方式 2**：在 SillyTavern 酒馆扩展设置中，找到本插件点击 **「Check for Updates / 检查更新」**；
+* **方式 3（命令行）**：在插件目录下执行 `git pull origin main`，随后重启后端 `start.bat`。
+
 ---
 
 ## 🎨 12 款内置经典语音气泡风格
