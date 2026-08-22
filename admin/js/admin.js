@@ -210,4 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindTestConnectionButton();
     bindAnalysisLLMButtons();
     bindSettingsTabs();
+
+    // 显示通告弹窗
+    showDialog('notice-dialog');
 });
