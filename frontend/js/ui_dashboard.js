@@ -110,6 +110,52 @@ export const TTS_UI = window.TTS_UI;
             updateNewAvatarPreview();
         });
 
+        // 辅助上传图片函数
+        async function doUploadAvatarFile(file, speakerName) {
+            const apiHost = (window.TTS_API && window.TTS_API.baseUrl) ? window.TTS_API.baseUrl : 'http://127.0.0.1:3000';
+            const formData = new FormData();
+            formData.append('file', file);
+            if (speakerName) formData.append('speaker_name', speakerName);
+
+            const res = await fetch(`${apiHost}/api/speakers/avatar/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: '上传接口错误' }));
+                throw new Error(err.detail || '上传失败');
+            }
+            return await res.json();
+        }
+
+        // 点击上传本地头像 (按钮与预览圈均可触发)
+        $('#tts-btn-upload-avatar, #tts-new-avatar-preview').off('click').on('click', function () {
+            $('#tts-avatar-file-input').val('').click();
+        });
+
+        $('#tts-avatar-file-input').off('change').on('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const charName = $('#tts-new-char').val().trim();
+            const $btn = $('#tts-btn-upload-avatar');
+            const origText = $btn.text();
+            $btn.text('上传中..').prop('disabled', true);
+
+            try {
+                const data = await doUploadAvatarFile(file, charName);
+                if (data && data.avatar_url) {
+                    $('#tts-new-char-avatar').val(data.avatar_url);
+                    updateNewAvatarPreview();
+                }
+            } catch (err) {
+                console.error('[AvatarUpload] 上传失败:', err);
+                alert(`头像上传失败: ${err.message}`);
+            } finally {
+                $btn.text(origText).prop('disabled', false);
+            }
+        });
+
         // 选卡弹窗/快捷填充
         $('#tts-btn-pick-char-avatar').off('click').on('click', function () {
             const context = window.SillyTavern?.getContext?.();
@@ -146,7 +192,7 @@ export const TTS_UI = window.TTS_UI;
             $('.tts-picker-item').on('click', function () {
                 const name = $(this).data('name');
                 const avatar = $(this).data('avatar');
-                if (name) $('#tts-new-char').val(name);
+                if (name && !$('#tts-new-char').val().trim()) $('#tts-new-char').val(name);
                 if (avatar) $('#tts-new-char-avatar').val(avatar);
                 updateNewAvatarPreview();
                 $('#tts-char-picker-modal').remove();
@@ -430,20 +476,147 @@ export const TTS_UI = window.TTS_UI;
             c.append($item);
         });
 
-        // 绑定头像快捷编辑事件
+        // 绑定头像快捷编辑事件 (多功能弹窗: 本地上传 / 选卡 / URL / 还原)
         c.find('.tts-avatar-trigger, .tts-btn-edit-avatar').off('click').on('click', function (e) {
             e.stopPropagation();
             const charName = $(this).data('char');
             if (!charName) return;
 
-            const curAvatars = getCustomSpeakerAvatars();
-            const currentUrl = curAvatars[charName] || '';
-            const newUrl = prompt(`为角色【${charName}】设置自定义头像图片 URL 或相对路径：\n(留空将清除自定义绑定并自动使用酒馆角色卡头像)`, currentUrl);
-            if (newUrl !== null) {
-                setCustomSpeakerAvatar(charName, newUrl.trim() || null);
-                scope.renderDashboardList();
-            }
+            openSpeakerAvatarModal(charName);
         });
     };
 
+    /**
+     * 打开单个角色的多功能头像设置弹窗
+     */
+    function openSpeakerAvatarModal(charName) {
+        $('#tts-speaker-avatar-modal').remove();
+
+        const curAvatars = getCustomSpeakerAvatars();
+        const currentCustomUrl = curAvatars[charName] || '';
+        const currentAvatarHtml = renderAvatarHtml(charName, '', 'width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid rgba(196,155,79,0.6); box-shadow:0 4px 12px rgba(0,0,0,0.5);');
+
+        const modalHtml = `
+            <div id="tts-speaker-avatar-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+                <div style="width:360px; max-height:85vh; background:#1b172a; border:1px solid rgba(196,155,79,0.4); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:14px; box-shadow:0 12px 40px rgba(0,0,0,0.7); color:#fff;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(196,155,79,0.2); padding-bottom:8px;">
+                        <span style="font-weight:600; color:#fde047; font-size:14px;">🖼️ 设置【${charName}】头像</span>
+                        <button id="tts-av-modal-close" style="background:transparent; border:none; color:#9ca3af; font-size:20px; cursor:pointer;">×</button>
+                    </div>
+
+                    <!-- 当前头像展示 -->
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:10px 0; background:rgba(0,0,0,0.25); border-radius:8px;">
+                        ${currentAvatarHtml}
+                        <span style="font-size:11.5px; color:${currentCustomUrl ? '#fde047' : 'rgba(220,200,150,0.7)'};">
+                            ${currentCustomUrl ? '已设置专属自定义头像' : '当前使用酒馆角色卡 / 默认头像'}
+                        </span>
+                    </div>
+
+                    <!-- 操作区域 -->
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <!-- 方式1: 本地电脑选图上传 -->
+                        <div>
+                            <button id="tts-av-btn-upload-local" class="btn-primary" style="width:100%; padding:8px 12px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+                                📁 从电脑本地选择图片上传落盘
+                            </button>
+                            <input type="file" id="tts-av-file-input" accept="image/*" style="display:none !important;">
+                        </div>
+
+                        <!-- 方式2: 从酒馆已有角色卡挑选 -->
+                        <div>
+                            <button id="tts-av-btn-pick-card" class="btn-secondary" style="width:100%; padding:8px 12px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+                                🖼️ 从当前酒馆角色卡中选取
+                            </button>
+                        </div>
+
+                        <!-- 方式3: 手动输入 URL / 相对路径 -->
+                        <div style="display:flex; gap:6px; margin-top:2px;">
+                            <input type="text" id="tts-av-custom-url-input" value="${currentCustomUrl}" placeholder="输入网络 URL 或 /avatars/ 相对路径" class="tts-modern-input" style="flex:1; min-width:0; font-size:11.5px;">
+                            <button id="tts-av-btn-save-url" class="btn-secondary" style="padding:6px 10px; font-size:11.5px; white-space:nowrap;">保存</button>
+                        </div>
+
+                        <!-- 方式4: 清除自定义还原默认 -->
+                        ${currentCustomUrl ? `
+                            <button id="tts-av-btn-clear-custom" class="btn-red" style="width:100%; padding:6px 12px; font-size:11.5px; margin-top:4px; cursor:pointer;">
+                                🔄 清除自定义头像 (还原酒馆默认)
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('body').append(modalHtml);
+
+        const closeModal = () => $('#tts-speaker-avatar-modal').remove();
+        $('#tts-av-modal-close').on('click', closeModal);
+
+        // 1. 本地上传
+        $('#tts-av-btn-upload-local').on('click', () => {
+            $('#tts-av-file-input').val('').click();
+        });
+
+        $('#tts-av-file-input').on('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const $btn = $('#tts-av-btn-upload-local');
+            $btn.text('正在上传落盘..').prop('disabled', true);
+            try {
+                const apiHost = (window.TTS_API && window.TTS_API.baseUrl) ? window.TTS_API.baseUrl : 'http://127.0.0.1:3000';
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('speaker_name', charName);
+
+                const res = await fetch(`${apiHost}/api/speakers/avatar/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!res.ok) throw new Error('上传接口返回失败');
+                const data = await res.json();
+                if (data && data.avatar_url) {
+                    setCustomSpeakerAvatar(charName, data.avatar_url);
+                    scope.renderDashboardList();
+                    closeModal();
+                }
+            } catch (err) {
+                alert(`上传失败: ${err.message}`);
+                $btn.text('📁 从电脑本地选择图片上传落盘').prop('disabled', false);
+            }
+        });
+
+        // 2. 从酒馆卡片选取
+        $('#tts-av-btn-pick-card').on('click', () => {
+            closeModal();
+            $('#tts-btn-pick-char-avatar').click();
+            // 在选卡后将选取的头像更新给当前角色
+            const origHandler = window._tempPickAvatarCallback;
+            const context = window.SillyTavern?.getContext?.();
+            $('.tts-picker-item').off('click').on('click', function () {
+                const avatar = $(this).data('avatar');
+                if (avatar) {
+                    setCustomSpeakerAvatar(charName, avatar);
+                    scope.renderDashboardList();
+                }
+                $('#tts-char-picker-modal').remove();
+            });
+        });
+
+        // 3. 保存 URL
+        $('#tts-av-btn-save-url').on('click', () => {
+            const url = $('#tts-av-custom-url-input').val().trim();
+            setCustomSpeakerAvatar(charName, url || null);
+            scope.renderDashboardList();
+            closeModal();
+        });
+
+        // 4. 清除自定义
+        $('#tts-av-btn-clear-custom').on('click', () => {
+            setCustomSpeakerAvatar(charName, null);
+            scope.renderDashboardList();
+            closeModal();
+        });
+    }
+
 })(window.TTS_UI);
+

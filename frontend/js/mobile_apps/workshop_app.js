@@ -1520,9 +1520,15 @@ function openImportModal() {
                 <div class="ws-modal-body">
                     <div class="ws-form-group">
                         <label class="ws-form-label">方式 1: 选择本地 JSON 文件</label>
-                        <input type="file" id="ws-file-input" accept=".json" style="margin-top:4px; font-size:12px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+                            <button type="button" class="ws-tool-btn ws-tool-btn-primary" id="ws-btn-choose-file" style="padding:6px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                                ${SVG.import} 📁 浏览并选择文件
+                            </button>
+                            <span id="ws-chosen-filename" style="font-size:12px; color:rgba(220,200,150,0.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;">未选择文件</span>
+                            <input type="file" id="ws-file-input" accept=".json,application/json" style="display:none !important;">
+                        </div>
                     </div>
-                    <div class="ws-form-group" style="margin-top:10px;">
+                    <div class="ws-form-group" style="margin-top:12px;">
                         <label class="ws-form-label">方式 2: 直接粘贴 JSON 文本</label>
                         <textarea class="ws-textarea" id="ws-json-textarea" placeholder="在此粘贴完整的预设 JSON 对象..." style="height:140px;"></textarea>
                     </div>
@@ -1540,9 +1546,15 @@ function openImportModal() {
     const closeModal = () => $('#ws-import-modal-overlay').remove();
     $('#ws-import-close-btn, #ws-import-cancel-btn').on('click', closeModal);
 
+    // 点击自定义按钮唤起系统文件选择框
+    $('#ws-btn-choose-file').on('click', function () {
+        $('#ws-file-input').val('').click();
+    });
+
     $('#ws-file-input').on('change', function (e) {
         const file = e.target.files[0];
         if (!file) return;
+        $('#ws-chosen-filename').text(`📄 ${file.name}`).css('color', '#fef08a');
         const reader = new FileReader();
         reader.onload = function (evt) {
             $('#ws-json-textarea').val(evt.target.result);

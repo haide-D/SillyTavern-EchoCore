@@ -86,13 +86,15 @@ export function getDashboardHTML(data) {
                             <button id="tts-btn-fill-current-char" class="btn-secondary" style="padding:7px 12px; font-size:12px; white-space:nowrap;" title="一键填入当前对话的角色名">✨ 填入当前</button>
                         </div>
 
-                        <!-- 第2行: 自定义头像绑定 (可选) -->
-                        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-                            <div id="tts-new-avatar-preview" style="width:36px; height:36px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.08); border:1px solid rgba(196,155,79,0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <!-- 第2行: 自定义头像绑定 (支持本地选图落盘 / 选卡 / 输入URL) -->
+                        <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
+                            <div id="tts-new-avatar-preview" style="width:36px; height:36px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,0.08); border:1px solid rgba(196,155,79,0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;" title="点击上传本地头像图片">
                                 <span style="font-size:16px;">👤</span>
                             </div>
-                            <input type="text" id="tts-new-char-avatar" class="tts-modern-input" style="flex: 1; min-width: 0; font-size: 11.5px;" placeholder="自定义头像图片URL (选填，自动探测角色卡)">
-                            <button id="tts-btn-pick-char-avatar" class="btn-secondary" style="padding:7px 10px; font-size:11.5px; white-space:nowrap;" title="从当前酒馆角色列表中选取">🖼️ 选卡</button>
+                            <input type="text" id="tts-new-char-avatar" class="tts-modern-input" style="flex: 1; min-width: 0; font-size: 11.5px;" placeholder="头像URL/本地路径 (可点右侧选图/选卡)">
+                            <button id="tts-btn-upload-avatar" class="btn-secondary" style="padding:7px 8px; font-size:11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:2px;" title="从电脑本地上传图片并永久落盘">📁 选图</button>
+                            <button id="tts-btn-pick-char-avatar" class="btn-secondary" style="padding:7px 8px; font-size:11.5px; white-space:nowrap; display:inline-flex; align-items:center; gap:2px;" title="从当前酒馆角色列表中选取">🖼️ 选卡</button>
+                            <input type="file" id="tts-avatar-file-input" accept="image/*" style="display:none !important;">
                         </div>
 
                         <!-- 第3行: 音色模型选择 (独占整行，文字不被截断) -->

@@ -73,6 +73,10 @@ app.mount("/favorites", StaticFiles(directory="data/favorites_audio"), name="fav
 os.makedirs("data/themes", exist_ok=True)
 app.mount("/api/themes/assets", StaticFiles(directory="data/themes"), name="themes_assets")
 
+# 挂载角色自定义本地头像目录
+os.makedirs("data/avatars", exist_ok=True)
+app.mount("/avatars", StaticFiles(directory="data/avatars"), name="avatars")
+
 # 挂载主动电话音频目录 - 使用自定义路由处理中文路径
 from config import init_settings
 from fastapi.responses import FileResponse

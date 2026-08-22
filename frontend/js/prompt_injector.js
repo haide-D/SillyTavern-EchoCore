@@ -113,7 +113,22 @@ export const PromptInjector = {
         const mappings = state.CACHE.mappings || {};
         const modelsData = state.CACHE.models || {};
 
-        // 1. 构建 List 1: 已绑定角色及其情绪词池
+        // 1. 获取当前主角色名称 (Primary Character)
+        let primaryChar = '';
+        try {
+            if (window.SillyTavern && typeof window.SillyTavern.getContext === 'function') {
+                const ctx = window.SillyTavern.getContext();
+                if (ctx.characters && ctx.characterId !== undefined && ctx.characters[ctx.characterId]) {
+                    primaryChar = (ctx.characters[ctx.characterId].name || '').trim();
+                } else if (ctx.name2) {
+                    primaryChar = String(ctx.name2).trim();
+                }
+            }
+        } catch (e) {
+            console.warn('[PromptInjector] 获取主角色名失败:', e);
+        }
+
+        // 2. 构建 List 1: 已绑定角色及其情绪词池
         const boundMap = {};
         for (const [charName, modelName] of Object.entries(mappings)) {
             if (!charName || !modelName) continue;
@@ -140,20 +155,21 @@ export const PromptInjector = {
 
         this.boundSpeakersMap = boundMap;
 
-        // 2. 编译 ElevenLabs V3 提示词
-        const promptText = this.buildPromptDirective(boundMap, Array.from(this.skippedSpeakers));
+        // 3. 编译强力通用的 ElevenLabs V3 提示词
+        const promptText = this.buildPromptDirective(boundMap, Array.from(this.skippedSpeakers), primaryChar);
 
-        // 3. 注入到 SillyTavern
+        // 4. 注入到 SillyTavern
         this._injectIntoSillyTavern(promptText);
     },
 
     /**
-     * 编译 ElevenLabs V3 格式指令
+     * 编译通用强力 ElevenLabs V3 格式指令
      * @param {Object} boundMap - { "角色名": ["default", "happy", ...] }
-     * @param {Array<string>} skippedList - ["店员", "路人A"]
+     * @param {Array<string>} skippedList - ["角色A", "路人B"]
+     * @param {string} primaryChar - 当前主角色名
      * @returns {string} 编译后的指令字符串
      */
-    buildPromptDirective(boundMap, skippedList) {
+    buildPromptDirective(boundMap, skippedList, primaryChar = '') {
         const boundEntries = Object.entries(boundMap);
         
         let boundSection = '';
@@ -172,22 +188,38 @@ export const PromptInjector = {
             skippedSection = '   (None)';
         }
 
+        const primaryCharNote = primaryChar ? `\n- Current Active Character: "${primaryChar}" (Ensure consistent naming if speaking).` : '';
+
         return `
-[Audio & Dialogue Directives: ElevenLabs V3 Format]
-Follow these exact formatting rules when outputting spoken dialogue:
+[Voice Synthesis & Dialogue Protocol]
+You must format spoken dialogue according to the following strict rules:${primaryCharNote}
 
-1. Bound Voice Characters (Must prepend emotion tag):
+### Core Rules:
+1. **Character Naming Consistency (Crucial)**:
+   - Each character MUST maintain a single, consistent, official name across the entire reply and conversation.
+   - NEVER switch, alternate, or use temporary pronouns/titles/nicknames in place of the character's exact name. (Every line spoken by the same character must use the identical Character_Name prefix).
+
+2. **Dialogue Tagging Format**:
+   - Place voice tags immediately before direct spoken quotes: \`[Character_Name, emotion] "Spoken dialogue..."\` or \`[Character_Name, emotion] “对白内容……”\`
+   - Narration, environmental descriptions, internal thoughts, and action beats must be written as regular text outside the tag. NEVER put non-spoken narration inside or as the sole content of the tag.
+
+3. **Speaker Categories**:
+   - **List 1: Bound Voice Characters** (Must use corresponding emotion tag):
 ${boundSection}
-   Format: [Character_Name, emotion] <spoken dialogue>
-   Example: [${boundEntries[0] ? boundEntries[0][0] : 'Character'}, ${boundEntries[0] && boundEntries[0][1][1] ? boundEntries[0][1][1] : 'happy'}] Spoken words here...
-
-2. Skipped Characters (Output as plain text, NO voice tag):
+   - **List 2: Skipped Characters** (Plain text only, NO voice tag):
 ${skippedSection}
-   Format: Character_Name: <spoken dialogue> or standard narration.
+   - **List 3: New / Unbound Characters** (Anyone NOT listed above):
+     Format: \`[New_Character_Name, New] "Spoken dialogue..."\` (Keep name consistent on subsequent lines).
 
-3. Newly Introduced Characters (Anyone NOT in the lists above):
-   Format: [New_Character_Name, New] <spoken dialogue>
-   (This allows the user to bind a voice model).
+### Demonstrations:
+- ✅ Correct:
+  She stepped out of the room and looked up with a smile.
+  [Alice, happy] "Hello there! Nice to meet you."
+  She tilted her head playfully.
+  [Alice, playful] "What do you think of this outfit?"
+- ❌ Forbidden:
+  [Alice, happy] She stepped out of the room and smiled. (Error: putting narration into speech tag)
+  [Assistant, happy] "Hello!" (Error: switching or inventing alternative names for the same person)
 `.trim();
     },
 

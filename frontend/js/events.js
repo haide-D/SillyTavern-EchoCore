@@ -1,4 +1,4 @@
-﻿// static/js/events.js
+// static/js/events.js
 let currentAudio = null;
 
 export const TTS_Events = {
@@ -164,27 +164,25 @@ export const TTS_Events = {
                 }
 
                 if (!CACHE.mappings[charName]) {
+                    // 优先调起轻量快捷绑定弹窗
+                    if (window.TTS_Parser && typeof window.TTS_Parser.openQuickBindModal === 'function') {
+                        window.TTS_Parser.openQuickBindModal(charName);
+                        return;
+                    }
+
                     if (window.TTS_UI) {
-                        // 修复竞态条件：先刷新数据，确保模型列表已加载，再弹出面板
+                        // 降级处理：打开 Dashboard 面板
                         const showPanelAndFill = () => {
                             window.TTS_UI.showDashboard();
                             $('#tts-new-char').val(charName);
                             $('#tts-new-model').focus();
-                            setTimeout(() => {
-                                alert(`⚠️ 角色 "${charName}" 尚未绑定 TTS 模型。\n已为您自动填好角色名，请在右侧选择模型并点击"绑定"！`);
-                            }, 100);
                         };
 
                         if (window.TTS_UI.CTX && window.TTS_UI.CTX.Callbacks && window.TTS_UI.CTX.Callbacks.refreshData) {
-                            // 先刷新数据，完成后再弹出面板（确保模型列表已加载）
                             window.TTS_UI.CTX.Callbacks.refreshData()
                                 .then(showPanelAndFill)
-                                .catch((err) => {
-                                    console.warn('[TTS] 刷新数据失败，仍弹出面板:', err);
-                                    showPanelAndFill(); // 即使失败也弹出面板
-                                });
+                                .catch(() => showPanelAndFill());
                         } else {
-                            // 降级处理：直接弹出
                             showPanelAndFill();
                         }
                     }
@@ -255,27 +253,23 @@ export const TTS_Events = {
             const Scheduler = window.TTS_Scheduler;
 
             if (!CACHE.mappings[charName]) {
+                if (window.TTS_Parser && typeof window.TTS_Parser.openQuickBindModal === 'function') {
+                    window.TTS_Parser.openQuickBindModal(charName);
+                    return;
+                }
+
                 if (window.TTS_UI) {
-                    // 修复竞态条件：先刷新数据，确保模型列表已加载，再弹出面板
                     const showPanelAndFill = () => {
                         window.TTS_UI.showDashboard();
                         $('#tts-new-char').val(charName);
                         $('#tts-new-model').focus();
-                        setTimeout(() => {
-                            alert(`⚠ 角色 "${charName}" 尚未绑定 TTS 模型。\n请为该角色配置后重试,面板已自动打开,请选择模型并点击绑定。`);
-                        }, 100);
                     };
 
                     if (window.TTS_UI.CTX && window.TTS_UI.CTX.Callbacks && window.TTS_UI.CTX.Callbacks.refreshData) {
-                        // 先刷新数据，完成后再弹出面板（确保模型列表已加载）
                         window.TTS_UI.CTX.Callbacks.refreshData()
                             .then(showPanelAndFill)
-                            .catch((err) => {
-                                console.warn('[TTS] 刷新数据失败，仍弹出面板:', err);
-                                showPanelAndFill(); // 即使失败也弹出面板
-                            });
+                            .catch(() => showPanelAndFill());
                     } else {
-                        // 降级处理：直接弹出
                         showPanelAndFill();
                     }
                 }

@@ -180,6 +180,25 @@ export function getDefaultAvatarDataUrl(name = '') {
 }
 
 /**
+ * 格式化头像 URL (自动将后端相对路径 /avatars/ 补全为 API Host)
+ * @param {string} url - 原始 URL 或相对路径
+ * @returns {string|null} 格式化后的完整 URL
+ */
+export function formatAvatarUrl(url) {
+    if (!url) return null;
+    const str = String(url).trim();
+    if (!str) return null;
+    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:')) {
+        return str;
+    }
+    if (str.startsWith('/avatars/') || str.startsWith('/api/')) {
+        const host = getApiHost();
+        return `${host}${str}`;
+    }
+    return str;
+}
+
+/**
  * 获取角色/Speaker 头像 URL (四级解析)
  * 1. Speaker 自定义独立绑定
  * 2. SillyTavern 全量角色卡匹配 (匹配 name, avatar 文件名等)
@@ -194,7 +213,7 @@ export function getCharacterAvatar(charName = '') {
     // 1. 检查 Speaker 自定义独立绑定
     const customAvatars = getCustomSpeakerAvatars();
     if (cleanName && customAvatars[cleanName]) {
-        return customAvatars[cleanName];
+        return formatAvatarUrl(customAvatars[cleanName]);
     }
 
     try {
@@ -205,9 +224,10 @@ export function getCharacterAvatar(charName = '') {
         const userName = (context.name1 || '用户').trim();
         if (cleanName && (cleanName === userName || cleanName === '你' || cleanName === 'User' || cleanName.toLowerCase() === 'user')) {
             if (context.user_avatar) {
-                return context.getThumbnailUrl 
+                const uUrl = context.getThumbnailUrl 
                     ? context.getThumbnailUrl('avatar', context.user_avatar)
                     : `/characters/${context.user_avatar}`;
+                return formatAvatarUrl(uUrl);
             }
         }
 
@@ -229,7 +249,7 @@ export function getCharacterAvatar(charName = '') {
                     const url = context.getThumbnailUrl 
                         ? context.getThumbnailUrl('avatar', foundChar.avatar) 
                         : `/characters/${foundChar.avatar}`;
-                    return url;
+                    return formatAvatarUrl(url);
                 }
             }
 
@@ -237,9 +257,10 @@ export function getCharacterAvatar(charName = '') {
             if (context.characterId !== undefined && context.characters[context.characterId]) {
                 const currentChar = context.characters[context.characterId];
                 if (currentChar?.avatar) {
-                    return context.getThumbnailUrl 
+                    const url = context.getThumbnailUrl 
                         ? context.getThumbnailUrl('avatar', currentChar.avatar) 
                         : `/characters/${currentChar.avatar}`;
+                    return formatAvatarUrl(url);
                 }
             }
         }
@@ -263,4 +284,5 @@ export function renderAvatarHtml(charName = '', className = '', style = '') {
     const safeUrl = avatarUrl || fallbackUrl;
     return `<img class="${className}" src="${safeUrl}" alt="${charName || 'Avatar'}" style="${style}" onerror="this.onerror=null; this.src='${fallbackUrl}'" />`;
 }
+
 
