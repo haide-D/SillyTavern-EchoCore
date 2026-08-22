@@ -455,16 +455,21 @@ class MiniMaxTTSService:
             "Content-Type": "application/json"
         }
         
+        voice_setting = {
+            "voice_id": final_voice_id,
+            "speed": final_speed,
+            "vol": final_vol,
+            "pitch": final_pitch
+        }
+        # 仅在支持 emotion 参数的模型（如 speech-01 系列）中传递 emotion
+        # speech-02 等模型官方 API 不支持 emotion 参数（传入会报 2013 错误）
+        if not active_model.startswith("speech-02") and final_emotion:
+            voice_setting["emotion"] = final_emotion
+
         payload = {
             "model": active_model,
             "text": text,
-            "voice_setting": {
-                "voice_id": final_voice_id,
-                "speed": final_speed,
-                "vol": final_vol,
-                "pitch": final_pitch,
-                "emotion": final_emotion
-            },
+            "voice_setting": voice_setting,
             "audio_setting": {
                 "sample_rate": 32000,
                 "bitrate": 128000,
@@ -476,6 +481,15 @@ class MiniMaxTTSService:
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(request_url, headers=headers, json=payload)
+                
+                # 如果遇到不支持 emotion 的模型（错误码 2013），自动剔除 emotion 再次自适应重试
+                if response.status_code == 200:
+                    res_json = response.json()
+                    base_resp = res_json.get("base_resp", {})
+                    if base_resp.get("status_code") == 2013 and "emotion" in payload.get("voice_setting", {}):
+                        print(f"[MiniMax TTS] ⚠️ 当前模型 {active_model} 不支持 emotion 参数，自动剔除后重试...")
+                        del payload["voice_setting"]["emotion"]
+                        response = await client.post(request_url, headers=headers, json=payload)
         except (httpx.ConnectError, httpx.RequestError) as req_err:
             raise RuntimeError(f"无法连接到 MiniMax 云端 API: {req_err}")
 
