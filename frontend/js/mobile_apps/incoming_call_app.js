@@ -378,26 +378,38 @@ function showInCallUI(container, callData) {
 }
 
 /**
- * 显示历史记录播放界面
+ * 显示历史记录播放界面 (导出供全屏重温复用)
  * @param {jQuery} container - App 容器
  * @param {Object} call - 历史来电数据
  * @param {Function} createNavbar - 创建导航栏函数
+ * @param {Function} [onReturn] - 可选的退出回退回调
  */
-function showHistoryPlaybackUI(container, call, createNavbar) {
+export function showHistoryPlaybackUI(container, call, createNavbar, onReturn = null) {
     container.empty();
 
     // 添加导航栏(带返回按钮)
-    const $navbar = createNavbar("播放历史通话");
+    const $navbar = createNavbar ? createNavbar("播放历史通话") : $(`<div class="pc-immersive-nav"><button class="nav-left" style="background:transparent;border:none;color:#fef08a;cursor:pointer;padding:8px 12px;font-size:14px;">← 返回</button><span style="font-weight:600;">播放历史通话</span></div>`);
     container.append($navbar);
+
+    const handleExit = () => {
+        cleanupGlobalPlayer();
+        if (typeof onReturn === 'function') {
+            onReturn();
+        } else if (createNavbar) {
+            render(container, createNavbar);
+        } else {
+            $('#mobile-home-btn').click();
+        }
+    };
 
     // 监听返回按钮点击 - 停止音频播放
     $navbar.find('.nav-left').off('click').on('click', function () {
-        console.log('[Mobile] 用户点击返回,停止音频播放');
-        cleanupGlobalPlayer();
-        $('#mobile-home-btn').click();
+        console.log('[Mobile] 用户点击返回, 停止音频播放');
+        handleExit();
     });
 
-    const avatarHtml = renderAvatarHtml(call.char_name, 'history-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
+    const charName = call.char_name || call.selected_speaker || '未知角色';
+    const avatarHtml = renderAvatarHtml(charName, 'history-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
 
     // 创建播放界面
     const $playbackContent = $(`
@@ -503,8 +515,7 @@ function showHistoryPlaybackUI(container, call, createNavbar) {
     }
 
     function endPlayback() {
-        cleanupGlobalPlayer();
-        render(container, createNavbar);
+        handleExit();
     }
 }
 

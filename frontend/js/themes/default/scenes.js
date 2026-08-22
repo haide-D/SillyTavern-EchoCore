@@ -69,9 +69,13 @@ export const scenes = {
 
     incoming_call: {
         render($container, ctx) {
-            const callData = window.TTS_IncomingCall;
+            const callData = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : window.TTS_IncomingCall;
             if (callData) {
-                IncomingCallApp.render($container, createNavbarForApps);
+                if (ctx && ctx.data && ctx.data.isReplay) {
+                    IncomingCallApp.showHistoryPlaybackUI($container, callData, createNavbarForApps, ctx.data.onReturn);
+                } else {
+                    IncomingCallApp.render($container, createNavbarForApps);
+                }
             } else {
                 const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
                 PhoneCallApp.render($appContainer, createNavbarForApps);
@@ -86,9 +90,14 @@ export const scenes = {
 
     eavesdrop: {
         render($container, ctx) {
-            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
-            EavesdropApp.render($appContainer, createNavbarForApps);
-            $container.append($appContainer);
+            const callData = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
+            if (callData && ctx && ctx.data && ctx.data.isReplay) {
+                IncomingCallApp.showHistoryPlaybackUI($container, callData, createNavbarForApps, ctx.data.onReturn);
+            } else {
+                const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
+                EavesdropApp.render($appContainer, createNavbarForApps);
+                $container.append($appContainer);
+            }
         },
         cleanup() {
             if (EavesdropApp.cleanup) EavesdropApp.cleanup();

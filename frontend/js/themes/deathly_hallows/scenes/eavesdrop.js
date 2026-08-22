@@ -223,7 +223,9 @@ function showCustomEavesdropUI(container, callData, ctx) {
         delete window.TTS_EavesdropData;
         cleanupGlobalPlayer();
         $('#tts-dh-modal').show();
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx && ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
@@ -232,7 +234,8 @@ function showCustomEavesdropUI(container, callData, ctx) {
 
 export const eavesdropScene = {
     render($container, ctx) {
-        const data = window.TTS_EavesdropReady || window.TTS_EavesdropData;
+        // 优先获取 ctx.data 传入的指定密谈数据（如重温播放），其次取全局 TTS_EavesdropReady/Data
+        const data = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
         if (!data) {
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
             EavesdropApp.render($appContainer, createNavbarForApps);
@@ -240,6 +243,12 @@ export const eavesdropScene = {
             return;
         }
         
+        // 如果是重温播放 (isReplay)，直接打开死亡圣器专属紫色全屏密谈界面
+        if (ctx && ctx.data && ctx.data.isReplay) {
+            showCustomEavesdropUI($container, data, ctx);
+            return;
+        }
+
         // 有窃听就绪状态时，渲染紫色的窃听等待界面
         renderCustomDeathlyHallowsEavesdrop($container, data, ctx);
     },

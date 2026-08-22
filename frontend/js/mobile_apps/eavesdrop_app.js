@@ -14,6 +14,7 @@ import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audi
 import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar, getDefaultAvatarDataUrl } from './shared/utils.js';
 import { loadExtensionSettings } from '../settings_ui.js';
 import { STATUS_SVGS, getEavesdropStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
+import { showHistoryPlaybackUI } from './incoming_call_app.js';
 
 export const id = 'eavesdrop';
 export const defaultName = '对话追踪';
@@ -25,6 +26,9 @@ export const hidden = false;
 let _activeTab = 'current'; // 'current' | 'all' | 'launch'
 let _lastGeneratedEavesdrop = null;
 let _currentAudioPlayer = null;
+let _playingCardElement = null; // 当前正在内联播放的卡片
+let _currentAppContainer = null;
+let _currentCreateNavbar = null;
 let _allEavesdropsCache = [];
 let _currentEavesdropsCache = [];
 let _searchQuery = '';
@@ -32,6 +36,7 @@ let _presetsCache = [];
 let _boundSpeakersCache = [];
 
 const SVG = STATUS_SVGS;
+const SVG_FULLSCREEN = `<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
 
 /**
  * 注入样式
@@ -180,9 +185,10 @@ const injectCSS = () => {
             flex-direction: column;
             gap: 7px;
             backdrop-filter: blur(8px);
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             box-sizing: border-box;
             width: 100%;
+            position: relative;
         }
         .ed-card:hover {
             border-color: rgba(196, 155, 79, 0.45);
@@ -192,6 +198,11 @@ const injectCSS = () => {
             border-color: #f59e0b;
             box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
             background: linear-gradient(135deg, rgba(40, 30, 20, 0.8), rgba(25, 18, 12, 0.9));
+        }
+        .ed-card.is-playing {
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 18px rgba(245, 158, 11, 0.28) !important;
+            background: linear-gradient(135deg, rgba(38, 28, 18, 0.92), rgba(28, 20, 26, 0.95)) !important;
         }
         .ed-card-header {
             display: flex;
@@ -206,9 +217,20 @@ const injectCSS = () => {
             align-items: center;
             gap: 5px;
         }
+        .ed-time-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .ed-time {
             font-size: 11px;
             color: rgba(220, 200, 160, 0.6);
+        }
+        .ed-time-playback {
+            font-size: 11px;
+            color: #fde047;
+            font-family: monospace, -apple-system, sans-serif;
+            font-weight: 600;
         }
         .ed-theme {
             font-size: 11.5px;
@@ -222,7 +244,7 @@ const injectCSS = () => {
             font-size: 11.5px;
             color: #d1d5db;
             line-height: 1.45;
-            max-height: 80px;
+            max-height: 85px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.25);
             padding: 5px 8px;
@@ -230,6 +252,36 @@ const injectCSS = () => {
             display: flex;
             flex-direction: column;
             gap: 3px;
+        }
+        .ed-dialog-preview div.ed-segment-line {
+            transition: all 0.2s ease;
+            padding: 1px 0;
+            border-radius: 3px;
+        }
+        .ed-dialog-preview div.ed-segment-line.active-segment {
+            color: #fde047 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+            padding-left: 5px;
+            border-left: 2px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+        }
+        .ed-audio-progress-wrap {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 2px 0;
+            display: none;
+            position: relative;
+        }
+        .ed-audio-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+            transition: width 0.1s linear;
         }
         .ed-card-actions {
             display: flex;
@@ -270,6 +322,17 @@ const injectCSS = () => {
         }
         .ed-action-btn.inject:hover {
             background: rgba(16, 185, 129, 0.3);
+        }
+        .ed-action-btn.immersive {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+            margin-left: auto;
+        }
+        .ed-action-btn.immersive:hover {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.6);
+            color: #ede9fe;
         }
 
         /* 内嵌式开启密谈控制台面板 */
@@ -429,6 +492,12 @@ const injectCSS = () => {
 export async function render(container, createNavbar) {
     injectCSS();
     cleanupGlobalPlayer();
+    if (_playingCardElement && _playingCardElement._resetUI) {
+        _playingCardElement._resetUI();
+        _playingCardElement = null;
+    }
+    _currentAppContainer = container;
+    _currentCreateNavbar = createNavbar;
     container.empty();
 
     const eavesdropData = window.TTS_EavesdropData;
@@ -875,7 +944,7 @@ function renderLaunchConsole($container) {
 }
 
 /**
- * 创建单条密谈卡片 (支持重播、重新生成与注入聊天)
+ * 创建单条密谈卡片 (支持内联精致播放、说话人聚光灯、逐句高亮、沉浸重温与注入聊天)
  */
 function createEavesdropCard(rec, isLatest = false) {
     let speakers = rec.speakers || [];
@@ -893,9 +962,9 @@ function createEavesdropCard(rec, isLatest = false) {
         try { segments = JSON.parse(segments); } catch (e) { segments = []; }
     }
 
-    const previewTexts = segments.map(s => {
+    const previewTexts = segments.map((s, idx) => {
         const t = s.translation || s.text || '';
-        return `<div><strong>${s.speaker || '角色'}:</strong> ${t}</div>`;
+        return `<div class="ed-segment-line" data-idx="${idx}"><strong>${s.speaker || '角色'}:</strong> ${t}</div>`;
     }).join('');
 
     // 构造多角色头像胶囊栈
@@ -917,7 +986,10 @@ function createEavesdropCard(rec, isLatest = false) {
                         ${isLatest ? '<span style="font-size:10px; background:#d97706; color:#fff; padding:1px 6px; border-radius:10px;">最新密谈</span>' : ''}
                     </div>
                 </div>
-                <span class="ed-time">${timeStr}</span>
+                <div class="ed-time-wrap">
+                    <span class="ed-time-playback" style="display:none;">0:00 / 0:00</span>
+                    <span class="ed-time">${timeStr}</span>
+                </div>
             </div>
 
             <div class="ed-theme">
@@ -925,6 +997,10 @@ function createEavesdropCard(rec, isLatest = false) {
             </div>
 
             ${previewTexts ? `<div class="ed-dialog-preview">${previewTexts}</div>` : ''}
+
+            <div class="ed-audio-progress-wrap">
+                <div class="ed-audio-progress-bar"></div>
+            </div>
 
             <div class="ed-card-actions">
                 ${audioUrl ? `
@@ -938,25 +1014,82 @@ function createEavesdropCard(rec, isLatest = false) {
                 <button class="ed-action-btn inject ws-btn-inject" title="将密谈内容追加到 SillyTavern 聊天消息">
                     ${SVG.inject} 注入当前聊天
                 </button>
+                ${audioUrl ? `
+                    <button class="ed-action-btn immersive ws-btn-fullscreen" title="进入全屏沉浸重温模式">
+                        ${SVG_FULLSCREEN} 沉浸重温
+                    </button>
+                ` : ''}
             </div>
         </div>
     `);
+
+    // 卡片 UI 状态重置
+    const resetCardUI = () => {
+        $card.removeClass('is-playing');
+        $card.find('.ed-avatar-stack-item').removeClass('speaking dimmed');
+        $card.find('.ed-segment-line').removeClass('active-segment');
+        $card.find('.ed-audio-progress-wrap').hide();
+        $card.find('.ed-audio-progress-bar').css('width', '0%');
+        $card.find('.ed-time-playback').hide();
+        $card.find('.ed-time').show();
+        $card.find('.ws-btn-play').html(`${SVG.play} 播放录音`);
+    };
 
     // 播放/暂停及说话人动态切换
     $card.find('.ws-btn-play').on('click', function () {
         if (!audioUrl) return;
         const $btn = $(this);
 
-        if (_currentAudioPlayer && _currentAudioPlayer.isPlaying()) {
+        // 如果本卡片正在播放，点击则暂停
+        if (_playingCardElement && _playingCardElement[0] === $card[0] && _currentAudioPlayer && _currentAudioPlayer.isPlaying()) {
             _currentAudioPlayer.pause();
-            $btn.html(`${SVG.play} 播放录音`);
-            $card.find('.ed-avatar-stack-item').removeClass('speaking dimmed');
+            $btn.html(`${SVG.play} 继续播放`);
+            $card.removeClass('is-playing');
             return;
         }
 
+        // 如果本卡片处于暂停状态，恢复播放
+        if (_playingCardElement && _playingCardElement[0] === $card[0] && _currentAudioPlayer) {
+            _currentAudioPlayer.play();
+            $btn.html(`${SVG.pause} 暂停`);
+            $card.addClass('is-playing');
+            return;
+        }
+
+        // 停止并清理前一个播放器
         cleanupGlobalPlayer();
+        if (_playingCardElement && _playingCardElement._resetUI) {
+            _playingCardElement._resetUI();
+        }
+
+        _playingCardElement = $card;
+        $card._resetUI = resetCardUI;
+
+        // 初始化播放器并绑定事件
         _currentAudioPlayer = new AudioPlayer({ audioUrl, segments });
         setGlobalPlayer(_currentAudioPlayer);
+
+        const $progressBar = $card.find('.ed-audio-progress-bar');
+        const $progressWrap = $card.find('.ed-audio-progress-wrap');
+        const $timePlayback = $card.find('.ed-time-playback');
+        const $timeOriginal = $card.find('.ed-time');
+        const $lines = $card.find('.ed-segment-line');
+
+        $progressWrap.show();
+        $timeOriginal.hide();
+        $timePlayback.show().text('0:00 / 0:00');
+        $card.addClass('is-playing');
+        $btn.html(`${SVG.pause} 暂停`);
+
+        _currentAudioPlayer.on('timeupdate', (currentTime, duration) => {
+            if (duration && duration > 0) {
+                const percent = Math.min(100, Math.max(0, (currentTime / duration) * 100));
+                $progressBar.css('width', `${percent}%`);
+                $timePlayback.text(`${formatTime(currentTime)} / ${formatTime(duration)}`);
+            } else {
+                $timePlayback.text(`${formatTime(currentTime)}`);
+            }
+        });
 
         // 监听说话人切换事件，动态聚光灯高亮当前发言人头像
         _currentAudioPlayer.on('speaker_change', ({ speaker }) => {
@@ -970,13 +1103,85 @@ function createEavesdropCard(rec, isLatest = false) {
             });
         });
 
+        // 句段高亮与滚动
+        _currentAudioPlayer.on('segment_change', ({ index }) => {
+            $lines.removeClass('active-segment');
+            const $active = $lines.filter(`[data-idx="${index}"]`).addClass('active-segment');
+            if ($active.length) {
+                const previewEl = $card.find('.ed-dialog-preview')[0];
+                if (previewEl) {
+                    const activeEl = $active[0];
+                    previewEl.scrollTop = activeEl.offsetTop - previewEl.offsetTop - 10;
+                }
+            }
+        });
+
+        _currentAudioPlayer.on('play', () => {
+            $btn.html(`${SVG.pause} 暂停`);
+            $card.addClass('is-playing');
+        });
+
+        _currentAudioPlayer.on('pause', () => {
+            $btn.html(`${SVG.play} 继续播放`);
+            $card.removeClass('is-playing');
+        });
+
         _currentAudioPlayer.on('ended', () => {
-            $btn.html(`${SVG.play} 播放录音`);
-            $card.find('.ed-avatar-stack-item').removeClass('speaking dimmed');
+            resetCardUI();
+            _playingCardElement = null;
+        });
+
+        _currentAudioPlayer.on('error', () => {
+            resetCardUI();
+            _playingCardElement = null;
         });
 
         _currentAudioPlayer.play();
-        $btn.html(`${SVG.pause} 暂停`);
+    });
+
+    // 沉浸重温 (调用当前激活主题的专属特殊全屏密谈页面)
+    $card.find('.ws-btn-fullscreen').on('click', function () {
+        if (!audioUrl) return;
+        cleanupGlobalPlayer();
+        if (_playingCardElement && _playingCardElement._resetUI) {
+            _playingCardElement._resetUI();
+            _playingCardElement = null;
+        }
+
+        const primarySpeaker = speakers[0] || '密谈角色';
+        const replayData = {
+            char_name: primarySpeaker,
+            speakers: speakers,
+            scene_description: theme,
+            created_at: rec.created_at,
+            audio_url: audioUrl,
+            segments: segments,
+            record_id: rec.record_id || rec.id || Date.now(),
+            id: rec.record_id || rec.id || Date.now(),
+            isReplay: true,
+            onReturn: () => {
+                if (window.TTS_ThemeEngine) {
+                    window.TTS_ThemeEngine.showScene('eavesdrop');
+                } else if (_currentAppContainer && _currentCreateNavbar) {
+                    render(_currentAppContainer, _currentCreateNavbar);
+                } else {
+                    renderActiveTabContent();
+                }
+            }
+        };
+
+        if (window.TTS_ThemeEngine) {
+            console.log('[EavesdropApp] 唤起当前主题专属全屏沉浸重温:', replayData);
+            window.TTS_ThemeEngine.showScene('eavesdrop', replayData);
+        } else {
+            const $targetContainer = _currentAppContainer || $('#ed-tab-content').closest('.theme-content, .mobile-screen, .ed-app-container').parent();
+            showHistoryPlaybackUI(
+                $targetContainer.length ? $targetContainer : $('#ed-tab-content'),
+                replayData,
+                _currentCreateNavbar,
+                replayData.onReturn
+            );
+        }
     });
 
     // 重新生成

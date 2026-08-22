@@ -13,6 +13,7 @@ import { NotificationHandler } from '../notification_handler.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar } from './shared/utils.js';
 import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
+import { showHistoryPlaybackUI } from './incoming_call_app.js';
 
 export const id = 'phone_call';
 export const defaultName = '主动电话';
@@ -24,6 +25,9 @@ export const hidden = false;
 let _activeTab = 'current'; // 'current' | 'all' | 'dial'
 let _lastGeneratedCall = null;
 let _currentAudioPlayer = null;
+let _playingCardElement = null; // 当前正在内联播放的卡片
+let _currentAppContainer = null;
+let _currentCreateNavbar = null;
 let _allCallsCache = [];
 let _currentCallsCache = [];
 let _searchQuery = '';
@@ -31,6 +35,7 @@ let _presetsCache = [];
 let _boundSpeakersCache = [];
 
 const SVG = STATUS_SVGS;
+const SVG_FULLSCREEN = `<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
 
 /**
  * 注入样式
@@ -149,9 +154,10 @@ const injectCSS = () => {
             flex-direction: column;
             gap: 7px;
             backdrop-filter: blur(8px);
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             box-sizing: border-box;
             width: 100%;
+            position: relative;
         }
         .pc-card:hover {
             border-color: rgba(196, 155, 79, 0.45);
@@ -161,6 +167,11 @@ const injectCSS = () => {
             border-color: #10b981;
             box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
             background: linear-gradient(135deg, rgba(30, 45, 40, 0.8), rgba(20, 28, 26, 0.9));
+        }
+        .pc-card.is-playing {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.28) !important;
+            background: linear-gradient(135deg, rgba(20, 38, 32, 0.92), rgba(16, 26, 30, 0.95)) !important;
         }
         .pc-card-header {
             display: flex;
@@ -175,9 +186,28 @@ const injectCSS = () => {
             align-items: center;
             gap: 5px;
         }
+        .pc-avatar-playing {
+            animation: pc-avatar-pulse 1.6s infinite ease-in-out;
+        }
+        @keyframes pc-avatar-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .pc-time-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .pc-time {
             font-size: 11px;
             color: rgba(220, 200, 160, 0.6);
+        }
+        .pc-time-playback {
+            font-size: 11px;
+            color: #6ee7b7;
+            font-family: monospace, -apple-system, sans-serif;
+            font-weight: 600;
         }
         .pc-reason {
             font-size: 11.5px;
@@ -191,11 +221,41 @@ const injectCSS = () => {
             font-size: 11.5px;
             color: #d1d5db;
             line-height: 1.45;
-            max-height: 80px;
+            max-height: 85px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.2);
             padding: 5px 8px;
             border-radius: 5px;
+        }
+        .pc-dialog-preview div.pc-segment-line {
+            transition: all 0.2s ease;
+            padding: 1px 0;
+            border-radius: 3px;
+        }
+        .pc-dialog-preview div.pc-segment-line.active-segment {
+            color: #6ee7b7 !important;
+            font-weight: 600;
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+            padding-left: 5px;
+            border-left: 2px solid #10b981;
+            background: rgba(16, 185, 129, 0.08);
+        }
+        .pc-audio-progress-wrap {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 2px 0;
+            display: none;
+            position: relative;
+        }
+        .pc-audio-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+            transition: width 0.1s linear;
         }
         .pc-card-actions {
             display: flex;
@@ -236,6 +296,17 @@ const injectCSS = () => {
         }
         .pc-action-btn.inject:hover {
             background: rgba(234, 179, 8, 0.3);
+        }
+        .pc-action-btn.immersive {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+            margin-left: auto;
+        }
+        .pc-action-btn.immersive:hover {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.6);
+            color: #ede9fe;
         }
 
         /* 内嵌式主动呼出控制台面板 */
@@ -383,6 +454,12 @@ function getSpeakerLanguageHint(speakerName) {
 export async function render(container, createNavbar) {
     injectCSS();
     cleanupGlobalPlayer();
+    if (_playingCardElement && _playingCardElement._resetUI) {
+        _playingCardElement._resetUI();
+        _playingCardElement = null;
+    }
+    _currentAppContainer = container;
+    _currentCreateNavbar = createNavbar;
     container.empty();
     container.append(createNavbar("主动电话"));
 
@@ -772,7 +849,7 @@ function renderDialConsole($container) {
 }
 
 /**
- * 创建单条通话卡片 (支持重播、重新生成与注入聊天)
+ * 创建单条通话卡片 (支持内联精致播放、逐句高亮、沉浸重温、重新生成与注入聊天)
  */
 function createCallCard(call, isLatest = false) {
     const caller = call.char_name || call.selected_speaker || "神秘角色";
@@ -786,12 +863,12 @@ function createCallCard(call, isLatest = false) {
         try { segments = JSON.parse(segments); } catch (e) { segments = []; }
     }
 
-    const previewTexts = segments.map(s => {
+    const previewTexts = segments.map((s, idx) => {
         const t = s.translation || s.text || '';
-        return `<div>${t}</div>`;
+        return `<div class="pc-segment-line" data-idx="${idx}">${t}</div>`;
     }).join('');
 
-    const avatarHtml = renderAvatarHtml(caller, '', 'width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid rgba(196,155,79,0.4); flex-shrink:0;');
+    const avatarHtml = renderAvatarHtml(caller, 'pc-card-avatar-img', 'width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid rgba(196,155,79,0.4); flex-shrink:0; transition:all 0.3s;');
 
     const $card = $(`
         <div class="pc-card ${isLatest ? 'highlight' : ''}">
@@ -803,7 +880,10 @@ function createCallCard(call, isLatest = false) {
                         ${isLatest ? '<span style="font-size:10px; background:#10b981; color:#fff; padding:1px 6px; border-radius:10px;">最新通话</span>' : ''}
                     </div>
                 </div>
-                <span class="pc-time">${timeStr}</span>
+                <div class="pc-time-wrap">
+                    <span class="pc-time-playback" style="display:none;">0:00 / 0:00</span>
+                    <span class="pc-time">${timeStr}</span>
+                </div>
             </div>
 
             <div class="pc-reason">
@@ -812,9 +892,13 @@ function createCallCard(call, isLatest = false) {
 
             ${previewTexts ? `<div class="pc-dialog-preview">${previewTexts}</div>` : ''}
 
+            <div class="pc-audio-progress-wrap">
+                <div class="pc-audio-progress-bar"></div>
+            </div>
+
             <div class="pc-card-actions">
                 ${audioUrl ? `
-                    <button class="pc-action-btn play ws-btn-play" title="播放完整录音">
+                    <button class="pc-action-btn play ws-btn-play" title="播放/暂停录音">
                         ${SVG.play} 播放录音
                     </button>
                 ` : ''}
@@ -824,31 +908,165 @@ function createCallCard(call, isLatest = false) {
                 <button class="pc-action-btn inject ws-btn-inject" title="将通话内容追加到 SillyTavern 聊天消息中">
                     ${SVG.inject} 注入当前聊天
                 </button>
+                ${audioUrl ? `
+                    <button class="pc-action-btn immersive ws-btn-fullscreen" title="进入全屏沉浸重温模式 (大立绘、实时声波与滚动字幕)">
+                        ${SVG_FULLSCREEN} 沉浸重温
+                    </button>
+                ` : ''}
             </div>
         </div>
     `);
 
-    // 播放/暂停
+    // 卡片 UI 状态重置
+    const resetCardUI = () => {
+        $card.removeClass('is-playing');
+        $card.find('.pc-card-avatar-img').removeClass('pc-avatar-playing');
+        $card.find('.pc-segment-line').removeClass('active-segment');
+        $card.find('.pc-audio-progress-wrap').hide();
+        $card.find('.pc-audio-progress-bar').css('width', '0%');
+        $card.find('.pc-time-playback').hide();
+        $card.find('.pc-time').show();
+        $card.find('.ws-btn-play').html(`${SVG.play} 播放录音`);
+    };
+
+    // 播放/暂停控制
     $card.find('.ws-btn-play').on('click', function () {
         if (!audioUrl) return;
         const $btn = $(this);
 
-        if (_currentAudioPlayer && _currentAudioPlayer.isPlaying()) {
+        // 如果本卡片正在播放，点击则暂停
+        if (_playingCardElement && _playingCardElement[0] === $card[0] && _currentAudioPlayer && _currentAudioPlayer.isPlaying()) {
             _currentAudioPlayer.pause();
-            $btn.html(`${SVG.play} 播放录音`);
+            $btn.html(`${SVG.play} 继续播放`);
+            $card.removeClass('is-playing');
+            $card.find('.pc-card-avatar-img').removeClass('pc-avatar-playing');
             return;
         }
 
+        // 如果本卡片处于暂停状态，恢复播放
+        if (_playingCardElement && _playingCardElement[0] === $card[0] && _currentAudioPlayer) {
+            _currentAudioPlayer.play();
+            $btn.html(`${SVG.pause} 暂停`);
+            $card.addClass('is-playing');
+            $card.find('.pc-card-avatar-img').addClass('pc-avatar-playing');
+            return;
+        }
+
+        // 停止并清理前一个播放器
         cleanupGlobalPlayer();
-        _currentAudioPlayer = new AudioPlayer({ audioUrl });
+        if (_playingCardElement && _playingCardElement._resetUI) {
+            _playingCardElement._resetUI();
+        }
+
+        _playingCardElement = $card;
+        $card._resetUI = resetCardUI;
+
+        // 初始化播放器并绑定事件
+        _currentAudioPlayer = new AudioPlayer({ audioUrl, segments });
         setGlobalPlayer(_currentAudioPlayer);
 
+        const $progressBar = $card.find('.pc-audio-progress-bar');
+        const $progressWrap = $card.find('.pc-audio-progress-wrap');
+        const $timePlayback = $card.find('.pc-time-playback');
+        const $timeOriginal = $card.find('.pc-time');
+        const $lines = $card.find('.pc-segment-line');
+
+        $progressWrap.show();
+        $timeOriginal.hide();
+        $timePlayback.show().text('0:00 / 0:00');
+        $card.addClass('is-playing');
+        $card.find('.pc-card-avatar-img').addClass('pc-avatar-playing');
+        $btn.html(`${SVG.pause} 暂停`);
+
+        _currentAudioPlayer.on('timeupdate', (currentTime, duration) => {
+            if (duration && duration > 0) {
+                const percent = Math.min(100, Math.max(0, (currentTime / duration) * 100));
+                $progressBar.css('width', `${percent}%`);
+                $timePlayback.text(`${formatTime(currentTime)} / ${formatTime(duration)}`);
+            } else {
+                $timePlayback.text(`${formatTime(currentTime)}`);
+            }
+        });
+
+        _currentAudioPlayer.on('segment_change', ({ index }) => {
+            $lines.removeClass('active-segment');
+            const $active = $lines.filter(`[data-idx="${index}"]`).addClass('active-segment');
+            if ($active.length) {
+                const previewEl = $card.find('.pc-dialog-preview')[0];
+                if (previewEl) {
+                    const activeEl = $active[0];
+                    previewEl.scrollTop = activeEl.offsetTop - previewEl.offsetTop - 10;
+                }
+            }
+        });
+
+        _currentAudioPlayer.on('play', () => {
+            $btn.html(`${SVG.pause} 暂停`);
+            $card.addClass('is-playing');
+            $card.find('.pc-card-avatar-img').addClass('pc-avatar-playing');
+        });
+
+        _currentAudioPlayer.on('pause', () => {
+            $btn.html(`${SVG.play} 继续播放`);
+            $card.removeClass('is-playing');
+            $card.find('.pc-card-avatar-img').removeClass('pc-avatar-playing');
+        });
+
         _currentAudioPlayer.on('ended', () => {
-            $btn.html(`${SVG.play} 播放录音`);
+            resetCardUI();
+            _playingCardElement = null;
+        });
+
+        _currentAudioPlayer.on('error', () => {
+            resetCardUI();
+            _playingCardElement = null;
         });
 
         _currentAudioPlayer.play();
-        $btn.html(`${SVG.pause} 暂停`);
+    });
+
+    // 沉浸重温 (调用当前激活主题的专属特殊全屏播放页面)
+    $card.find('.ws-btn-fullscreen').on('click', function () {
+        if (!audioUrl) return;
+        cleanupGlobalPlayer();
+        if (_playingCardElement && _playingCardElement._resetUI) {
+            _playingCardElement._resetUI();
+            _playingCardElement = null;
+        }
+
+        const replayData = {
+            char_name: caller,
+            selected_speaker: caller,
+            created_at: call.created_at,
+            audio_url: audioUrl,
+            segments: segments,
+            call_id: call.call_id || call.id || Date.now(),
+            id: call.call_id || call.id || Date.now(),
+            isReplay: true,
+            onReturn: () => {
+                // 退出沉浸模式时无缝回退到主动电话列表
+                if (window.TTS_ThemeEngine) {
+                    window.TTS_ThemeEngine.showScene('phone_call');
+                } else if (_currentAppContainer && _currentCreateNavbar) {
+                    render(_currentAppContainer, _currentCreateNavbar);
+                } else {
+                    renderActiveTabContent();
+                }
+            }
+        };
+
+        if (window.TTS_ThemeEngine) {
+            console.log('[PhoneCallApp] 唤起当前主题专属全屏沉浸重温:', replayData);
+            window.TTS_ThemeEngine.showScene('incoming_call', replayData);
+        } else {
+            const $targetContainer = _currentAppContainer || $('#pc-tab-content').closest('.theme-content, .mobile-screen, .pc-app-container').parent();
+            showHistoryPlaybackUI(
+                $targetContainer.length ? $targetContainer : $('#pc-tab-content'),
+                replayData,
+                _currentCreateNavbar,
+                replayData.onReturn
+            );
+        }
     });
 
     // 重新生成

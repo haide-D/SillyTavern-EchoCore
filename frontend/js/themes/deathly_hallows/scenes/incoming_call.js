@@ -195,7 +195,9 @@ function showCustomInCallUI(container, callData, ctx) {
         delete window.TTS_IncomingCall;
         cleanupGlobalPlayer();
         $('#tts-dh-modal').show();
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx && ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
@@ -204,16 +206,23 @@ function showCustomInCallUI(container, callData, ctx) {
 
 export const incomingCallScene = {
     render($container, ctx) {
-        const callData = window.TTS_IncomingCall;
+        // 优先获取 ctx.data 传入的指定通话数据（如重温播放），其次取全局 TTS_IncomingCall
+        const callData = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : window.TTS_IncomingCall;
         if (!callData) {
-            // 如果没有实时来电，直接使用具备三子列表与剧本工坊联动的主动电话 App UI
+            // 如果没有实时来电且非重温，直接使用具备三子列表与剧本工坊联动的主动电话 App UI
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
             PhoneCallApp.render($appContainer, createNavbarForApps);
             $container.empty().append($appContainer);
             return;
         }
         
-        // 有来电时，渲染自定义死亡圣器主题界面
+        // 如果是重温播放 (isReplay)，直接打开死亡圣器专属金色全屏通话界面
+        if (ctx && ctx.data && ctx.data.isReplay) {
+            showCustomInCallUI($container, callData, ctx);
+            return;
+        }
+
+        // 有实时来电时，渲染自定义死亡圣器主题待接听界面
         renderCustomDeathlyHallowsCall($container, callData, ctx);
     },
     cleanup() {

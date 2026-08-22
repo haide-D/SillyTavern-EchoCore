@@ -36,9 +36,13 @@ MyCharacters/*
 *.log
 
 # --- 用户数据 (不上传个人使用数据) ---
-# data 目录包含 favorites.db 等用户数据
+# data 目录包含 favorites.db、自定义主题(themes)、头像(avatars) 等
 data/
 !data/.gitkeep
+
+# 剧本工坊自定义电话与偷听预设 (只保留内置 builtin，忽略本地 custom)
+presets/custom/*
+!presets/custom/**/.gitkeep
 
 # --- 文档和临时文件 ---
 # docs 目录包含临时文档、日志等
