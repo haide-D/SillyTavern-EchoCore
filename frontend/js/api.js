@@ -4,25 +4,44 @@ export const TTS_API = {
     apiToken: "",
 
     init: function (url, token = "") {
-        this.baseUrl = url;
+        this.baseUrl = url || "";
         this.apiToken = token || "";
         console.log("🔵 [API] 服务地址已设定:", this.baseUrl, this.apiToken ? "(已携带访问 Token)" : "(免密模式)");
     },
 
+    getBaseUrl: function () {
+        if (this.baseUrl && this.baseUrl !== "http://127.0.0.1:3000") {
+            return this.baseUrl;
+        }
+        if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
+            const cfg = window.TTS_Utils.getLatestRemoteConfig();
+            const resolved = window.TTS_Utils.resolveBackendUrls(cfg);
+            if (resolved && resolved.httpUrl) {
+                this.baseUrl = resolved.httpUrl;
+                if (cfg.token) this.apiToken = cfg.token;
+                return this.baseUrl;
+            }
+        }
+        return this.baseUrl || "http://127.0.0.1:3000";
+    },
+
     _headers: function (extra = {}) {
         const headers = { ...extra };
-        if (this.apiToken) {
-            headers["Authorization"] = `Bearer ${this.apiToken}`;
-            headers["X-Api-Token"] = this.apiToken;
+        const token = this.apiToken || (window.TTS_Utils?.getLatestRemoteConfig?.()?.token || '');
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+            headers["X-Api-Token"] = token;
         }
         return headers;
     },
 
     _url: function (endpoint) {
-        let url = `${this.baseUrl}${endpoint}`;
-        if (this.apiToken) {
+        const base = this.getBaseUrl();
+        let url = `${base}${endpoint}`;
+        const token = this.apiToken || (window.TTS_Utils?.getLatestRemoteConfig?.()?.token || '');
+        if (token) {
             const separator = url.includes('?') ? '&' : '?';
-            url = `${url}${separator}token=${encodeURIComponent(this.apiToken)}`;
+            url = `${url}${separator}token=${encodeURIComponent(token)}`;
         }
         return url;
     },

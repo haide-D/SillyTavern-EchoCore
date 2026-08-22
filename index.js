@@ -114,6 +114,12 @@ function initPlugin() {
 
     // 4. 定义核心回调函数 (传给 UI 模块使用)
     async function refreshData() {
+        // 动态获取最新配置并同步 API 地址
+        const currentCfg = TTS_Utils.getLatestRemoteConfig();
+        const currentUrls = TTS_Utils.resolveBackendUrls(currentCfg);
+        TTS_API.init(currentUrls.httpUrl, currentCfg.token || "");
+        CACHE.API_URL = currentUrls.httpUrl;
+
         try {
             TTS_Utils.injectStyles();
             $('#tts-manager-btn').css({ 'border-color': 'rgba(255,255,255,0.3)', 'color': '#fff' }).text('🔊 TTS配置');
@@ -164,8 +170,8 @@ function initPlugin() {
             TTS_Utils.showNotification("❌ 未检测到 TTS 后端服务", "error");
             $('#tts-manager-btn').css({ 'border-color': '#ff5252', 'color': '#ff5252' }).text('⚠️ TTS断开');
 
-            console.log("🔴 [Debug] 调用 showEmergencyConfig, MANAGER_API =", MANAGER_API);
-            showEmergencyConfig(MANAGER_API);
+            console.log("🔴 [Debug] 调用 showEmergencyConfig, 当前目标 =", currentUrls.httpUrl);
+            showEmergencyConfig(currentUrls.httpUrl);
             console.log("🔴 [Debug] showEmergencyConfig 调用完成");
         }
     }

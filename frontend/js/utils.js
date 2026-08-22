@@ -614,6 +614,34 @@ export function applyTextReplacements(text, replacements = {}) {
 }
 
 /**
+ * 获取系统最新的远程配置（优先从酒馆 extensionSettings，次之从 localStorage）
+ */
+export function getLatestRemoteConfig() {
+    let config = { useRemote: false, ip: '', port: 3000, token: '' };
+    try {
+        if (window.SillyTavern && window.SillyTavern.getContext) {
+            const ext = window.SillyTavern.getContext()?.extensionSettings?.st_direct_tts;
+            if (ext) {
+                config.useRemote = !!ext.use_remote;
+                config.ip = (ext.remote_ip || '').trim();
+                config.port = parseInt(ext.remote_port) || 3000;
+                config.token = (ext.remote_token || '').trim();
+                return config;
+            }
+        }
+        const saved = localStorage.getItem('tts_plugin_remote_config');
+        if (saved) {
+            const p = JSON.parse(saved);
+            config.useRemote = !!p.useRemote;
+            config.ip = (p.ip || '').trim();
+            config.port = parseInt(p.port) || 3000;
+            config.token = (p.token || '').trim();
+        }
+    } catch (e) { }
+    return config;
+}
+
+/**
  * 标准解析后端 Manager API 与 WebSocket 连接地址 (彻底修复 Issue #2 反向代理 HTTPS 支持)
  * @param {Object} remoteConfig - { useRemote: boolean, ip: string, port: number }
  * @returns {{ httpUrl: string, wsUrl: (path: string) => string, adminUrl: string, isHttps: boolean }}
