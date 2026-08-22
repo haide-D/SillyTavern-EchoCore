@@ -749,6 +749,9 @@ export function resolveBackendUrls(remoteConfig = {}) {
     }
 
     if (host.includes(':') && !host.startsWith('[')) {
+        host = `[${host}]`;
+    }
+
     const httpUrl = `http://${host}:${port}`;
     return {
         httpUrl,
