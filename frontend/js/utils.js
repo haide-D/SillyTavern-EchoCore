@@ -634,6 +634,9 @@ export function getLatestRemoteConfig() {
             extConfig = context?.extensionSettings?.st_direct_tts;
         }
 
+        const localValid = !!(localConfig && localConfig.useRemote && (localConfig.ip || '').trim());
+        const extValid = !!(extConfig && extConfig.use_remote && (extConfig.remote_ip || '').trim());
+
         // 决策：优先使用用户在当前浏览器最新保存的 localConfig，彻底杜绝回退覆盖旧域名
         if (localValid) {
             config.useRemote = true;

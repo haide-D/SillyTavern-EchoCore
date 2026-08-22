@@ -113,11 +113,7 @@ export const TTS_UI = window.TTS_UI;
 
         // 辅助上传图片函数
         async function doUploadAvatarFile(file, speakerName) {
-            const apiHost = (window.TTS_API && typeof window.TTS_API.getBaseUrl === 'function')
-                ? window.TTS_API.getBaseUrl()
-                : ((window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function')
-                    ? window.TTS_Utils.resolveBackendUrls(window.TTS_Utils.getLatestRemoteConfig()).httpUrl
-                    : 'http://127.0.0.1:3000');
+            const apiHost = (window.TTS_API && window.TTS_API.baseUrl) ? window.TTS_API.baseUrl : 'http://127.0.0.1:3000';
             const formData = new FormData();
             formData.append('file', file);
             if (speakerName) formData.append('speaker_name', speakerName);
@@ -448,7 +444,7 @@ export const TTS_UI = window.TTS_UI;
         $('#tts-dashboard-open-admin').off('click').on('click', function () {
             const apiHost = (window.TTS_API && typeof window.TTS_API.getBaseUrl === 'function')
                 ? window.TTS_API.getBaseUrl()
-                : 'http://127.0.0.1:3000';
+                : (window.TTS_API?.baseUrl || 'http://127.0.0.1:3000');
             window.open(`${apiHost}/admin`, '_blank');
         });
 

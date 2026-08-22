@@ -30,6 +30,8 @@ import { CallQueueManager } from './frontend/js/call_queue_manager.js';
 
 // ================= 1. 配置区域 =================
 const remoteConfig = TTS_Utils.getLatestRemoteConfig();
+
+// 统一解析后端 API 地址 (彻底支持反代 HTTPS 与动态端口，解决 Issue #2)
 const backendUrls = TTS_Utils.resolveBackendUrls(remoteConfig);
 const MANAGER_API = backendUrls.httpUrl;
 
@@ -331,15 +333,10 @@ function showEmergencyConfig(currentApi) {
 
     $('body').append(html);
 
-    const saved = localStorage.getItem('tts_plugin_remote_config');
-    if (saved) {
-        try {
-            const p = JSON.parse(saved);
-            if (p.ip) $('#tts-emergency-ip').val(p.ip);
-            if (p.port) $('#tts-emergency-port').val(p.port);
-            if (p.token) $('#tts-emergency-token').val(p.token);
-        } catch (e) { }
-    }
+    const currentSaved = TTS_Utils.getLatestRemoteConfig();
+    if (currentSaved.ip) $('#tts-emergency-ip').val(currentSaved.ip);
+    if (currentSaved.port) $('#tts-emergency-port').val(currentSaved.port);
+    if (currentSaved.token) $('#tts-emergency-token').val(currentSaved.token);
 
     $('#tts-emergency-close').on('click', function () {
         $('#tts-emergency-box').remove();
