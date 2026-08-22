@@ -7,19 +7,16 @@ export const ProviderManager = {
     providers: {},
 
     /**
-     * 获取当前启用的 Provider 实例
+     * 获取当前全局默认启用的 Provider 实例
      * @returns {import('./base_provider.js').BaseTTSProvider}
      */
     getCurrentProvider() {
-        // 从 SillyTavern 扩展设置获取当前所选的供应商
         const extensionSettings = window.SillyTavern ? window.SillyTavern.getContext().extensionSettings : {};
         const config = extensionSettings.st_direct_tts || {};
         const activeProviderId = config.active_provider || 'gpt_sovits';
 
-        // 获取特定供应商的配置
         const providerConfig = config.provider_settings ? config.provider_settings[activeProviderId] : {};
 
-        // 单例缓存，如果切换了供应商或配置变了，最好重新实例化或更新 config
         switch (activeProviderId) {
             case 'minimax':
                 return new MiniMaxProvider(providerConfig);
@@ -29,5 +26,20 @@ export const ProviderManager = {
             default:
                 return new GPTSoVITSProvider(providerConfig);
         }
+    },
+
+    /**
+     * 根据角色绑定信息动态分发对应的 Provider (支持角色混合模式)
+     */
+    getProviderForCharacter(charName) {
+        const mappings = (window.TTS_State && window.TTS_State.CACHE) ? window.TTS_State.CACHE.mappings : {};
+        const mappedModel = mappings[charName];
+        if (mappedModel && (mappedModel.startsWith('minimax:') || mappedModel.startsWith('minimax_'))) {
+            const extensionSettings = window.SillyTavern ? window.SillyTavern.getContext().extensionSettings : {};
+            const config = extensionSettings.st_direct_tts || {};
+            const providerConfig = config.provider_settings ? config.provider_settings['minimax'] : {};
+            return new MiniMaxProvider(providerConfig);
+        }
+        return this.getCurrentProvider();
     }
 };

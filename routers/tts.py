@@ -88,18 +88,43 @@ async def proxy_set_sovits_weights(weights_path: str):
     
     return {"status": 200, "detail": result["message"]}
 
+class MiniMaxTestRequest(BaseModel):
+    api_key: str
+    group_id: str
+    api_url: Optional[str] = "https://api.minimax.chat/v1/t2a_v2"
+
+
+@router.post("/api/tts/minimax/test")
+async def test_minimax(req: MiniMaxTestRequest):
+    """测试 MiniMax API Key 与 Group ID 连通性"""
+    from services.minimax_service import minimax_service
+    return await minimax_service.test_credentials(req.api_key, req.group_id, req.api_url)
+
+
+@router.get("/api/tts/minimax/voices")
+def get_minimax_voices():
+    """获取 MiniMax 可用音色列表 (官方预设 + 用户自定义)"""
+    from services.minimax_service import minimax_service
+    return {
+        "status": "success",
+        "voices": minimax_service.get_preset_voices()
+    }
+
+
 @router.get("/tts_proxy")
 async def tts_proxy(
     text: str, 
-    text_lang: str, 
-    ref_audio_path: str, 
-    prompt_text: str, 
-    prompt_lang: str, 
+    text_lang: str = "zh", 
+    ref_audio_path: str = "", 
+    prompt_text: str = "", 
+    prompt_lang: str = "zh", 
     emotion: Optional[str] = "default",
     speed: Optional[float] = 1.0,
     speed_factor: Optional[float] = None,
     streaming_mode: Optional[str] = "false", 
-    check_only: Optional[str] = None
+    check_only: Optional[str] = None,
+    provider: Optional[str] = None,
+    voice_id: Optional[str] = None
 ):
     from services.model_weight_service import model_weight_service
     
@@ -108,14 +133,60 @@ async def tts_proxy(
 
     # 统一语速倍率
     actual_speed = speed_factor if speed_factor is not None else (speed if speed is not None else 1.0)
-    
-    # ========== 缓存检查逻辑 ==========
+    actual_emotion = emotion or "default"
+
+    # ========== 识别是否为 MiniMax 云端供应商 ==========
+    is_minimax = (
+        (provider and provider.lower() in ("minimax", "minimax_tts")) or
+        (ref_audio_path and (ref_audio_path.startswith("minimax:") or ref_audio_path.startswith("minimax_")))
+    )
+
+    if is_minimax:
+        from services.minimax_service import minimax_service
+        
+        target_voice_id = voice_id
+        if not target_voice_id and ref_audio_path:
+            if ref_audio_path.startswith("minimax:"):
+                target_voice_id = ref_audio_path[len("minimax:"):].strip()
+            elif ref_audio_path.startswith("minimax_"):
+                target_voice_id = ref_audio_path[len("minimax_"):].strip()
+        
+        # 检查仅预检缓存
+        if check_only == "true":
+            cached, filename, _ = minimax_service.check_cache(
+                text=text,
+                voice_id=target_voice_id or "female-shaonv",
+                emotion=actual_emotion,
+                speed=actual_speed
+            )
+            return {
+                "cached": cached,
+                "filename": filename
+            }
+
+        try:
+            result = await minimax_service.generate_audio(
+                text=text,
+                voice_id=target_voice_id,
+                emotion=actual_emotion,
+                speed=actual_speed
+            )
+            custom_headers = {
+                "X-Audio-Filename": result["filename"],
+                "Access-Control-Expose-Headers": "X-Audio-Filename"
+            }
+            return FileResponse(result["file_path"], media_type="audio/wav", headers=custom_headers)
+        except Exception as mm_err:
+            print(f"[TTS Proxy] ❌ MiniMax 语音生成失败: {mm_err}")
+            raise HTTPException(status_code=500, detail=f"MiniMax 语音生成失败: {str(mm_err)}")
+
+    # ========== GPT-SoVITS 本地模型流程 ==========
     _, cache_dir = get_current_dirs()
 
     try:
         # 新缓存Key: 包含情绪与语速
         speed_tag = f"_sp{actual_speed}" if actual_speed != 1.0 else ""
-        new_key = f"{text}_{emotion}_{text_lang}_{prompt_lang}{speed_tag}"
+        new_key = f"{text}_{actual_emotion}_{text_lang}_{prompt_lang}{speed_tag}"
         new_hash = hashlib.md5(new_key.encode('utf-8')).hexdigest()
         new_filename = f"{new_hash}.wav"
         new_cache_path = os.path.join(cache_dir, new_filename)
@@ -138,6 +209,8 @@ async def tts_proxy(
             cached = os.path.exists(new_cache_path) or os.path.exists(old_cache_path)
             return {
                 "cached": cached,
+                "filename": new_filename
+            }
                 "filename": new_filename
             }
 

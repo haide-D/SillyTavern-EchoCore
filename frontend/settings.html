@@ -75,11 +75,29 @@
             <div id="tts-provider-panel-minimax" class="tts-provider-panel" style="display:none; margin-top: 8px;">
                 <div style="margin-bottom: 6px;">
                     <small>MiniMax API Key:</small>
-                    <input type="password" id="tts-minimax-api-key" class="text_pole" placeholder="输入 MiniMax API Key" />
+                    <input type="password" id="tts-minimax-api-key" class="text_pole" placeholder="输入 MiniMax API Key (Bearer Token)" />
                 </div>
-                <div>
+                <div style="margin-bottom: 6px;">
                     <small>Group ID:</small>
-                    <input type="text" id="tts-minimax-group-id" class="text_pole" placeholder="输入 Group ID" />
+                    <input type="text" id="tts-minimax-group-id" class="text_pole" placeholder="输入 MiniMax Group ID" />
+                </div>
+                <div style="margin-bottom: 6px;">
+                    <small>模型选择:</small>
+                    <select id="tts-minimax-model" class="text_pole" style="width: 100%;">
+                        <option value="speech-01-turbo">speech-01-turbo (极速高品质 - 推荐)</option>
+                        <option value="speech-01-240228">speech-01-240228 (标准大模型)</option>
+                        <option value="speech-02">speech-02 (最新旗舰)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <small>默认音色 / Voice ID:</small>
+                    <input type="text" id="tts-minimax-voice-id" class="text_pole" placeholder="例如: female-shaonv 或自定义克隆ID" />
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="tts-minimax-test-btn" class="menu_button" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">
+                        <span>⚡ 测试 MiniMax 连接</span>
+                    </button>
+                    <span id="tts-minimax-test-result" style="font-size: 12px;"></span>
                 </div>
             </div>
 

@@ -48,30 +48,26 @@ class AudioPipeline:
         previous_emotion = None
         previous_ref_audio = None
 
-        # 使用统一模型权重锁，确保合成期间不被其他并发任务打断或篡改权重
-        async with model_weight_service.use_model(char_name, lock_context_id) as switch_success:
-            if not switch_success:
-                print(f"[AudioPipeline] ⚠️ 权重切换失败，将使用当前加载的模型继续生成")
+        from config import is_minimax_character
 
+        is_minimax = is_minimax_character(char_name)
+
+        if is_minimax:
+            # MiniMax 云端角色：无需占用本地 GPU 模型权重锁，直接并行/分段合成
+            print(f"[AudioPipeline] ☁️ 角色 '{char_name}' 属于 MiniMax 云端模型，免模型锁直接合成")
             for i, segment in enumerate(segments):
                 print(f"[AudioPipeline] 生成片段 {i+1}/{len(segments)}: [{segment.emotion}] {segment.text[:30]}...")
-
                 ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion)
                 if not ref_audio:
-                    print(f"[AudioPipeline] 警告: 未找到角色 '{char_name}' 情绪 '{segment.emotion}' 的参考音频，跳过")
-                    continue
-
-                emotion_changed = previous_emotion is not None and previous_emotion != segment.emotion
+                    ref_audio = {"path": "minimax:female-shaonv", "text": "", "is_minimax": True, "voice_id": "female-shaonv"}
 
                 try:
                     audio_bytes = await self.tts_service.generate_audio(
                         segment=segment,
                         ref_audio=ref_audio,
-                        tts_config=tts_config,
-                        previous_ref_audio=previous_ref_audio if emotion_changed else None
+                        tts_config=tts_config
                     )
 
-                    # 异步计算音频时长 (秒)，避免阻塞主事件循环
                     try:
                         def _calc_duration(data):
                             seg = PydubSegment.from_file(BytesIO(data), format="wav")
@@ -82,12 +78,50 @@ class AudioPipeline:
                         print(f"[AudioPipeline] ⚠️ 计算音频时长失败: {dur_err}")
 
                     audio_bytes_list.append(audio_bytes)
-                    previous_emotion = segment.emotion
-                    previous_ref_audio = ref_audio
-
                 except Exception as e:
-                    print(f"[AudioPipeline] ❌ 片段 {i+1} 生成失败: {e}")
+                    print(f"[AudioPipeline] ❌ MiniMax 片段 {i+1} 生成失败: {e}")
                     continue
+        else:
+            # 本地 GPT-SoVITS 角色：使用统一模型权重锁，确保合成期间不被其他并发任务打断
+            async with model_weight_service.use_model(char_name, lock_context_id) as switch_success:
+                if not switch_success:
+                    print(f"[AudioPipeline] ⚠️ 权重切换失败，将使用当前加载的模型继续生成")
+
+                for i, segment in enumerate(segments):
+                    print(f"[AudioPipeline] 生成片段 {i+1}/{len(segments)}: [{segment.emotion}] {segment.text[:30]}...")
+
+                    ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion)
+                    if not ref_audio:
+                        print(f"[AudioPipeline] 警告: 未找到角色 '{char_name}' 情绪 '{segment.emotion}' 的参考音频，跳过")
+                        continue
+
+                    emotion_changed = previous_emotion is not None and previous_emotion != segment.emotion
+
+                    try:
+                        audio_bytes = await self.tts_service.generate_audio(
+                            segment=segment,
+                            ref_audio=ref_audio,
+                            tts_config=tts_config,
+                            previous_ref_audio=previous_ref_audio if emotion_changed else None
+                        )
+
+                        # 异步计算音频时长 (秒)，避免阻塞主事件循环
+                        try:
+                            def _calc_duration(data):
+                                seg = PydubSegment.from_file(BytesIO(data), format="wav")
+                                return len(seg) / 1000.0
+                            duration_seconds = await asyncio.to_thread(_calc_duration, audio_bytes)
+                            segment.audio_duration = duration_seconds
+                        except Exception as dur_err:
+                            print(f"[AudioPipeline] ⚠️ 计算音频时长失败: {dur_err}")
+
+                        audio_bytes_list.append(audio_bytes)
+                        previous_emotion = segment.emotion
+                        previous_ref_audio = ref_audio
+
+                    except Exception as e:
+                        print(f"[AudioPipeline] ❌ 片段 {i+1} 生成失败: {e}")
+                        continue
 
         if not audio_bytes_list:
             return None, segments

@@ -68,18 +68,47 @@ class TTSService:
         previous_ref_audio: Optional[Dict] = None
     ) -> bytes:
         """
-        为单个情绪片段生成音频
+        为单个情绪片段生成音频 (支持 GPT-SoVITS 与 MiniMax 云端引擎)
         
         Args:
             segment: 情绪片段
             ref_audio: 参考音频信息 {path, text}
             tts_config: TTS配置参数
             previous_ref_audio: 上一个情绪的参考音频 {path, text} (可选)
-                               当情绪变化时,将上一个情绪的音频加入副音频进行音色融合
+                                当情绪变化时,将上一个情绪的音频加入副音频进行音色融合
         
         Returns:
-            音频字节数据
+            音频字节数据 (标准 WAV)
         """
+        # ========== MiniMax 云端引擎快速通道 ==========
+        is_minimax = (
+            ref_audio.get("is_minimax") is True or
+            str(ref_audio.get("path", "")).startswith("minimax:") or
+            str(ref_audio.get("path", "")).startswith("minimax_")
+        )
+
+        if is_minimax:
+            from services.minimax_service import minimax_service
+            raw_path = str(ref_audio.get("path", ""))
+            voice_id = ref_audio.get("voice_id")
+            if not voice_id:
+                if ":" in raw_path:
+                    voice_id = raw_path.split(":", 1)[1].strip()
+                elif "_" in raw_path:
+                    voice_id = raw_path.split("_", 1)[1].strip()
+                else:
+                    voice_id = "female-shaonv"
+            
+            print(f"[TTSService] ☁️ 路由到 MiniMax TTS: voice={voice_id}, emotion={segment.emotion}, text=\"{segment.text[:30]}\"")
+            res = await minimax_service.generate_audio(
+                text=segment.text,
+                voice_id=voice_id,
+                emotion=segment.emotion,
+                speed=segment.speed
+            )
+            return res["audio_bytes"]
+
+        # ========== GPT-SoVITS 本地引擎通道 ==========
         url = f"{self.sovits_host}/tts"
         
         # 智能感知与校验语言

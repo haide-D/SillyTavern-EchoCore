@@ -253,6 +253,29 @@ def init_settings():
     else:
         if deep_merge(prompt_injector_defaults, settings["prompt_injector"]):
             dirty = True
+
+    # minimax_tts 默认配置 - 云端 TTS 商业化引擎
+    minimax_tts_defaults = {
+        "enabled": False,
+        "api_key": "",
+        "group_id": "",
+        "api_url": "https://api.minimax.chat/v1/t2a_v2",
+        "model": "speech-01-turbo",
+        "default_voice_id": "female-shaonv",
+        "speed": 1.0,
+        "vol": 1.0,
+        "pitch": 0,
+        "audio_format": "mp3",
+        "sample_rate": 32000,
+        "bitrate": 128000,
+        "custom_voices": []
+    }
+    if "minimax_tts" not in settings or not isinstance(settings["minimax_tts"], dict):
+        settings["minimax_tts"] = minimax_tts_defaults
+        dirty = True
+    else:
+        if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
+            dirty = True
     
     # 迁移旧配置（兼容性处理）
     if "analysis_llm" in settings:
@@ -326,6 +349,36 @@ def is_character_bound(char_name: str) -> bool:
     """检查角色是否已绑定模型"""
     mappings = get_character_mappings()
     return char_name in mappings
+
+
+def get_character_provider(char_name: str) -> str:
+    """
+    获取角色所绑定的 TTS 引擎供应商
+    
+    Returns:
+        'minimax' 或 'gpt_sovits'
+    """
+    mappings = get_character_mappings()
+    target = str(mappings.get(char_name, ""))
+    if target.startswith("minimax:") or target.startswith("minimax_"):
+        return "minimax"
+    return "gpt_sovits"
+
+
+def is_minimax_character(char_name: str) -> bool:
+    """检查角色是否绑定了 MiniMax 声线"""
+    return get_character_provider(char_name) == "minimax"
+
+
+def get_character_voice_id(char_name: str, default: str = "female-shaonv") -> str:
+    """获取 MiniMax 角色的音色 ID"""
+    mappings = get_character_mappings()
+    target = str(mappings.get(char_name, ""))
+    if target.startswith("minimax:"):
+        return target[len("minimax:"):].strip() or default
+    elif target.startswith("minimax_"):
+        return target[len("minimax_"):].strip() or default
+    return default
 
 
 def filter_bound_speakers(speakers: list) -> list:

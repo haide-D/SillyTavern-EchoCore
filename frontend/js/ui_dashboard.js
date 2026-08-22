@@ -412,7 +412,7 @@ export const TTS_UI = window.TTS_UI;
         });
     };
     // ===========================================
-    // ⬇️ 渲染模型下拉菜单 (适配与友好提示)
+    // ⬇️ 渲染模型下拉菜单 (适配本地模型与 MiniMax 云端预设声线)
     // ===========================================
     scope.renderModelOptions = function () {
         const CTX = scope.CTX;
@@ -423,19 +423,38 @@ export const TTS_UI = window.TTS_UI;
 
         const models = (CTX && CTX.CACHE && CTX.CACHE.models) ? CTX.CACHE.models : {};
         const modelKeys = Object.keys(models);
+        const minimaxVoices = (CTX && CTX.CACHE && CTX.CACHE.minimax_voices) ? CTX.CACHE.minimax_voices : [
+            { id: "female-shaonv", name: "少女音" },
+            { id: "female-yujie", name: "御姐音" },
+            { id: "female-tianmei", name: "甜美音" },
+            { id: "female-chengshu", name: "成熟女性" },
+            { id: "male-qn-qingse", name: "青涩青年" },
+            { id: "male-qn-jingying", name: "精英青年" },
+            { id: "male-qn-badao", name: "霸道青年" },
+            { id: "male-qn-daxuesheng", name: "男大学生" },
+            { id: "presenter_female", name: "女主持人" },
+            { id: "presenter_male", name: "男主持人" },
+            { id: "audiobook_female_1", name: "女播音1" },
+            { id: "audiobook_male_1", name: "男播音1" }
+        ];
 
-        if (modelKeys.length === 0) {
-            $select.append('<option disabled selected value="">⚠️ 暂未检测到模型 (请打开管理面板扫描)</option>');
-            return;
+        $select.append(`<option disabled ${!currentVal ? 'selected' : ''} value="">🎙️ 请选择语音模型 / 音色...</option>`);
+
+        if (modelKeys.length > 0) {
+            const $localGroup = $('<optgroup label="📁 本地 GPT-SoVITS 模型"></optgroup>');
+            modelKeys.forEach(k => {
+                $localGroup.append(`<option value="${k}">🎙️ ${k}</option>`);
+            });
+            $select.append($localGroup);
         }
 
-        $select.append(`<option disabled ${!currentVal ? 'selected' : ''} value="">🎙️ 请选择语音模型 / 音色 (共 ${modelKeys.length} 个)...</option>`);
-
-        modelKeys.forEach(k => {
-            $select.append(`<option value="${k}">🎙️ ${k}</option>`);
+        const $mmGroup = $('<optgroup label="☁️ MiniMax 云端预设声线"></optgroup>');
+        minimaxVoices.forEach(v => {
+            $mmGroup.append(`<option value="minimax:${v.id}">☁️ MiniMax: ${v.name} (${v.id})</option>`);
         });
+        $select.append($mmGroup);
 
-        if (currentVal && modelKeys.includes(currentVal)) {
+        if (currentVal) {
             $select.val(currentVal);
         }
     };

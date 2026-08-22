@@ -110,6 +110,8 @@ export async function initSettingsUI() {
         if (config.provider_settings?.minimax) {
             $('#tts-minimax-api-key').val(config.provider_settings.minimax.api_key || '');
             $('#tts-minimax-group-id').val(config.provider_settings.minimax.group_id || '');
+            $('#tts-minimax-model').val(config.provider_settings.minimax.model || 'speech-01-turbo');
+            $('#tts-minimax-voice-id').val(config.provider_settings.minimax.voice_id || 'female-shaonv');
         }
         if (config.provider_settings?.doubao) {
             $('#tts-doubao-api-key').val(config.provider_settings.doubao.api_key || '');
@@ -185,16 +187,74 @@ export async function initSettingsUI() {
             context.saveSettingsDebounced();
         });
 
-        // MiniMax 字段
+        // MiniMax 字段同步
+        const syncMinimaxBackend = () => {
+            const mm = config.provider_settings.minimax;
+            if (window.TTS_API && typeof window.TTS_API.updateSettings === 'function') {
+                window.TTS_API.updateSettings({
+                    minimax_tts: {
+                        api_key: mm.api_key || '',
+                        group_id: mm.group_id || '',
+                        model: mm.model || 'speech-01-turbo',
+                        default_voice_id: mm.voice_id || 'female-shaonv'
+                    }
+                }).catch(() => {});
+            }
+        };
+
         $('#tts-minimax-api-key').on('input', (e) => {
             if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
-            config.provider_settings.minimax.api_key = $(e.target).val();
+            config.provider_settings.minimax.api_key = $(e.target).val().trim();
             context.saveSettingsDebounced();
+            syncMinimaxBackend();
         });
         $('#tts-minimax-group-id').on('input', (e) => {
             if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
-            config.provider_settings.minimax.group_id = $(e.target).val();
+            config.provider_settings.minimax.group_id = $(e.target).val().trim();
             context.saveSettingsDebounced();
+            syncMinimaxBackend();
+        });
+        $('#tts-minimax-model').on('change', (e) => {
+            if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
+            config.provider_settings.minimax.model = $(e.target).val();
+            context.saveSettingsDebounced();
+            syncMinimaxBackend();
+        });
+        $('#tts-minimax-voice-id').on('input', (e) => {
+            if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
+            config.provider_settings.minimax.voice_id = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncMinimaxBackend();
+        });
+
+        // 测试 MiniMax 连通性
+        $('#tts-minimax-test-btn').on('click', async () => {
+            const $res = $('#tts-minimax-test-result');
+            const apiKey = $('#tts-minimax-api-key').val().trim();
+            const groupId = $('#tts-minimax-group-id').val().trim();
+
+            if (!apiKey || !groupId) {
+                $res.text('❌ 请先填写 API Key 和 Group ID').css('color', '#ff5555');
+                return;
+            }
+
+            $res.text('🔄 正在测试连接...').css('color', '#aaa');
+
+            try {
+                const res = await fetch(window.TTS_API._url('/api/tts/minimax/test'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey, group_id: groupId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    $res.text(`✅ ${data.message}`).css('color', '#55ff55');
+                } else {
+                    $res.text(`❌ ${data.message}`).css('color', '#ff5555');
+                }
+            } catch (err) {
+                $res.text(`❌ 连接失败: ${err.message}`).css('color', '#ff5555');
+            }
         });
 
         // 豆包 字段

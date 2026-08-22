@@ -281,7 +281,9 @@ export const PromptInjector = {
             const modelConfig = modelsData[modelName];
             const emotionsSet = new Set(['default']);
 
-            if (modelConfig && modelConfig.languages) {
+            if (modelName.startsWith('minimax:') || modelName.startsWith('minimax_')) {
+                ['default', 'happy', 'sad', 'angry', 'surprise', 'fear', 'whisper', 'disgust', 'smug'].forEach(e => emotionsSet.add(e));
+            } else if (modelConfig && modelConfig.languages) {
                 for (const langConfig of Object.values(modelConfig.languages)) {
                     if (Array.isArray(langConfig)) {
                         langConfig.forEach(ref => {

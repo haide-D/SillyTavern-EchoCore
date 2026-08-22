@@ -240,6 +240,28 @@ export async function loadSettings() {
         if (extractTagEl) extractTagEl.value = msgProcessing.extract_tag || '';
         if (filterTagsEl) filterTagsEl.value = msgProcessing.filter_tags || '';
 
+        // MiniMax TTS 配置
+        const mm = settings.minimax_tts || {};
+        const mmEnabledEl = document.getElementById('setting-minimax-enabled');
+        const mmApiKeyEl = document.getElementById('setting-minimax-api-key');
+        const mmGroupIdEl = document.getElementById('setting-minimax-group-id');
+        const mmApiUrlEl = document.getElementById('setting-minimax-api-url');
+        const mmModelEl = document.getElementById('setting-minimax-model');
+        const mmDefaultVoiceEl = document.getElementById('setting-minimax-default-voice');
+        const mmSpeedEl = document.getElementById('setting-minimax-speed');
+        const mmPitchEl = document.getElementById('setting-minimax-pitch');
+        const mmVolEl = document.getElementById('setting-minimax-vol');
+
+        if (mmEnabledEl) mmEnabledEl.value = String(mm.enabled || false);
+        if (mmApiKeyEl) mmApiKeyEl.value = mm.api_key || '';
+        if (mmGroupIdEl) mmGroupIdEl.value = mm.group_id || '';
+        if (mmApiUrlEl) mmApiUrlEl.value = mm.api_url || 'https://api.minimax.chat/v1/t2a_v2';
+        if (mmModelEl) mmModelEl.value = mm.model || 'speech-01-turbo';
+        if (mmDefaultVoiceEl) mmDefaultVoiceEl.value = mm.default_voice_id || 'female-shaonv';
+        if (mmSpeedEl) mmSpeedEl.value = mm.speed !== undefined ? mm.speed : 1.0;
+        if (mmPitchEl) mmPitchEl.value = mm.pitch !== undefined ? mm.pitch : 0;
+        if (mmVolEl) mmVolEl.value = mm.vol !== undefined ? mm.vol : 1.0;
+
         // 渲染文本发音替换词库列表 (如果为空则展示默认常用词库)
         const replacements = (msgProcessing.text_replacements && Object.keys(msgProcessing.text_replacements).length > 0)
             ? msgProcessing.text_replacements
@@ -260,6 +282,16 @@ export async function saveSettings() {
     const managerPortEl = document.getElementById('setting-manager-port');
     const defaultLangEl = document.getElementById('setting-default-lang');
     const devModeEl = document.getElementById('setting-developer-mode');
+
+    const mmEnabledEl = document.getElementById('setting-minimax-enabled');
+    const mmApiKeyEl = document.getElementById('setting-minimax-api-key');
+    const mmGroupIdEl = document.getElementById('setting-minimax-group-id');
+    const mmApiUrlEl = document.getElementById('setting-minimax-api-url');
+    const mmModelEl = document.getElementById('setting-minimax-model');
+    const mmDefaultVoiceEl = document.getElementById('setting-minimax-default-voice');
+    const mmSpeedEl = document.getElementById('setting-minimax-speed');
+    const mmPitchEl = document.getElementById('setting-minimax-pitch');
+    const mmVolEl = document.getElementById('setting-minimax-vol');
 
     const analysisEnabledEl = document.getElementById('setting-analysis-enabled');
     const analysisIntervalEl = document.getElementById('setting-analysis-interval');
@@ -296,6 +328,18 @@ export async function saveSettings() {
         manager_port: managerPortEl ? (parseInt(managerPortEl.value) || 3000) : 3000,
         default_lang: defaultLangEl ? defaultLangEl.value : 'Chinese',
         developer_mode: devModeEl ? devModeEl.value === 'true' : false,
+
+        minimax_tts: {
+            enabled: mmEnabledEl ? mmEnabledEl.value === 'true' : false,
+            api_key: mmApiKeyEl ? mmApiKeyEl.value.trim() : '',
+            group_id: mmGroupIdEl ? mmGroupIdEl.value.trim() : '',
+            api_url: mmApiUrlEl ? mmApiUrlEl.value.trim() : 'https://api.minimax.chat/v1/t2a_v2',
+            model: mmModelEl ? mmModelEl.value : 'speech-01-turbo',
+            default_voice_id: mmDefaultVoiceEl ? mmDefaultVoiceEl.value : 'female-shaonv',
+            speed: mmSpeedEl ? parseFloat(mmSpeedEl.value) || 1.0 : 1.0,
+            pitch: mmPitchEl ? parseInt(mmPitchEl.value) || 0 : 0,
+            vol: mmVolEl ? parseFloat(mmVolEl.value) || 1.0 : 1.0
+        },
 
         prompt_injector: {
             enabled: true,
@@ -761,5 +805,68 @@ export function bindTextReplacementControls() {
         });
     }
 }
+
+/**
+ * 绑定 MiniMax 云端连接测试按钮
+ */
+export function bindTestMiniMaxButton() {
+    const btn = document.getElementById('test-minimax-connection-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        const apiKey = document.getElementById('setting-minimax-api-key')?.value.trim();
+        const groupId = document.getElementById('setting-minimax-group-id')?.value.trim();
+        const apiUrl = document.getElementById('setting-minimax-api-url')?.value.trim();
+        const resEl = document.getElementById('test-minimax-connection-result');
+
+        if (!apiKey || !groupId) {
+            showNotification('请先填写 MiniMax API Key 和 Group ID', 'warning');
+            if (resEl) {
+                resEl.textContent = '❌ 请先填写 API Key 和 Group ID';
+                resEl.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '🔄 测试中...';
+        if (resEl) {
+            resEl.textContent = '正在连接 MiniMax 开放平台...';
+            resEl.style.color = '#9ca3af';
+        }
+
+        try {
+            const resp = await fetch(`${API_BASE}/tts/minimax/test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey, group_id: groupId, api_url: apiUrl })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showNotification(data.message, 'success');
+                if (resEl) {
+                    resEl.textContent = `✅ ${data.message}`;
+                    resEl.style.color = '#10b981';
+                }
+            } else {
+                showNotification(data.message, 'error');
+                if (resEl) {
+                    resEl.textContent = `❌ ${data.message}`;
+                    resEl.style.color = '#ef4444';
+                }
+            }
+        } catch (e) {
+            showNotification(`连接失败: ${e.message}`, 'error');
+            if (resEl) {
+                resEl.textContent = `❌ 请求异常: ${e.message}`;
+                resEl.style.color = '#ef4444';
+            }
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚡ 测试 MiniMax API 连接';
+        }
+    });
+}
+
 
 

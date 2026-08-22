@@ -57,6 +57,7 @@ import {
     fetchLLMModels,
     bindFetchModelsButton,
     bindTestConnectionButton,
+    bindTestMiniMaxButton,
     bindAnalysisLLMButtons,
     bindPromptAndEmotionControls,
     bindTextReplacementControls
@@ -218,9 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     initPromptEmotionsPage();
 
-    // 绑定 LLM 相关测试与选择
+    // 绑定 LLM 与云端服务相关测试与选择
     bindFetchModelsButton();
     bindTestConnectionButton();
+    bindTestMiniMaxButton();
     bindAnalysisLLMButtons();
     bindTextReplacementControls();
     bindSettingsTabs();

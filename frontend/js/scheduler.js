@@ -117,11 +117,15 @@ export const TTS_Scheduler = {
 
         for (const modelName of Object.keys(groups)) {
             const tasks = groups[modelName];
-            const modelConfig = CACHE.models[modelName];
+            const isMiniMaxGroup = modelName && (modelName.startsWith("minimax:") || modelName.startsWith("minimax_"));
+            const modelConfig = isMiniMaxGroup ? {} : CACHE.models[modelName];
 
-            const provider = ProviderManager.getCurrentProvider();
+            const provider = isMiniMaxGroup
+                ? ProviderManager.getProviderForCharacter(tasks[0].charName)
+                : ProviderManager.getCurrentProvider();
+            const isLocalModel = provider.name === 'GPT-SoVITS' && !isMiniMaxGroup;
 
-            if (isLocalGPT && (!modelConfig || !this.validateModel(modelName, modelConfig))) {
+            if (isLocalModel && (!modelConfig || !this.validateModel(modelName, modelConfig))) {
                 console.warn(`[TTS] Model ${modelName} is missing files. Skipping generation.`);
                 tasks.forEach(t => {
                     this.updateStatus(t.$btn, 'error');
@@ -152,12 +156,14 @@ export const TTS_Scheduler = {
 
             if (tasksToGenerate.length > 0) {
                 try {
-                    await this.switchModel(modelConfig);
+                    if (isLocalModel) {
+                        await this.switchModel(modelConfig);
+                    }
                     for (const task of tasksToGenerate) await this.processSingleTask(task, modelConfig);
                 } catch (e) {
                     console.error("模型切换或生成失败:", e);
                     const errorMsg = e.message || "未知错误";
-                    window.TTS_Utils.showNotification(`❌ 模型切换失败: ${errorMsg}`, 'error');
+                    window.TTS_Utils.showNotification(`❌ 模型切换或生成失败: ${errorMsg}`, 'error');
                     tasksToGenerate.forEach(t => {
                         this.updateStatus(t.$btn, 'error');
                         CACHE.pendingTasks.delete(t.key);
@@ -181,7 +187,7 @@ export const TTS_Scheduler = {
 
     async checkCache(task, modelConfig) {
         try {
-            const provider = ProviderManager.getCurrentProvider();
+            const provider = ProviderManager.getProviderForCharacter(task.charName);
             return await provider.checkCache(task, modelConfig);
         } catch { return { cached: false }; }
     },
@@ -198,7 +204,7 @@ export const TTS_Scheduler = {
         const CACHE = window.TTS_State.CACHE;
 
         try {
-            const provider = ProviderManager.getCurrentProvider();
+            const provider = ProviderManager.getProviderForCharacter(task.charName);
             const { blob, audioUrl, filename } = await provider.generateAudio(task, modelConfig);
             
             if (filename) {
@@ -215,7 +221,7 @@ export const TTS_Scheduler = {
 
         } catch (e) {
             console.error("生成失败:", e);
-            const provider = ProviderManager.getCurrentProvider();
+            const provider = ProviderManager.getProviderForCharacter(task.charName);
             const errorMsg = provider.getErrorMessage ? provider.getErrorMessage(e) : e.message;
             window.TTS_Utils.showNotification(`❌ ${errorMsg}`, 'error');
             this.updateStatus($btn, 'error');

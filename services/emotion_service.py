@@ -26,7 +26,18 @@ class EmotionService:
         if char_name not in mappings:
             raise HTTPException(status_code=404, detail=f"角色 {char_name} 未绑定模型")
         
-        model_folder = mappings[char_name]
+        model_target = str(mappings[char_name])
+
+        # ========== MiniMax 角色情绪处理 ==========
+        if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
+            # MiniMax 云端音色原生支持全量情绪与声学调优
+            return [
+                "default", "neutral", "happy", "sad", "angry", 
+                "fear", "whisper", "surprise", "disgust", 
+                "smug", "panting", "climax"
+            ]
+        
+        model_folder = model_target
         base_dir, _ = get_current_dirs()
         
         # 从 tts_config.prompt_lang 读取语言设置并转换为目录名
@@ -82,7 +93,19 @@ class EmotionService:
             print(f"[EmotionService] 错误: 角色 {char_name} 未绑定模型")
             return None
         
-        model_folder = mappings[char_name]
+        model_target = str(mappings[char_name])
+
+        # ========== MiniMax 角色参考音频虚拟对象 ==========
+        if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
+            voice_id = model_target.split(":", 1)[1] if ":" in model_target else model_target.split("_", 1)[1]
+            return {
+                "path": f"minimax:{voice_id}",
+                "text": "",
+                "is_minimax": True,
+                "voice_id": voice_id
+            }
+
+        model_folder = model_target
         base_dir, _ = get_current_dirs()
         
         if not prompt_lang:

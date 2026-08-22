@@ -88,7 +88,17 @@ def get_data():
             }
 
     mappings = load_json(MAPPINGS_FILE)
-    return { "models": models_data, "mappings": mappings, "settings": settings }
+    
+    # 附带 MiniMax 云端音色库列表
+    from services.minimax_service import minimax_service
+    minimax_voices = minimax_service.get_preset_voices()
+
+    return { 
+        "models": models_data, 
+        "mappings": mappings, 
+        "settings": settings,
+        "minimax_voices": minimax_voices
+    }
 
 @router.post("/bind_character")
 def bind(req: BindRequest):

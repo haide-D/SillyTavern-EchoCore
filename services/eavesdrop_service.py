@@ -238,20 +238,17 @@ class EavesdropService:
         
         print(f"[EavesdropService] Grouped speakers: {', '.join(f'{s}({len(items)})' for s, items in speaker_groups.items())}")
         
-        # 3. 按说话人批量生成音频（每个说话人只切换一次模型）
+        # 3. 按说话人批量生成音频（MiniMax 免 GPU 锁，SoVITS 独占切换）
         # 格式: {original_index: audio_bytes}
         audio_results = {}
+        from config import is_minimax_character
         
         for speaker, items in speaker_groups.items():
             print(f"[EavesdropService] Synthesizing {len(items)} segments for {speaker}")
-            
-            # 使用 ModelWeightService 切换到该说话人的模型
-            async with model_weight_service.use_model(speaker, f"eavesdrop_{speaker}") as success:
-                if not success:
-                    print(f"[EavesdropService] [ERROR] Cannot switch model to {speaker}, skipped")
-                    continue
-                
-                # 批量生成该说话人的所有片段
+            is_mm = is_minimax_character(speaker)
+
+            if is_mm:
+                # MiniMax 云端说话人：直调生成
                 for original_index, seg, ref_audio in items:
                     try:
                         emotion_segment = EmotionSegment(
@@ -259,20 +256,46 @@ class EavesdropService:
                             text=seg.text,
                             speed=seg.speed
                         )
-                        
                         audio_bytes = await self.tts_service.generate_audio(
                             segment=emotion_segment,
                             ref_audio=ref_audio,
                             tts_config=tts_config,
-                            previous_ref_audio=None  # 分组生成时不使用情绪过渡
+                            previous_ref_audio=None
                         )
-                        
                         audio_results[original_index] = audio_bytes
-                        print(f"[EavesdropService] [SUCCESS] Segment {original_index} ({speaker}) synthesized")
-                        
+                        print(f"[EavesdropService] [SUCCESS] MiniMax Segment {original_index} ({speaker}) synthesized")
                     except Exception as e:
-                        print(f"[EavesdropService] [WARN] Segment {original_index} ({speaker}) TTS failed: {e}")
+                        print(f"[EavesdropService] [WARN] MiniMax Segment {original_index} ({speaker}) TTS failed: {e}")
                         continue
+            else:
+                # GPT-SoVITS 本地说话人：使用 ModelWeightService 切换并加锁
+                async with model_weight_service.use_model(speaker, f"eavesdrop_{speaker}") as success:
+                    if not success:
+                        print(f"[EavesdropService] [ERROR] Cannot switch model to {speaker}, skipped")
+                        continue
+                    
+                    # 批量生成该说话人的所有片段
+                    for original_index, seg, ref_audio in items:
+                        try:
+                            emotion_segment = EmotionSegment(
+                                emotion=seg.emotion,
+                                text=seg.text,
+                                speed=seg.speed
+                            )
+                            
+                            audio_bytes = await self.tts_service.generate_audio(
+                                segment=emotion_segment,
+                                ref_audio=ref_audio,
+                                tts_config=tts_config,
+                                previous_ref_audio=None  # 分组生成时不使用情绪过渡
+                            )
+                            
+                            audio_results[original_index] = audio_bytes
+                            print(f"[EavesdropService] [SUCCESS] Segment {original_index} ({speaker}) synthesized")
+                            
+                        except Exception as e:
+                            print(f"[EavesdropService] [WARN] Segment {original_index} ({speaker}) TTS failed: {e}")
+                            continue
         
         # 4. 按原始顺序重组音频列表
         audio_bytes_list = []

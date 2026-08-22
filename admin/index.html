@@ -415,6 +415,7 @@
                 <!-- Tab 标签栏 -->
                 <div class="settings-tabs">
                     <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
+                    <button class="settings-tab" data-tab="minimax">☁️ MiniMax 云端 TTS</button>
                     <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
                     <button class="settings-tab" data-tab="phone">📞 电话功能</button>
                     <button class="settings-tab" data-tab="remote">🌐 远程与穿透</button>
@@ -502,6 +503,99 @@
 
                         <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                             <!-- 动态渲染替换列表 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MiniMax 云端 TTS Tab -->
+                <div id="settings-tab-minimax" class="settings-tab-content">
+                    <div class="settings-form">
+                        <h3 class="settings-section-title">☁️ MiniMax 商业级云端 TTS 服务</h3>
+                        <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
+                            MiniMax 提供极致拟真、超低延迟的 T2A v2 语音合成服务，无需占用本地 GPU 显存，支持全套官方音色及克隆声音。
+                        </small>
+
+                        <div class="form-group">
+                            <label>启用 MiniMax 服务</label>
+                            <select id="setting-minimax-enabled" class="select">
+                                <option value="false">禁用 (使用本地 GPT-SoVITS)</option>
+                                <option value="true">启用 (支持全局与角色混合绑定)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>MiniMax API Key</label>
+                            <input type="password" id="setting-minimax-api-key" class="input" placeholder="例: Bearer Token 或 API Key">
+                            <small>MiniMax 开放平台申请的 API Key</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>MiniMax Group ID</label>
+                            <input type="text" id="setting-minimax-group-id" class="input" placeholder="例: 181234567890123456">
+                            <small>MiniMax 账户对应的 Group ID</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>API 请求地址 (Base URL)</label>
+                            <input type="text" id="setting-minimax-api-url" class="input" value="https://api.minimax.chat/v1/t2a_v2">
+                            <small>官方中国站为 https://api.minimax.chat/v1/t2a_v2，海外站为 https://api.minimax.io/v1/t2a_v2</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>默认推理模型</label>
+                            <select id="setting-minimax-model" class="select">
+                                <option value="speech-01-turbo">speech-01-turbo (极速高拟真 - 推荐)</option>
+                                <option value="speech-01-240228">speech-01-240228 (标准大模型)</option>
+                                <option value="speech-02">speech-02 (最新旗舰)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>默认预设音色 (Voice ID)</label>
+                            <select id="setting-minimax-default-voice" class="select">
+                                <option value="female-shaonv">少女音 (female-shaonv - 清澈灵动)</option>
+                                <option value="female-yujie">御姐音 (female-yujie - 成熟知性)</option>
+                                <option value="female-tianmei">甜美音 (female-tianmei - 软萌温柔)</option>
+                                <option value="female-chengshu">成熟女性 (female-chengshu)</option>
+                                <option value="presenter_female">女主持人 (presenter_female)</option>
+                                <option value="audiobook_female_1">女播音员1 (audiobook_female_1)</option>
+                                <option value="audiobook_female_2">女播音员2 (audiobook_female_2)</option>
+                                <option value="male-qn-qingse">青涩青年 (male-qn-qingse - 阳光少年)</option>
+                                <option value="male-qn-jingying">精英青年 (male-qn-jingying - 沉稳干练)</option>
+                                <option value="male-qn-badao">霸道青年 (male-qn-badao - 磁性低沉)</option>
+                                <option value="male-qn-daxuesheng">男大学生 (male-qn-daxuesheng)</option>
+                                <option value="presenter_male">男主持人 (presenter_male)</option>
+                                <option value="audiobook_male_1">男播音员1 (audiobook_male_1)</option>
+                                <option value="audiobook_male_2">男播音员2 (audiobook_male_2)</option>
+                            </select>
+                            <small>未指定声线时的全局兜底音色，也可以在角色绑定中输入自定义克隆 Voice ID</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>基础声学参数调优</label>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+                                <div>
+                                    <small>语速倍率 (0.5 - 2.0):</small>
+                                    <input type="number" id="setting-minimax-speed" class="input" step="0.05" min="0.5" max="2.0" value="1.0">
+                                </div>
+                                <div>
+                                    <small>音调调节 (-12 到 12):</small>
+                                    <input type="number" id="setting-minimax-pitch" class="input" step="1" min="-12" max="12" value="0">
+                                </div>
+                                <div>
+                                    <small>音量倍率 (0.1 - 2.0):</small>
+                                    <input type="number" id="setting-minimax-vol" class="input" step="0.1" min="0.1" max="2.0" value="1.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <div style="display:flex; align-items:center; gap: 12px;">
+                                <button type="button" id="test-minimax-connection-btn" class="btn btn-secondary">
+                                    ⚡ 测试 MiniMax API 连接
+                                </button>
+                                <span id="test-minimax-connection-result" style="font-size: 13px;"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
