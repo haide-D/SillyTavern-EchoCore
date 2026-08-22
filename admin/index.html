@@ -785,6 +785,87 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 远程与穿透 Tab -->
+                <div id="settings-tab-remote" class="settings-tab-content">
+                    <div class="settings-form">
+                        <h3 class="settings-section-title">☁️ Cloudflare Zero-Config 安全公网隧道</h3>
+                        <p style="font-size:12px; color:#9ca3af; margin-top:-6px; margin-bottom:12px;">
+                            无需公网 IP、无需域名、无需申请 SSL 证书，一键获取自带 HTTPS / WSS 绿色安全认证的公网访问地址，任何设备随时连接。
+                        </p>
+
+                        <div class="form-group" style="background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid rgba(196,155,79,0.3);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span id="tunnel-status-indicator" style="width:10px; height:10px; border-radius:50%; background:#9ca3af; display:inline-block;"></span>
+                                    <strong id="tunnel-status-text" style="font-size:13px; color:#e2e8f0;">隧道未运行</strong>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" id="btn-start-tunnel" class="btn btn-primary" style="padding:5px 14px; font-size:12px;">🚀 开启公网隧道</button>
+                                    <button type="button" id="btn-stop-tunnel" class="btn btn-secondary" style="padding:5px 14px; font-size:12px; display:none;">🛑 关闭隧道</button>
+                                    <button type="button" id="btn-refresh-tunnel" class="btn btn-secondary" style="padding:5px 10px; font-size:12px;">🔄 刷新</button>
+                                </div>
+                            </div>
+                            <div id="tunnel-url-container" style="display:none; margin-top:8px;">
+                                <small style="color:#fde047; font-weight:500;">公网安全直连 URL (点击复制后填入酒馆插件远程地址):</small>
+                                <div style="display:flex; gap:6px; margin-top:4px;">
+                                    <input type="text" id="tunnel-public-url-input" class="input" readonly style="color:#6ee7b7; font-weight:bold; font-family:monospace;">
+                                    <button type="button" id="btn-copy-tunnel-url" class="btn btn-secondary" style="white-space:nowrap; padding:6px 12px; font-size:12px;">📋 复制</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>开机自动启动 Cloudflare 隧道</label>
+                            <select id="setting-auto-share-tunnel" class="select">
+                                <option value="false">关闭 (手动开启)</option>
+                                <option value="true">开启 (Manager 启动时自动穿透)</option>
+                            </select>
+                            <small>开启后，每次后端启动都会自动申请一条免费公网临时安全隧道</small>
+                        </div>
+
+                        <h3 class="settings-section-title" style="margin-top:24px;">🛠️ Nginx 反向代理配置一键生成器 (VPS 专享)</h3>
+                        <p style="font-size:12px; color:#9ca3af; margin-top:-6px; margin-bottom:12px;">
+                            自动生成已调优、自带 100% 完整 WebSocket (WSS) 穿透支持的 Nginx 配置文件。
+                        </p>
+
+                        <div class="form-group">
+                            <label>你的绑定域名</label>
+                            <input type="text" id="nginx-domain-input" class="input" placeholder="例如: tts.yourdomain.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label>启用 HTTPS / SSL 证书配置</label>
+                            <select id="nginx-enable-ssl" class="select">
+                                <option value="true">启用 HTTPS / WSS (推荐)</option>
+                                <option value="false">仅普通 HTTP (不推荐公网使用)</option>
+                            </select>
+                        </div>
+
+                        <div id="nginx-ssl-fields">
+                            <div class="form-group">
+                                <label>SSL 证书路径 (fullchain.pem / .crt)</label>
+                                <input type="text" id="nginx-ssl-cert-input" class="input" value="/etc/letsencrypt/live/yourdomain.com/fullchain.pem">
+                            </div>
+                            <div class="form-group">
+                                <label>SSL 私钥路径 (privkey.pem / .key)</label>
+                                <input type="text" id="nginx-ssl-key-input" class="input" value="/etc/letsencrypt/live/yourdomain.com/privkey.pem">
+                            </div>
+                        </div>
+
+                        <button type="button" id="btn-generate-nginx" class="btn btn-primary" style="margin-top:4px;">
+                            ✨ 一键生成 Nginx 完整配置文件
+                        </button>
+
+                        <div id="nginx-result-box" style="display:none; margin-top:14px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span style="font-size:12px; font-weight:600; color:#fde047;">📄 生成的 nginx.conf：</span>
+                                <button type="button" id="btn-copy-nginx" class="btn btn-secondary" style="padding:4px 10px; font-size:11px;">📋 复制配置</button>
+                            </div>
+                            <textarea id="nginx-config-textarea" class="input" rows="12" style="font-family:monospace; font-size:12px; line-height:1.4; color:#a7f3d0;" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
             </section>
 
 

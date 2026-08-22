@@ -208,15 +208,12 @@ def auto_start_sovits():
         
         # 检查是否已配置安装路径
         if not config.install_path:
-            manager_port = get_manager_port()
-            print(f"[GPT-SoVITS] ⚠️  未配置安装路径，请访问 http://localhost:{manager_port}/admin 进行配置")
+            print("[Manager] 💡 GPT-SoVITS 本地路径未配置，已进入【轻量无头模式】(云端 TTS / 远程 API 正常可用)")
             return
         
         install_path = Path(config.install_path)
         if not install_path.exists():
-            manager_port = get_manager_port()
-            print(f"[GPT-SoVITS] ⚠️  安装路径不存在: {install_path}")
-            print(f"[GPT-SoVITS] ⚠️  请访问 http://localhost:{manager_port}/admin 重新配置")
+            print(f"[Manager] 💡 未在本地找到 SoVITS 路径 ({install_path})，跳过本地自动启动，进入轻量模式")
             return
         
         # 检查端口是否已被占用（可能已经在运行）
@@ -230,11 +227,13 @@ def auto_start_sovits():
             return
         
         # 查找启动脚本
-        python_exe = install_path / "runtime" / "python.exe"
+        python_exe = install_path / "runtime" / "python.exe" if os.name == 'nt' else install_path / "bin" / "python"
+        if not python_exe.exists() and os.name != 'nt':
+            python_exe = Path("python3")
         api_script = install_path / "api_v2.py"
         config_yaml = install_path / "GPT_SoVITS" / "configs" / "tts_infer.yaml"
         
-        if not python_exe.exists():
+        if not python_exe.exists() and os.name == 'nt':
             print(f"[GPT-SoVITS] ⚠️  未找到 Python: {python_exe}")
             return
         
@@ -262,23 +261,52 @@ def auto_start_sovits():
                 creationflags=subprocess.CREATE_NEW_CONSOLE
             )
         else:
-            subprocess.Popen(cmd, cwd=str(install_path))
+            subprocess.Popen(cmd, cwd=str(install_path), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
-        print("[GPT-SoVITS] ✅ 服务已在新窗口中启动")
+        print("[GPT-SoVITS] ✅ 服务已启动")
         
     except Exception as e:
-        manager_port = get_manager_port()
-        print(f"[GPT-SoVITS] ❌ 自动启动失败: {e}")
-        print(f"[GPT-SoVITS] ⚠️  请手动启动或访问 http://localhost:{manager_port}/admin 配置")
+        print(f"[Manager] 💡 跳过 GPT-SoVITS 本地自启动 ({e})，使用轻量模式运行")
 
 
 if __name__ == "__main__":
-    # 自动启动 GPT-SoVITS
+    import argparse
+    parser = argparse.ArgumentParser(description="SillyTavern-GPT-SoVITS 后端管理器")
+    parser.add_argument("--share", action="store_true", help="自动创建 Cloudflare 免费公网安全穿透隧道 (提供免费 HTTPS/WSS 远程地址)")
+    parser.add_argument("--port", type=int, default=None, help="自定义监听端口")
+    parser.add_argument("--ssl-cert", type=str, default=None, help="SSL 证书文件路径 (.crt/.pem)")
+    parser.add_argument("--ssl-key", type=str, default=None, help="SSL 私钥文件路径 (.key)")
+    args, _ = parser.parse_known_args()
+
+    # 尝试自动启动本地 GPT-SoVITS (如有配置)
     auto_start_sovits()
     
-    port = get_manager_port()
-    print(f"[Manager] 🚀 启动后端 API 服务 (端口: {port})...")
+    port = args.port or get_manager_port()
+    print("================================================================")
+    print(f"🚀 SillyTavern-GPT-SoVITS 后端中间件已启动 (Port: {port})")
+    print(f"📡 局域网/本地访问地址: http://0.0.0.0:{port}")
+    print(f"⚙️  管理控制台面板:     http://127.0.0.1:{port}/admin")
+    print("💡 支持平台: Windows / Linux / macOS / Android Termux / VPS Docker")
+    print("================================================================")
 
-    # 必须是 0.0.0.0，否则局域网无法访问
-    # access_log=False 禁用默认访问日志,使用自定义日志中间件
-    uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
+    # 检查是否需要启动 Cloudflare 穿透隧道
+    from utils_admin.tunnel_manager import tunnel_manager
+    from config import load_json, SETTINGS_FILE
+    settings = load_json(SETTINGS_FILE)
+    auto_tunnel = args.share or settings.get("auto_share_tunnel", False)
+
+    if auto_tunnel:
+        tunnel_manager.start_tunnel(local_port=port)
+
+    # 原生 SSL 支持
+    ssl_cert = args.ssl_cert or settings.get("ssl_cert_file")
+    ssl_key = args.ssl_key or settings.get("ssl_key_file")
+
+    try:
+        if ssl_cert and ssl_key and os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            print(f"[SSL] 🔒 已启用原生 HTTPS/WSS 加密模式")
+            uvicorn.run(app, host="0.0.0.0", port=port, ssl_certfile=ssl_cert, ssl_keyfile=ssl_key, access_log=False)
+        else:
+            uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
+    finally:
+        tunnel_manager.stop_tunnel()

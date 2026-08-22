@@ -60,7 +60,8 @@ import {
     bindTestMiniMaxButton,
     bindAnalysisLLMButtons,
     bindPromptAndEmotionControls,
-    bindTextReplacementControls
+    bindTextReplacementControls,
+    bindTunnelAndNginxControls
 } from './modules/settings.js';
 import {
     checkVersion,
@@ -225,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindTestMiniMaxButton();
     bindAnalysisLLMButtons();
     bindTextReplacementControls();
+    bindTunnelAndNginxControls();
     bindSettingsTabs();
 
     // 显示通告弹窗
