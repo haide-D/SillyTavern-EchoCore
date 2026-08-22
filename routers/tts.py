@@ -94,14 +94,14 @@ class MiniMaxTestRequest(BaseModel):
     api_url: Optional[str] = "https://api.minimax.chat/v1/t2a_v2"
 
 
-@router.post("/api/tts/minimax/test")
+@router.post("/tts/minimax/test")
 async def test_minimax(req: MiniMaxTestRequest):
     """测试 MiniMax API Key 与 Group ID 连通性"""
     from services.minimax_service import minimax_service
     return await minimax_service.test_credentials(req.api_key, req.group_id, req.api_url)
 
 
-@router.get("/api/tts/minimax/voices")
+@router.get("/tts/minimax/voices")
 def get_minimax_voices():
     """获取 MiniMax 可用音色列表 (官方预设 + 用户自定义)"""
     from services.minimax_service import minimax_service
