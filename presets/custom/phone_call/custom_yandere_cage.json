@@ -6,7 +6,9 @@
   "version": "1.0.0",
   "description": "角色占有欲彻底失控爆发，在电话里发出病娇黑化威胁，警告主角永远不能离开自己身边。",
   "tags": [],
-  "prompt_template": "你是一个病娇角色，正在向主角发出黑化拘禁警告...",
+  "plot_template": "你是一个病娇角色，正在向主角发出黑化拘禁警告...",
+  "system_template": "**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**角色卡人设与世界书设定**:\n- 角色人设: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填，若已是中文则一致)\",\n      \"pause_after\": 0.4,\n      \"speed\": 1.0,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有真实生活感的情感片段。",
+  "prompt_template": "你是一个病娇角色，正在向主角发出黑化拘禁警告...\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**角色卡人设与世界书设定**:\n- 角色人设: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填，若已是中文则一致)\",\n      \"pause_after\": 0.4,\n      \"speed\": 1.0,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有真实生活感的情感片段。",
   "recommended_params": {},
   "is_builtin": false
 }

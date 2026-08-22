@@ -9,6 +9,7 @@
 
 import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
+import { NotificationHandler } from '../notification_handler.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime } from './shared/utils.js';
 import { STATUS_SVGS, getEavesdropStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
@@ -920,11 +921,21 @@ function renderPassivePrompt(container, eavesdropData) {
 
     $prompt.find('#ed-ignore-btn').on('click', () => {
         window.TTS_EavesdropData = null;
-        $('#mobile-home-btn').click();
+        window.TTS_EavesdropReady = null;
+        if (window.TTS_ThemeEngine) {
+            window.TTS_ThemeEngine.notify('call_ended', {});
+            window.TTS_ThemeEngine.showScene('home');
+        } else {
+            $('#mobile-home-btn').click();
+        }
     });
 
     $prompt.find('#ed-listen-btn').on('click', async () => {
         window.TTS_EavesdropData = null;
+        window.TTS_EavesdropReady = null;
+        if (window.TTS_ThemeEngine) {
+            window.TTS_ThemeEngine.notify('call_ended', {});
+        }
         _lastGeneratedEavesdrop = eavesdropData;
 
         // 自动注入聊天
@@ -1033,28 +1044,28 @@ async function generateAndLaunchEavesdrop({ speakers, presetId, reason, tone, la
         const parseData = await parseRes.json();
 
         // 组装生成结果对象
-        _lastGeneratedEavesdrop = {
+        const eavesdropData = {
             record_id: parseData.record_id || `manual_eavesdrop_${Date.now()}`,
             speakers: speakers,
             scene_description: reason,
             preset_id: presetId,
             segments: parseData.segments || [],
             audio_url: parseData.audio_url || (parseData.audio ? `data:audio/wav;base64,${parseData.audio}` : null),
+            notification_text: `检测到 ${speakers.join(' 与 ')} 的密谈`,
             created_at: new Date().toISOString()
         };
+        _lastGeneratedEavesdrop = eavesdropData;
 
-        // 自动切换到「当前对话」Tab 并自动播放
+        // 预设 Tab 为当前对话
         _activeTab = 'current';
-        $('.ed-nav-tab-btn').removeClass('active');
-        $(`.ed-nav-tab-btn[data-tab="current"]`).addClass('active');
-        await renderActiveTabContent();
 
-        if (_lastGeneratedEavesdrop.audio_url) {
-            cleanupGlobalPlayer();
-            _currentAudioPlayer = new AudioPlayer({ audioUrl: _lastGeneratedEavesdrop.audio_url });
-            setGlobalPlayer(_currentAudioPlayer);
-            _currentAudioPlayer.play();
+        // 1. 自动收起/最小化当前面板
+        if (window.TTS_ThemeEngine) {
+            window.TTS_ThemeEngine.close();
         }
+
+        // 2. 通过 NotificationHandler 分发密谈通知（触发悬浮球动效/粒子/法阵及Toast提示）
+        await NotificationHandler.handleEavesdropReady(eavesdropData);
 
     } catch (e) {
         console.error('[EavesdropApp] 密谈生成失败:', e);

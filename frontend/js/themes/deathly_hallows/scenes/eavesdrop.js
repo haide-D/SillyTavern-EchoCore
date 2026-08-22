@@ -1,6 +1,7 @@
 import { buildCallScreen, createNavbarForApps } from './shared.js';
 import { HANGUP_SVG, ANSWER_SVG, USER_SVG } from '../assets.js';
 import * as EavesdropApp from '../../../mobile_apps/eavesdrop_app.js';
+import { ChatInjector } from '../../../chat_injector.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from '../../../mobile_apps/shared/audio_player.js';
 
 function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
@@ -40,7 +41,19 @@ function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
         }
     });
 
-    $content.find('#dh-btn-answer').click(function () {
+    $content.find('#dh-btn-answer').click(async function () {
+        try {
+            await ChatInjector.appendToLastAIMessage({
+                type: 'eavesdrop',
+                speakers: callData.speakers || [],
+                segments: callData.segments || [],
+                callId: callData.record_id || Date.now(),
+                audioUrl: callData.audio_url,
+                sceneDescription: callData.scene_description
+            });
+        } catch (e) {
+            console.error('[DeathlyHallows] 注入密谈失败:', e);
+        }
         $content.remove();
         showCustomEavesdropUI(container, callData, ctx);
     });
@@ -121,7 +134,7 @@ function showCustomEavesdropUI(container, callData, ctx) {
 
 export const eavesdropScene = {
     render($container, ctx) {
-        const data = window.TTS_EavesdropReady;
+        const data = window.TTS_EavesdropReady || window.TTS_EavesdropData;
         if (!data) {
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
             EavesdropApp.render($appContainer, createNavbarForApps);

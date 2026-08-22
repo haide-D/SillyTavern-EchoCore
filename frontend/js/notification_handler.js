@@ -55,6 +55,10 @@ export class NotificationHandler {
         window.TTS_IncomingCall = {
             call_id,
             char_name: actualCaller,  // 使用实际打电话人
+            selected_speaker: actualCaller,
+            target_user: data.target_user,
+            call_reason: data.call_reason,
+            preset_id: data.preset_id,
             segments,
             audio_path,
             audio_url: fullAudioUrl,
@@ -63,12 +67,12 @@ export class NotificationHandler {
 
         console.log('[NotificationHandler] ✅ 来电数据已存储到 window.TTS_IncomingCall:', window.TTS_IncomingCall);
 
-        // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）
+        // 统一触发悬浮球动效（保障 DOM 元素直接呈现动画）
+        this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...`);
+
+        // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现与粒子/法阵状态）
         if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
             window.TTS_ThemeEngine.notify('incoming_call', window.TTS_IncomingCall);
-        } else {
-            // 降级: 直接触发悬浮球动画
-            this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...`);
         }
 
         // 显示通知
@@ -102,30 +106,33 @@ export class NotificationHandler {
         };
         const fullAudioUrl = resolveUrl(audio_url);
 
-        // 存储对话追踪数据
+        // 存储对话追踪数据 (双变量兼容各主题读取)
         window.TTS_EavesdropData = {
             record_id,
             speakers,
             segments,
             audio_url: fullAudioUrl,
-            scene_description
+            scene_description,
+            notification_text: notification_text || `检测到 ${(speakers || []).join(' 和 ')} 的密谈`,
+            preset_id: data.preset_id
         };
+        window.TTS_EavesdropReady = window.TTS_EavesdropData;
 
         console.log('[NotificationHandler] ✅ 对话追踪数据已存储到 window.TTS_EavesdropData');
+
+        // 统一触发悬浮球动效
+        this.triggerFloatingBallAnimation(
+            'eavesdrop-available',
+            notification_text || `${(speakers || []).join(' 和 ')} 正在私聊...`
+        );
 
         // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）
         if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
             window.TTS_ThemeEngine.notify('eavesdrop_ready', window.TTS_EavesdropData);
-        } else {
-            // 降级: 直接触发悬浮球动画
-            this.triggerFloatingBallAnimation(
-                'eavesdrop-available',
-                notification_text || `${speakers.join(' 和 ')} 正在私聊...`
-            );
         }
 
         // 显示通知
-        this.showNotification(notification_text || `🎧 检测到 ${speakers.join(' 和 ')} 正在私聊`, 'info');
+        this.showNotification(notification_text || `🎧 检测到 ${(speakers || []).join(' 和 ')} 正在私聊`, 'info');
     }
 
     /**

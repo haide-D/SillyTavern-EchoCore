@@ -64,14 +64,11 @@ class PromptBuilder:
 **对话历史参考**:
 {{context}}
 
-**创作要求**:
-1. 生成自然的多人对话，角色之间互相交流
-2. 对话内容可以是：
-   - 讨论 {{user_name}} 的行为或心思
-   - 角色之间的私人话题（关系、秘密、日常）
-   - 透露一些 {{user_name}} 不知道的信息
-3. 每个角色的说话风格要符合其性格
-4. 情绪要自然过渡
+**剧本创作核心要求与铁律**:
+1. 【深度剧情锚定 (严禁割裂)】: 必须仔细阅读【对话历史参考】！角色私下谈话必须紧密结合刚才发生的剧情、主角刚才的举动或当前共同面临的环境，紧扣事件展开，严禁脱节闲聊。
+2. 【多人交替互动】: 参与角色自然交替说话，展现角色私底下对彼此的真实看法、心声或不为人知的秘密。
+3. 【情绪标签严格闭环】: 每个 segment 的 emotion 字段值**必须 100% 严格从上述【参与角色及其可用情绪】列表中选取**，严禁自行编造或臆造列表中不存在的情绪词。
+4. 每个角色的说话风格要符合其性格人设。
 5. **text 字段必须使用{{lang_display}}进行对话，这是强制要求，不可使用其他语言**
 6. **translation 字段必须填写中文翻译（即使 text 已经是中文也要复制过来）**
 
@@ -124,10 +121,10 @@ class PromptBuilder:
 
 {{eavesdrop_guidance}}
 
-**创作要求**:
-1. **严格按照上述对话大纲和主题进行创作**
-2. 每个角色的说话风格要符合其性格
-3. 情绪要自然过渡，符合情绪弧线
+**剧本创作核心要求与铁律**:
+1. **严格按照上述对话大纲和主题进行创作**，并深度结合【对话历史参考】中的最新剧情进展。
+2. 【情绪标签严格闭环】: 每个 segment 的 emotion 字段值**必须 100% 严格从上述【参与角色及其可用情绪】列表中选取**，严禁自行编造或臆造列表中不存在的情绪词。
+3. 每个角色的说话风格要符合其性格人设，情绪要自然过渡。
 4. **text 字段必须使用{{lang_display}}进行对话，这是强制要求，不可使用其他语言**
 5. **translation 字段必须填写中文翻译（即使 text 已经是中文也要复制过来）**
 
@@ -170,7 +167,7 @@ class PromptBuilder:
 
     
     # 默认 JSON 格式 Prompt 模板
-    DEFAULT_JSON_TEMPLATE = """You are an AI assistant helping to determine which character should make a phone call based on the conversation context.必须模仿电话的这种形式，电话内容必须合理且贴切，必须要有一件或者多个电话主题，围绕这个主题展开电话内容。不可以脱离当前的场景。
+    DEFAULT_JSON_TEMPLATE = """You are an AI assistant helping to determine which character should make a phone call based on the conversation context. 必须高度拟真电话/传讯的形式，内容必须贴切真实，严禁脱离当前故事主线。
 
 **Available Speakers and Their Emotions:**
 {{speakers_emotions}}
@@ -181,10 +178,11 @@ class PromptBuilder:
 **上次通话摘要** (如果有):
 {{last_call_summary}}
 
-**Your Task:**
-1. Analyze the conversation context
-2. Determine which speaker should make the phone call
-3. Generate appropriate phone call content with emotional segments
+**Your Task & Core Rules**:
+1. 【深度剧情锚定】: 仔细分析对话历史 (Conversation History)，通话内容必须深度结合两人刚刚经历的事件、刚分别的场景或未尽的话题，绝不可生成脱离故事背景的孤立闲聊。
+2. 【单向通话/独角戏】: 这是一个单向来电/独白，接听方 {{user_name}} 在此阶段**不会有任何语音回应**。绝对禁止自导自演假装听到对方说话并自我回应（严禁出现“啊？你说什么？……哦，这样啊”等虚假互动），必须保持单向倾诉、询问或叙述的连贯口语表达。
+3. 【情绪标签严格闭环】: 每个片段的 emotion 字段值**必须 100% 严格从上述【Available Speakers and Their Emotions】列表中选择**，严禁自行臆造列表中不存在的情绪标签！
+4. 确定由哪位角色发起呼叫，围绕动机生成 10-15 个具有真实生活感的情感片段。
 {{followup_call_instructions}}
 
 **IMPORTANT**: Respond ONLY with valid JSON in this exact format:
@@ -194,7 +192,7 @@ class PromptBuilder:
   "speaker": "speaker_name",
   "segments": [
     {
-      "emotion": "emotion_tag",
+      "emotion": "must_be_from_available_emotions_list",
       "text": "对话内容，**必须使用{{lang_display}}**",
       "translation": "中文翻译 (必须写上，如果已经是中文，就写上中文)",
       "pause_after": 0.8,
@@ -415,7 +413,7 @@ class PromptBuilder:
                 call_context_parts.append(f"- 世界书/场景设定 (World Info): {world_info}")
             if story_summary:
                 call_context_parts.append(f"- 前情剧情总结 (Story Summary): {story_summary}")
-            call_context_parts.append("请严格遵循上述人物设定与世界书背景，围绕动机生成真实贴切的电话台词。\n")
+            call_context_parts.append("【核心铁律】: 1. 深度剧情锚定：通话内容必须深度结合【近期对话上下文】最新剧情展开，绝不可脱节闲聊；2. 单向独白：接听方不会回应，禁止自导自演虚假互动；3. 情绪闭环：emotion 必须严格从列表选取。\n")
             call_context_section = "\n".join(call_context_parts)
             print(f"[PromptBuilder] [CallContext] caller={effective_caller}, target={effective_target}, reason={call_reason}, tone={call_tone}")
         

@@ -69,12 +69,18 @@ export const scenes = {
 
     incoming_call: {
         render($container, ctx) {
-            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
-            PhoneCallApp.render($appContainer, createNavbarForApps);
-            $container.append($appContainer);
+            const callData = window.TTS_IncomingCall;
+            if (callData) {
+                IncomingCallApp.render($container, createNavbarForApps);
+            } else {
+                const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
+                PhoneCallApp.render($appContainer, createNavbarForApps);
+                $container.append($appContainer);
+            }
         },
         cleanup() {
             if (PhoneCallApp.cleanup) PhoneCallApp.cleanup();
+            if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
         }
     },
 

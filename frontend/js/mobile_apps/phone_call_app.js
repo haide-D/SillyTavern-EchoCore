@@ -9,6 +9,7 @@
 
 import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
+import { NotificationHandler } from '../notification_handler.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime } from './shared/utils.js';
 import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
@@ -898,7 +899,7 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
         const parseData = await parseRes.json();
 
         // 组装生成结果对象
-        _lastGeneratedCall = {
+        const callData = {
             call_id: parseData.call_id || `manual_${Date.now()}`,
             char_name: caller,
             selected_speaker: caller,
@@ -909,19 +910,18 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
             audio_url: parseData.audio_url || (parseData.audio ? `data:audio/wav;base64,${parseData.audio}` : null),
             created_at: new Date().toISOString()
         };
+        _lastGeneratedCall = callData;
 
-        // 自动切换到「当前对话」Tab 并自动播放
+        // 预设 Tab 为当前对话，以便接听或进入 App 时直接呈现
         _activeTab = 'current';
-        $('.pc-nav-tab-btn').removeClass('active');
-        $(`.pc-nav-tab-btn[data-tab="current"]`).addClass('active');
-        await renderActiveTabContent();
 
-        if (_lastGeneratedCall.audio_url) {
-            cleanupGlobalPlayer();
-            _currentAudioPlayer = new AudioPlayer({ audioUrl: _lastGeneratedCall.audio_url });
-            setGlobalPlayer(_currentAudioPlayer);
-            _currentAudioPlayer.play();
+        // 1. 自动收起/最小化当前面板，退回待机主界面
+        if (window.TTS_ThemeEngine) {
+            window.TTS_ThemeEngine.close();
         }
+
+        // 2. 通过 NotificationHandler 分发来电通知（触发悬浮球动效/粒子/法阵及Toast提示）
+        await NotificationHandler.handlePhoneCallReady(callData);
 
     } catch (e) {
         console.error('[PhoneCallApp] 通话呼叫异常:', e);

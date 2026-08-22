@@ -473,6 +473,9 @@ function clearCallState() {
     delete window.TTS_IncomingCall;
     $('#tts-manager-btn').removeClass('incoming-call').attr('title', '🔊 TTS配置');
     $('#tts-mobile-trigger').removeClass('incoming-call');
+    if (window.TTS_ThemeEngine) {
+        window.TTS_ThemeEngine.notify('call_ended', {});
+    }
 }
 
 /**
