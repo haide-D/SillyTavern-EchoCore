@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import time
 import asyncio
 import base64
 from datetime import datetime
@@ -47,7 +48,8 @@ class PhoneCallService:
         character_persona: Optional[str] = None,
         world_info: Optional[str] = None,
         story_summary: Optional[str] = None,
-        chat_branch: Optional[str] = None
+        chat_branch: Optional[str] = None,
+        text_lang: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         构建 LLM 提示词与配置 (深度融合世界书、人设与历史剧情总结)
@@ -76,12 +78,12 @@ class PhoneCallService:
 
             if preset and preset.get("prompt_template"):
                 prompt_template = preset["prompt_template"]
-                print(f"[PhoneCallService] 🎨 采用剧本模板: 「{preset.get('name', '未命名')}」 (id={preset.get('id')})")
+                print(f"[PhoneCallService] [PRESET] Adopt preset: {preset.get('name', 'unnamed')} (id={preset.get('id')})")
             else:
                 prompt_template = phone_call_config.get("prompt_template", "")
 
         tts_config = phone_call_config.get("tts_config", {})
-        text_lang = tts_config.get("text_lang", "zh")
+        effective_lang = text_lang or tts_config.get("text_lang", "zh")
 
         # 提取上下文数据与可用情绪
         extracted_data = self.data_extractor.extract(context, extractors)
@@ -119,7 +121,7 @@ class PhoneCallService:
             context=context,
             extracted_data=extracted_data,
             emotions=emotions,
-            text_lang=text_lang,
+            text_lang=effective_lang,
             user_name=effective_target,
             call_reason=call_reason or "",
             call_tone=call_tone or "",
@@ -131,7 +133,7 @@ class PhoneCallService:
             story_summary=effective_summary
         )
 
-        print(f"[PhoneCallService] ✅ 提示词构建完成: {len(prompt)} 字符")
+        print(f"[PhoneCallService] [SUCCESS] Prompt built: {len(prompt)} chars")
 
         return {
             "status": "success",
@@ -159,8 +161,8 @@ class PhoneCallService:
         """
         完成自动电话生成：解析 LLM 响应、合成音频、更新数据库并发送推送
         """
-        print(f"\n[PhoneCallService] 收到 LLM 响应: call_id={call_id}")
-        print(f"[PhoneCallService] LLM 响应长度: {len(llm_response)} 字符")
+        print(f"\n[PhoneCallService] Received LLM response: call_id={call_id}")
+        print(f"[PhoneCallService] LLM response length: {len(llm_response)} chars")
 
         try:
             # 清理 markdown 代码块
@@ -169,14 +171,14 @@ class PhoneCallService:
             match = re.match(markdown_pattern, llm_response_cleaned, re.DOTALL)
             if match:
                 llm_response_cleaned = match.group(1).strip()
-                print(f"[PhoneCallService] 检测到 markdown 代码块，已清理")
+                print(f"[PhoneCallService] Markdown block cleaned")
 
             # 解析 JSON 响应
             try:
                 response_data = json.loads(llm_response_cleaned)
-                print(f"[PhoneCallService] ✅ JSON 解析成功")
+                print(f"[PhoneCallService] [SUCCESS] JSON parsed")
             except json.JSONDecodeError as e:
-                print(f"[PhoneCallService] ❌ JSON 解析失败: {str(e)}")
+                print(f"[PhoneCallService] [ERROR] JSON parse failed: {str(e)}")
                 raise ValueError(f"LLM 响应不是有效的 JSON 格式: {str(e)}")
 
             selected_speaker = response_data.get("speaker")
@@ -319,17 +321,27 @@ class PhoneCallService:
         self,
         char_name: str,
         llm_response: str,
-        generate_audio: bool = True
+        generate_audio: bool = True,
+        chat_branch: Optional[str] = None,
+        context_fingerprint: Optional[str] = None,
+        trigger_floor: Optional[int] = None,
+        target_user: Optional[str] = None,
+        text_lang: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        解析 LLM 响应并按需生成音频 (兼容接口)
+        解析 LLM 响应并按需生成音频，同时自动保存音频文件与入库
         """
-        print(f"\n[PhoneCallService] 开始解析: 角色={char_name}, 响应长度={len(llm_response)} 字符")
+        print(f"\n[PhoneCallService] 开始解析: 角色={char_name}, 响应长度={len(llm_response)} 字符, 指定语言={text_lang}")
 
         settings = load_json(SETTINGS_FILE)
         phone_call_config = settings.get("phone_call", {})
         parser_config = phone_call_config.get("response_parser", {})
-        emotions = self.emotion_service.get_available_emotions(char_name)
+        try:
+            emotions = self.emotion_service.get_available_emotions(char_name)
+        except Exception:
+            emotions = ["default", "neutral"]
+        if not emotions:
+            emotions = ["default", "neutral"]
 
         parse_format = parser_config.get("format", "json")
 
@@ -366,12 +378,14 @@ class PhoneCallService:
 
         result = {
             "status": "success",
-            "segments": [seg.dict() for seg in segments],
+            "segments": [seg.model_dump() if hasattr(seg, 'model_dump') else seg.dict() for seg in segments],
             "total_segments": len(segments)
         }
 
         if generate_audio and segments:
-            tts_config = phone_call_config.get("tts_config", {})
+            tts_config = dict(phone_call_config.get("tts_config", {}))
+            if text_lang and text_lang != "auto":
+                tts_config["text_lang"] = text_lang
             audio_merge_config = phone_call_config.get("audio_merge", {})
 
             merged_audio, segments = await self.audio_pipeline.synthesize_segments(
@@ -381,7 +395,41 @@ class PhoneCallService:
                 audio_merge_config=audio_merge_config,
                 lock_context_id=f"parse_generate_{char_name}"
             )
-            result["segments"] = [seg.dict() for seg in segments]
+            result["segments"] = [seg.model_dump() if hasattr(seg, 'model_dump') else seg.dict() for seg in segments]
+
+            if merged_audio:
+                audio_format = audio_merge_config.get("format", "wav")
+                call_id_int = int(time.time())
+                audio_path, audio_url = await self._save_audio(call_id_int, char_name, merged_audio, audio_format)
+                result["audio_path"] = audio_path
+                result["audio_url"] = audio_url
+
+                # 如果传入了对话分支或指纹，持久化写入数据库
+                if chat_branch or context_fingerprint:
+                    branch = chat_branch or "default"
+                    fp = context_fingerprint or f"manual_{call_id_int}"
+                    floor = trigger_floor or 1
+                    try:
+                        record_id = self.db.create_auto_call(
+                            chat_branch=branch,
+                            context_fingerprint=fp,
+                            trigger_floor=floor,
+                            char_name=char_name,
+                            segments=[seg.model_dump() if hasattr(seg, 'model_dump') else seg.dict() for seg in segments],
+                            audio_path=audio_path,
+                            status="completed"
+                        )
+                        if record_id:
+                            # 补全 audio_url
+                            conn = self.db._get_connection()
+                            cur = conn.cursor()
+                            cur.execute("UPDATE auto_phone_calls SET audio_url = ? WHERE id = ?", (audio_url, record_id))
+                            conn.commit()
+                            conn.close()
+                            result["call_id"] = record_id
+                            print(f"[PhoneCallService] [SUCCESS] Persisted call history record ID: {record_id}")
+                    except Exception as db_err:
+                        print(f"[PhoneCallService] [WARN] Persist call history record failed: {db_err}")
 
         return result
 

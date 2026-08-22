@@ -164,8 +164,13 @@ class ResponseParser:
                 
                 # 验证情绪
                 if available_emotions and emotion not in available_emotions:
-                    print(f"[ResponseParser] 警告: 情绪 '{emotion}' 不在可用列表中,使用 '{fallback_emotion}'")
-                    emotion = fallback_emotion
+                    eff_fallback = fallback_emotion if fallback_emotion in available_emotions else (
+                        "default" if "default" in available_emotions else (
+                            "neutral" if "neutral" in available_emotions else (available_emotions[0] if len(available_emotions) > 0 else fallback_emotion)
+                        )
+                    )
+                    print(f"[ResponseParser] 警告: 情绪 '{emotion}' 不在可用列表中,使用 '{eff_fallback}'")
+                    emotion = eff_fallback
                 
                 # 可选字段
                 pause_after = seg_data.get("pause_after")
@@ -284,9 +289,13 @@ class ResponseParser:
                 # 验证情绪（使用该说话人的可用情绪）
                 available_emotions = speakers_emotions.get(speaker, [])
                 if available_emotions and emotion not in available_emotions:
-                    # 尝试使用第一个可用情绪，否则用回退情绪
+                    eff_fallback = fallback_emotion if fallback_emotion in available_emotions else (
+                        "default" if "default" in available_emotions else (
+                            "neutral" if "neutral" in available_emotions else (available_emotions[0] if len(available_emotions) > 0 else fallback_emotion)
+                        )
+                    )
                     original_emotion = emotion
-                    emotion = available_emotions[0] if available_emotions else fallback_emotion
+                    emotion = eff_fallback
                     print(f"[ResponseParser] 警告: 情绪 '{original_emotion}' 对 {speaker} 不可用,使用 '{emotion}'")
                 
                 # 可选字段
@@ -321,7 +330,7 @@ class ResponseParser:
                 print(f"[ResponseParser] 警告: 解析片段 {i} 失败 - {e}")
                 continue
         
-        print(f"[ResponseParser] ✅ 多说话人解析完成: {len(segments)} 个片段")
+        print(f"[ResponseParser] [OK] 多说话人解析完成: {len(segments)} 个片段")
         return segments
     
     @staticmethod

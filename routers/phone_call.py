@@ -72,6 +72,8 @@ class BuildPromptRequest(BaseModel):
     world_info: Optional[str] = None
     story_summary: Optional[str] = None
     chat_branch: Optional[str] = None
+    text_lang: Optional[str] = None
+    language: Optional[str] = None
 
 
 class ParseAndGenerateRequest(BaseModel):
@@ -79,6 +81,12 @@ class ParseAndGenerateRequest(BaseModel):
     char_name: str
     llm_response: str
     generate_audio: Optional[bool] = True
+    chat_branch: Optional[str] = None
+    context_fingerprint: Optional[str] = None
+    trigger_floor: Optional[int] = None
+    target_user: Optional[str] = None
+    text_lang: Optional[str] = None
+    language: Optional[str] = None
 
 
 class CompleteGenerationRequest(BaseModel):
@@ -100,14 +108,21 @@ class LLMTestRequest(BaseModel):
     test_prompt: Optional[str] = "你好,请回复'测试成功'"
 
 
-class MessageWebhookRequest(BaseModel):
-    """消息 Webhook 请求"""
+class TestTriggerRequest(BaseModel):
+    """手动测试触发请求"""
     chat_branch: str
     speakers: List[str]
+    current_floor: Optional[int] = 1
+
+
+class MessageWebhookRequest(BaseModel):
+    """SillyTavern 消息 Webhook 请求"""
+    chat_branch: str
     current_floor: int
     context: List[ContextMessage]
+    speakers: List[str]
     context_fingerprint: str
-    user_name: Optional[str] = None
+    user_name: Optional[str] = "User"
     char_name: Optional[str] = None
     character_persona: Optional[str] = None
     world_info: Optional[str] = None
@@ -118,12 +133,12 @@ class SceneAnalysisCompleteRequest(BaseModel):
     request_id: str
     llm_response: str
     chat_branch: str
-    speakers: List[str]
     trigger_floor: int
-    context_fingerprint: str
     context: List[Dict[str, Any]]
+    context_fingerprint: str
+    speakers: List[str]
+    user_name: Optional[str] = "User"
     char_name: Optional[str] = None
-    user_name: Optional[str] = None
 
 
 class FingerprintHistoryRequest(BaseModel):
@@ -172,7 +187,8 @@ async def build_prompt(req: BuildPromptRequest):
         character_persona=req.character_persona,
         world_info=req.world_info,
         story_summary=req.story_summary,
-        chat_branch=req.chat_branch
+        chat_branch=req.chat_branch,
+        text_lang=req.text_lang or req.language
     )
 
 
@@ -191,12 +207,17 @@ async def complete_generation(req: CompleteGenerationRequest):
 
 @router.post("/phone_call/parse_and_generate")
 async def parse_and_generate(req: ParseAndGenerateRequest):
-    """解析 LLM 响应并按需生成音频 (兼容接口)"""
+    """解析 LLM 响应并按需生成音频，同时自动保存音频与入库"""
     check_phone_call_enabled()
     return await phone_call_service.parse_and_generate(
         char_name=req.char_name,
         llm_response=req.llm_response,
-        generate_audio=req.generate_audio
+        generate_audio=req.generate_audio,
+        chat_branch=req.chat_branch,
+        context_fingerprint=req.context_fingerprint,
+        trigger_floor=req.trigger_floor,
+        target_user=req.target_user,
+        text_lang=req.text_lang or req.language
     )
 
 
@@ -356,6 +377,30 @@ async def scene_analysis_complete(req: SceneAnalysisCompleteRequest):
 
 
 # ==================== 历史记录与 WebSocket ====================
+
+@router.get("/phone_call/history")
+async def get_phone_call_general_history(
+    chat_branch: Optional[str] = None,
+    char_name: Optional[str] = None,
+    limit: int = 50
+):
+    """获取主动电话通用历史记录 (支持分支过滤、角色过滤或全量历史)"""
+    check_phone_call_enabled()
+    if chat_branch:
+        history = db.get_auto_call_history_by_chat_branch(chat_branch, limit)
+    elif char_name:
+        history = db.get_auto_call_history(char_name, limit)
+    else:
+        history = db.get_all_auto_phone_calls(limit)
+    return {
+        "status": "success",
+        "chat_branch": chat_branch,
+        "char_name": char_name,
+        "history": history,
+        "records": history,
+        "total": len(history)
+    }
+
 
 @router.get("/phone_call/auto/history/{char_name}")
 async def get_auto_call_history(char_name: str, limit: int = 50):

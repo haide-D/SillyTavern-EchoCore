@@ -114,7 +114,14 @@ class EmotionService:
         matching_audios = [a for a in audio_files if a.get("emotion") == emotion]
         
         if not matching_audios:
-            print(f"[EmotionService] 警告: 未找到角色 '{char_name}' 情绪 '{emotion}' 的参考音频")
+            if audio_files:
+                selected = audio_files[0]
+                print(f"[EmotionService] ⚠️ 未找到角色 '{char_name}' 情绪 '{emotion}' 的参考音频, 自动兜底使用首个可用音频: {selected['path']}")
+                return {
+                    "path": selected["path"],
+                    "text": selected["text"]
+                }
+            print(f"[EmotionService] 警告: 未找到角色 '{char_name}' 情绪 '{emotion}' 的参考音频，且角色无可用音频")
             return None
         
         selected = random.choice(matching_audios)

@@ -11,7 +11,7 @@ export const THEME_ICONS = {
     'theme_store': { name: '变幻工坊', desc: '编织梦幻的画卷', icon: ICON_THEME_STORE },
     'workshop': { name: '变幻秘典', desc: '编织过往与未知的对话', icon: ICON_WORKSHOP },
     'llm_test': { name: '占卜预言', desc: '探询未知的启示', icon: ICON_LLM },
-    'phone_call': { name: '呼神护卫', desc: '召唤远方的守卫', icon: ICON_PHONE }
+    'phone_call': { name: '魔法传讯', desc: '跨越空间的呼唤', icon: ICON_PHONE }
 };
 
 export function createNavbarForApps(title) {
@@ -19,6 +19,10 @@ export function createNavbarForApps(title) {
         '系统配置': '法阵修正 (配置)',
         '我的收藏': '复活石铭刻 (收藏)',
         '来电记录': '魔法传讯 (记录)',
+        '主动电话': '魔法传讯',
+        '主动拨号': '魔法传讯',
+        '双面镜通讯': '双面镜通讯',
+        '对话追踪': '伸缩耳探听',
         '对话追踪历史': '探知低语 (记录)',
         '对话追踪记录': '探知低语 (记录)',
         '主动电话测试': '双面镜 (拨号)',

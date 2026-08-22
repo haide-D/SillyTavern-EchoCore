@@ -1,5 +1,5 @@
 import { THEME_ICONS } from './shared.js';
-import * as IncomingCallApp from '../../../mobile_apps/incoming_call_app.js';
+import * as PhoneCallApp from '../../../mobile_apps/phone_call_app.js';
 
 export const homeScene = {
     render($container, ctx) {
@@ -103,6 +103,6 @@ export const homeScene = {
             }
         });
 
-        if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
+        if (PhoneCallApp.cleanup) PhoneCallApp.cleanup();
     }
 };

@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { scenes } from './scenes.js';
 import * as ui from './ui.js';
-import * as IncomingCallApp from '../../mobile_apps/incoming_call_app.js';
+import * as PhoneCallApp from '../../mobile_apps/phone_call_app.js';
 
 const DefaultTheme = {
     id: 'default',
@@ -48,9 +48,9 @@ const DefaultTheme = {
     },
 
     onClose(engine) {
-        // 清理来电 App 资源
-        if (IncomingCallApp.cleanup) {
-            IncomingCallApp.cleanup();
+        // 清理主动电话 App 资源
+        if (PhoneCallApp.cleanup) {
+            PhoneCallApp.cleanup();
         }
         $('#tts-mobile-root').addClass('minimized');
         $('#tts-mobile-trigger').fadeIn();

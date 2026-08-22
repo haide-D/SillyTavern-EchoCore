@@ -121,6 +121,21 @@ async def set_active_preset(payload: Dict[str, Any] = Body(...)):
         raise HTTPException(status_code=500, detail=f"设置生效预设失败: {str(e)}")
 
 
+@router.get("/presets/defaults/{category}")
+async def get_preset_defaults(category: str):
+    """获取指定分类的官方默认模板 (剧情模版 + 系统注入模版)"""
+    try:
+        defaults = PresetService.get_default_templates(category)
+        return {
+            "success": True,
+            "category": category,
+            "defaults": defaults
+        }
+    except Exception as e:
+        logger.error(f"获取默认模板失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取默认模板失败: {str(e)}")
+
+
 @router.get("/presets")
 async def list_presets(category: Optional[str] = None):
     """

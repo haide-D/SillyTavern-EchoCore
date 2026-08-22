@@ -1,6 +1,6 @@
 import { buildCallScreen, createNavbarForApps } from './shared.js';
 import { HANGUP_SVG, ANSWER_SVG, USER_SVG } from '../assets.js';
-import * as IncomingCallApp from '../../../mobile_apps/incoming_call_app.js';
+import * as PhoneCallApp from '../../../mobile_apps/phone_call_app.js';
 import { ChatInjector } from '../../../chat_injector.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from '../../../mobile_apps/shared/audio_player.js';
 
@@ -133,9 +133,9 @@ export const incomingCallScene = {
     render($container, ctx) {
         const callData = window.TTS_IncomingCall;
         if (!callData) {
-            // 如果没有来电，回退调用默认来电历史记录 UI
+            // 如果没有实时来电，直接使用具备三子列表与剧本工坊联动的主动电话 App UI
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
-            IncomingCallApp.render($appContainer, createNavbarForApps);
+            PhoneCallApp.render($appContainer, createNavbarForApps);
             $container.empty().append($appContainer);
             return;
         }
@@ -146,7 +146,7 @@ export const incomingCallScene = {
     cleanup() {
         $('#dh-true-fullscreen-call').remove();
         $('#tts-dh-modal').show();
-        if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
+        if (PhoneCallApp.cleanup) PhoneCallApp.cleanup();
         cleanupGlobalPlayer();
     }
 };

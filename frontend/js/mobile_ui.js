@@ -42,7 +42,7 @@ window.TTS_Apps = {
     llm_test: LlmTestApp,
     phone_call: PhoneCallApp,
     eavesdrop: EavesdropApp,
-    incoming_call: IncomingCallApp,
+    incoming_call: PhoneCallApp,
     theme_store: ThemeStoreApp,
     workshop: WorkshopApp,
 };

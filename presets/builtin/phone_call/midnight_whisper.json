@@ -3,10 +3,11 @@
   "name": "深夜私语",
   "category": "phone_call",
   "author": "官方",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "夜深独处时打来的私密电话，声音轻柔，倾诉心声与依恋。",
   "tags": ["深夜", "治愈", "心事", "官方出厂"],
-  "prompt_template": "你是一个沉浸式情感编剧。当前场景是深夜独处或万籁俱寂的时刻，角色 {{caller}} 正在主动拨通给 {{target}} 的私密电话。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 心事主题: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**创作要求:**\n1. 语气轻柔、亲近，带有深夜独有的安静与放松氛围，仿佛在被窝或窗边轻声呢喃。\n2. 表达出白天未能直接表达的挂念、心事或依赖。\n3. 情绪以 whisper(轻语)、gentle(温柔)、shy(害羞) 或 soft 为主，语速稍慢。\n4. speaker 字段必须为 {{caller}}。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述与括号心理（如 `（轻声说）`、`（叹气）`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.6,\n      \"speed\": 0.95,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有呼吸感与轻语感的片段。",
+  "plot_template": "你是一个沉浸式情感编剧。当前场景是深夜独处或万籁俱寂的时刻，角色 {{caller}} 正在主动拨通给 {{target}} 的私密电话。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 心事主题: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**剧本创作要求与细节设定**:\n1. 语气轻柔、亲近，带有深夜独有的安静与放松氛围，仿佛在被窝或窗边轻声呢喃。\n2. 表达出白天未能直接表达的挂念、心事或依赖。\n3. 情绪以 whisper(轻语)、gentle(温柔)、shy(害羞) 或 soft 为主，语速稍慢。\n4. speaker 字段必须为 {{caller}}。\n{{followup_call_instructions}}",
+  "system_template": "**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**角色卡人设与世界书设定**:\n- 角色人设: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述与括号心理（如 `（轻声说）`、`（叹气）`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.6,\n      \"speed\": 0.95,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有呼吸感与轻语感的片段。",
   "recommended_params": {
     "temperature": 0.75,
     "speed": 0.95

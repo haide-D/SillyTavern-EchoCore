@@ -3,8 +3,15 @@ console.log("🔵 [1] TTS_Utils.js 开始加载...");
 // 2. CSS 状态管理
 let globalStyleContent = "";
 
-// 1. 正则表达式
-export const VOICE_TAG_REGEX = /(\s*)\[TTSVoice[:：]\s*([^:：]+)\s*[:：]\s*([^:：]*)\s*[:：]\s*(.*?)\]/gi;
+// 1. 正则表达式体系
+// ElevenLabs V3 格式: [角色名, 情绪] 或 [角色名, New] 紧跟对白文本
+export const ELEVENLABS_V3_REGEX = /\[([^\],:\n]{1,30})\s*[,，]\s*([^\]\n]{1,30})\](?:\s*([^[\n<]+))?/gi;
+
+// 旧版兼容格式: [TTSVoice:角色名:情绪:对白文本]
+export const LEGACY_VOICE_TAG_REGEX = /(\s*)\[TTSVoice[:：]\s*([^:：]+)\s*[:：]\s*([^:：]*)\s*[:：]\s*(.*?)\]/gi;
+
+// 默认统一正则 (对外兼容)
+export const VOICE_TAG_REGEX = ELEVENLABS_V3_REGEX;
 
 export function getStyleContent() {
     return globalStyleContent;
@@ -400,19 +407,27 @@ export function getCurrentChatBranch() {
 export function extractSpeaker(messageText) {
     if (!messageText) return null;
 
-    // 使用统一的正则表达式
-    const match = VOICE_TAG_REGEX.exec(messageText);
-    return match ? match[2] : null;  // match[2] 是说话人名称
+    // 1. 优先匹配 ElevenLabs V3 格式: [Speaker, emotion]
+    ELEVENLABS_V3_REGEX.lastIndex = 0;
+    const v3Match = ELEVENLABS_V3_REGEX.exec(messageText);
+    if (v3Match && v3Match[1]) {
+        const name = v3Match[1].trim();
+        if (name && !name.toLowerCase().startsWith('tts') && name.length <= 30) {
+            return name;
+        }
+    }
+
+    // 2. 兜底匹配旧版 [TTSVoice:Speaker:emotion:text]
+    LEGACY_VOICE_TAG_REGEX.lastIndex = 0;
+    const legacyMatch = LEGACY_VOICE_TAG_REGEX.exec(messageText);
+    return legacyMatch ? legacyMatch[2].trim() : null;
 }
 
 /**
- * 从消息列表中提取所有说话人 (去重)
-/**
- * 从对话消息列表中全面提取所有说话人 (去重)
- * 扫描范围:
- * 1. 消息发送者字段 msg.name (非用户、非系统)
- * 2. 语音标签 <voice name="...">
- * 3. 正文中的多角色对话前缀 (如 【角色名】 或 角色名:)
+ * 从对话消息列表中全面提取所有在场 Speaker (去重)
+ * 1. 扫描 ElevenLabs V3 [Speaker, emotion] 标签
+ * 2. 兼容扫描旧版 [TTSVoice:Speaker:...] 标签
+ * 3. 提取非用户/非系统的发言人字段 msg.name
  * 
  * @param {Array} messages - 消息列表
  * @returns {Array<string>} 去重后的说话人列表
@@ -424,7 +439,7 @@ export function extractAllSpeakers(messages) {
     for (const msg of messages) {
         if (!msg || msg.is_system) continue;
 
-        // 1. 提取非用户的消息发送者名称
+        // 1. 提取非用户的消息发送者名称 (若有)
         if (!msg.is_user && msg.name && typeof msg.name === 'string') {
             const trimmedName = msg.name.trim();
             if (trimmedName && trimmedName !== 'System' && trimmedName !== 'User') {
@@ -435,25 +450,26 @@ export function extractAllSpeakers(messages) {
         const msgText = msg.mes || '';
         if (!msgText) continue;
 
-        // 2. 扫描语音标签 <voice name="...">
-        VOICE_TAG_REGEX.lastIndex = 0;
+        // 2. 扫描 ElevenLabs V3 格式: [Speaker, emotion]
+        ELEVENLABS_V3_REGEX.lastIndex = 0;
         let match;
-        while ((match = VOICE_TAG_REGEX.exec(msgText)) !== null) {
+        while ((match = ELEVENLABS_V3_REGEX.exec(msgText)) !== null) {
+            const speaker = match[1];
+            if (speaker && speaker.trim()) {
+                const clean = speaker.trim();
+                if (!clean.toLowerCase().startsWith('tts') && clean.length <= 30) {
+                    speakers.add(clean);
+                }
+            }
+        }
+
+        // 3. 兜底扫描旧版 [TTSVoice:Speaker:...]
+        LEGACY_VOICE_TAG_REGEX.lastIndex = 0;
+        while ((match = LEGACY_VOICE_TAG_REGEX.exec(msgText)) !== null) {
             const speaker = match[2];
             if (speaker && speaker.trim()) {
                 speakers.add(speaker.trim());
             }
-        }
-
-        // 3. 扫描常见的正文多角色对话格式: 【角色名】 或 角色名: / 角色名：
-        const dialogMatches = msgText.match(/(?:【([^】\n]{1,20})】|^([a-zA-Z0-9\u4e00-\u9fa5_]{2,20})[：:])/gm);
-        if (dialogMatches) {
-            dialogMatches.forEach(m => {
-                const cleanName = m.replace(/[【】:：\s]/g, '').trim();
-                if (cleanName && cleanName.length >= 2 && cleanName.length <= 20) {
-                    speakers.add(cleanName);
-                }
-            });
         }
     }
 

@@ -1,39 +1,35 @@
 /**
  * 主动电话 App 模块 (Phone Call App)
  * 
- * 核心功能:
- * 1. 历史来电展示与音频回放
- * 2. 现代化主动呼叫控制台 (Speaker 选择、Target 任意指定、剧本选择、事由与语气快捷标签池、参数调整)
- * 3. 即时生成结果卡片增强:
- *    - 🔊 重播音频
- *    - 🔄 修改参数重新生成
- *    - 📥 一键注入/追加到当前 SillyTavern 聊天
+ * 核心功能 (三子列表架构):
+ * 1. 💬 当前对话: 查看当前聊天分支 (chat_branch) 下的专属来电记录
+ * 2. 📜 总的历史对话: 查看所有角色与历史通话记录 (支持搜索与回放)
+ * 3. 🚀 主动呼出控制台: 内嵌式直接选择 Speaker、Target、联动剧本工坊 Presets、动机快捷池并一键拨号
  */
 
 import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime } from './shared/utils.js';
+import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
 
 export const id = 'phone_call';
 export const defaultName = '主动电话';
-export const defaultIcon = '📞';
+export const defaultIcon = STATUS_SVGS.phone;
 export const sceneId = 'phone_call';
 export const hidden = false;
 
-// 缓存最后一次生成的结果
+// 视图状态与缓存
+let _activeTab = 'current'; // 'current' | 'all' | 'dial'
 let _lastGeneratedCall = null;
 let _currentAudioPlayer = null;
+let _allCallsCache = [];
+let _currentCallsCache = [];
+let _searchQuery = '';
+let _presetsCache = [];
+let _boundSpeakersCache = [];
 
-const SVG = {
-    phone: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
-    play: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
-    pause: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
-    refresh: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`,
-    inject: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
-    sparkles: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
-    dial: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
-};
+const SVG = STATUS_SVGS;
 
 /**
  * 注入样式
@@ -46,62 +42,117 @@ const injectCSS = () => {
             flex-direction: column;
             height: 100%;
             width: 100%;
-            background: linear-gradient(180deg, #161224 0%, #0d0a17 100%);
+            background: transparent;
             color: #e5e7eb;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: hidden;
             box-sizing: border-box;
+            position: relative;
         }
-        .pc-header-action-bar {
-            padding: 12px 16px;
+
+        /* 顶部/子导航选项卡栏 (三子列表) */
+        .pc-nav-tabs {
+            display: flex;
             background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid rgba(196, 155, 79, 0.2);
+            padding: 8px 10px;
+            gap: 6px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .pc-nav-tab-btn {
+            flex: 1;
+            padding: 7px 6px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: rgba(220, 200, 150, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-shrink: 0;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
         }
-        .pc-main-btn {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: #fff;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            border-radius: 10px;
-            padding: 8px 16px;
-            font-size: 13px;
+        .pc-nav-tab-btn:hover {
+            color: rgba(220, 200, 150, 0.95);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .pc-nav-tab-btn.active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
             font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
         }
-        .pc-main-btn:hover {
-            filter: brightness(1.15);
-            transform: translateY(-1px);
-        }
+
+        /* 历史列表视图容器 */
         .pc-history-scroll {
             flex: 1;
             overflow-y: auto;
-            padding: 14px;
+            overflow-x: hidden;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+            box-sizing: border-box;
+            width: 100%;
         }
-        .pc-card {
-            background: rgba(28, 22, 40, 0.7);
-            border: 1px solid rgba(196, 155, 79, 0.2);
-            border-radius: 12px;
-            padding: 12px 14px;
+
+        /* 搜索框 */
+        .pc-search-row {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            backdrop-filter: blur(8px);
+            align-items: center;
+            position: relative;
+            margin-bottom: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .pc-search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(196, 155, 79, 0.2);
+            border-radius: 8px;
+            padding: 7px 10px 7px 30px;
+            font-size: 12px;
+            color: #fff;
+            outline: none;
+            box-sizing: border-box;
             transition: all 0.2s;
         }
+        .pc-search-input:focus {
+            border-color: #10b981;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .pc-search-icon {
+            position: absolute;
+            left: 10px;
+            color: rgba(196, 155, 79, 0.6);
+            pointer-events: none;
+            display: flex;
+        }
+
+        /* 通话记录卡片 */
+        .pc-card {
+            background: rgba(28, 22, 40, 0.75);
+            border: 1px solid rgba(196, 155, 79, 0.2);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+            box-sizing: border-box;
+            width: 100%;
+        }
         .pc-card:hover {
-            border-color: rgba(196, 155, 79, 0.4);
+            border-color: rgba(196, 155, 79, 0.45);
             background: rgba(34, 27, 48, 0.85);
         }
         .pc-card.highlight {
@@ -115,7 +166,7 @@ const injectCSS = () => {
             justify-content: space-between;
         }
         .pc-caller-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #fef08a;
             display: flex;
@@ -127,37 +178,37 @@ const injectCSS = () => {
             color: rgba(220, 200, 160, 0.6);
         }
         .pc-reason {
-            font-size: 12px;
+            font-size: 11.5px;
             color: rgba(220, 200, 160, 0.85);
             background: rgba(0, 0, 0, 0.25);
-            padding: 5px 8px;
-            border-radius: 6px;
-            border-left: 3px solid #eab308;
+            padding: 4px 8px;
+            border-radius: 5px;
+            border-left: 2px solid #eab308;
         }
         .pc-dialog-preview {
-            font-size: 12px;
+            font-size: 11.5px;
             color: #d1d5db;
-            line-height: 1.5;
+            line-height: 1.45;
             max-height: 80px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.2);
-            padding: 6px 8px;
-            border-radius: 6px;
+            padding: 5px 8px;
+            border-radius: 5px;
         }
         .pc-card-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-top: 4px;
+            gap: 6px;
+            margin-top: 3px;
             flex-wrap: wrap;
         }
         .pc-action-btn {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.12);
             color: #e5e7eb;
-            border-radius: 6px;
-            padding: 5px 10px;
-            font-size: 11.5px;
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 11px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -184,12 +235,148 @@ const injectCSS = () => {
         .pc-action-btn.inject:hover {
             background: rgba(234, 179, 8, 0.3);
         }
+
+        /* 内嵌式主动呼出控制台面板 */
+        .pc-dial-panel {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .pc-system-hint {
+            background: rgba(196, 155, 79, 0.08);
+            border: 1px solid rgba(196, 155, 79, 0.2);
+            padding: 7px 10px;
+            border-radius: 7px;
+            font-size: 11px;
+            color: rgba(220, 200, 160, 0.85);
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .pc-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .pc-form-label {
+            font-size: 11.5px;
+            color: rgba(220, 200, 160, 0.9);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pc-form-input, .pc-form-select {
+            width: 100%;
+            max-width: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(196, 155, 79, 0.25);
+            border-radius: 7px;
+            padding: 7px 10px;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .pc-form-input:focus, .pc-form-select:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            background: rgba(0, 0, 0, 0.65);
+        }
+        .pc-form-select option {
+            background: #181524;
+            color: #fff;
+        }
+        .pc-preset-hint {
+            font-size: 10.5px;
+            color: rgba(220, 200, 160, 0.6);
+            margin-top: 2px;
+            line-height: 1.35;
+        }
+        .pc-quick-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(196, 155, 79, 0.2);
+            color: rgba(220, 200, 160, 0.85);
+            padding: 3px 7px;
+            border-radius: 10px;
+            font-size: 10.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pc-quick-tag:hover {
+            background: rgba(16, 185, 129, 0.18);
+            border-color: rgba(16, 185, 129, 0.45);
+            color: #6ee7b7;
+        }
+        .pc-main-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 8px;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+            transition: all 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 4px;
+        }
+        .pc-main-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+        .pc-main-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
     `;
     $('head').append(`<style id="phone-call-app-css">${css}</style>`);
 };
 
 /**
- * 渲染主动电话 App
+ * 获取角色模型语言感知提示
+ */
+function getSpeakerLanguageHint(speakerName) {
+    if (!speakerName) return { recommended: 'zh', hint: '中文' };
+    const models = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.models) || {};
+    const speakerModel = models[speakerName];
+    if (!speakerModel || !speakerModel.languages) {
+        return { recommended: 'zh', hint: '中文' };
+    }
+    const langs = Object.keys(speakerModel.languages);
+    if (langs.includes('Japanese') && !langs.includes('Chinese')) {
+        return { recommended: 'ja', hint: '日文推荐' };
+    }
+    if (langs.includes('English') && !langs.includes('Chinese')) {
+        return { recommended: 'en', hint: '英文推荐' };
+    }
+    if (langs.includes('Japanese')) {
+        return { recommended: 'ja', hint: '中/日双语' };
+    }
+    return { recommended: 'zh', hint: '中文' };
+}
+
+/**
+ * 渲染主动电话 App 主体
  */
 export async function render(container, createNavbar) {
     injectCSS();
@@ -199,40 +386,87 @@ export async function render(container, createNavbar) {
 
     const $root = $(`
         <div class="pc-app-container">
-            <!-- 顶部操作栏 -->
-            <div class="pc-header-action-bar">
-                <div style="font-size:12px; color:rgba(220,200,160,0.8); display:flex; align-items:center; gap:5px;">
-                    ${SVG.sparkles} 沉浸式来电与语音互动
-                </div>
-                <button class="pc-main-btn" id="pc-btn-open-dial">
-                    ${SVG.dial} 主动拨打电话
+            <!-- 顶部三子列表导航切换栏 -->
+            <div class="pc-nav-tabs">
+                <button class="pc-nav-tab-btn ${_activeTab === 'current' ? 'active' : ''}" data-tab="current">
+                    ${SVG.chat || ''} 当前对话
+                </button>
+                <button class="pc-nav-tab-btn ${_activeTab === 'all' ? 'active' : ''}" data-tab="all">
+                    ${SVG.history || ''} 总历史
+                </button>
+                <button class="pc-nav-tab-btn ${_activeTab === 'dial' ? 'active' : ''}" data-tab="dial">
+                    ${SVG.dial || ''} 主动呼叫
                 </button>
             </div>
 
-            <!-- 历史通话列表 -->
-            <div class="pc-history-scroll" id="pc-history-list">
-                <div style="text-align:center; padding:30px; color:#9ca3af;">正在加载历史通话记录...</div>
+            <!-- 主视图容器 -->
+            <div id="pc-tab-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <div style="text-align:center; padding:30px; color:#9ca3af;">正在加载...</div>
             </div>
         </div>
     `);
 
     container.append($root);
 
-    // 绑定主动拨号按钮
-    $root.find('#pc-btn-open-dial').on('click', () => {
-        openDialModal();
+    // 绑定 Tab 切换
+    $root.find('.pc-nav-tab-btn').on('click', function () {
+        const tab = $(this).data('tab');
+        if (_activeTab === tab) return;
+        _activeTab = tab;
+        $root.find('.pc-nav-tab-btn').removeClass('active');
+        $(this).addClass('active');
+        renderActiveTabContent();
     });
 
-    // 加载历史记录
-    await loadCallHistory();
+    // 初始化预设与已绑定 Speakers
+    await initPresetsAndSpeakers();
+
+    // 渲染当前子视图
+    await renderActiveTabContent();
 }
 
 /**
- * 加载历史来电记录
+ * 初始化 Speakers 与剧本工坊预设池
  */
-async function loadCallHistory() {
-    const $list = $('#pc-history-list');
-    if (!$list.length) return;
+async function initPresetsAndSpeakers() {
+    const apiHost = getApiHost();
+    try {
+        const [dataRes, presetsRes] = await Promise.all([
+            fetch(`${apiHost}/api/get_data`).then(r => r.json()).catch(() => null),
+            fetch(`${apiHost}/api/presets?category=phone_call`).then(r => r.json()).catch(() => null)
+        ]);
+
+        if (dataRes && dataRes.mappings) {
+            _boundSpeakersCache = Object.keys(dataRes.mappings);
+        }
+        _presetsCache = (presetsRes && presetsRes.presets) || [];
+    } catch (e) {
+        console.warn('[PhoneCallApp] 初始化预设与 Speakers 失败:', e);
+    }
+}
+
+/**
+ * 渲染当前激活的子视图内容
+ */
+async function renderActiveTabContent() {
+    const $container = $('#pc-tab-content');
+    if (!$container.length) return;
+
+    if (_activeTab === 'current') {
+        await renderCurrentBranchCalls($container);
+    } else if (_activeTab === 'all') {
+        await renderAllHistoryCalls($container);
+    } else if (_activeTab === 'dial') {
+        renderDialConsole($container);
+    }
+}
+
+/**
+ * 子视图 1: 渲染当前对话分支的通话记录
+ */
+async function renderCurrentBranchCalls($container) {
+    $container.html(`<div class="pc-history-scroll" id="pc-current-list"><div style="text-align:center; padding:30px; color:#9ca3af;">正在加载当前对话来电...</div></div>`);
+    const $list = $('#pc-current-list');
 
     const chatBranch = getChatBranch();
     const apiHost = getApiHost();
@@ -243,37 +477,79 @@ async function loadCallHistory() {
             : `${apiHost}/api/phone_call/history?limit=40`;
         
         const res = await fetch(url).then(r => r.json());
-        const calls = (res && res.history) || [];
+        _currentCallsCache = (res && (res.history || res.records)) || [];
 
-        renderCallList(calls);
+        renderCallsToContainer($list, _currentCallsCache, true);
     } catch (e) {
-        console.error('[PhoneCallApp] 加载历史失败:', e);
+        console.error('[PhoneCallApp] 加载当前对话历史失败:', e);
         $list.html(`<div style="text-align:center; padding:30px; color:#ef4444;">加载失败: ${e.message}</div>`);
     }
 }
 
 /**
- * 渲染通话记录列表
+ * 子视图 2: 渲染全量总历史
  */
-function renderCallList(calls) {
-    const $list = $('#pc-history-list');
-    if (!$list.length) return;
+async function renderAllHistoryCalls($container) {
+    $container.html(`
+        <div style="padding:10px 14px 0 14px;">
+            <div class="pc-search-row">
+                <span class="pc-search-icon">${SVG.search}</span>
+                <input type="text" class="pc-search-input" id="pc-all-search" placeholder="搜索所有历史来电角色或事由..." value="${_searchQuery}">
+            </div>
+        </div>
+        <div class="pc-history-scroll" id="pc-all-list">
+            <div style="text-align:center; padding:30px; color:#9ca3af;">正在加载全量历史...</div>
+        </div>
+    `);
 
+    const $list = $('#pc-all-list');
+    const apiHost = getApiHost();
+
+    try {
+        const res = await fetch(`${apiHost}/api/phone_call/history?limit=80`).then(r => r.json());
+        _allCallsCache = (res && (res.history || res.records)) || [];
+
+        const applyFilterAndRender = () => {
+            const filtered = _allCallsCache.filter(c => {
+                if (!_searchQuery) return true;
+                const charMatch = (c.char_name || '').toLowerCase().includes(_searchQuery);
+                const reasonMatch = (c.call_reason || '').toLowerCase().includes(_searchQuery);
+                return charMatch || reasonMatch;
+            });
+            renderCallsToContainer($list, filtered, false);
+        };
+
+        $('#pc-all-search').on('input', function () {
+            _searchQuery = $(this).val().trim().toLowerCase();
+            applyFilterAndRender();
+        });
+
+        applyFilterAndRender();
+    } catch (e) {
+        console.error('[PhoneCallApp] 加载全量历史失败:', e);
+        $list.html(`<div style="text-align:center; padding:30px; color:#ef4444;">加载失败: ${e.message}</div>`);
+    }
+}
+
+/**
+ * 渲染通话列表卡片通用方法
+ */
+function renderCallsToContainer($list, calls, isCurrentTab = false) {
     $list.empty();
+    const statusTexts = getCallStatusTexts();
 
-    // 如果有刚生成但未持久化的最新电话，置顶渲染
-    if (_lastGeneratedCall) {
+    if (_lastGeneratedCall && isCurrentTab) {
         const $latestCard = createCallCard(_lastGeneratedCall, true);
         $list.append($latestCard);
     }
 
-    if (calls.length === 0 && !_lastGeneratedCall) {
+    if (calls.length === 0 && (!_lastGeneratedCall || !isCurrentTab)) {
         $list.html(`
             <div style="text-align:center; padding:50px 20px; color:#9ca3af;">
-                <div style="font-size:32px; margin-bottom:10px;">📞</div>
-                <div>暂无通话记录</div>
+                <div style="font-size:28px; margin-bottom:10px; opacity:0.8;">${SVG.phone}</div>
+                <div>${isCurrentTab ? statusTexts.emptyCurrentTitle : statusTexts.emptyAllTitle}</div>
                 <div style="font-size:11.5px; color:rgba(220,200,160,0.6); margin-top:6px;">
-                    点击右上角【主动拨打电话】开启第一次通话
+                    ${statusTexts.emptySub}
                 </div>
             </div>
         `);
@@ -287,16 +563,155 @@ function renderCallList(calls) {
 }
 
 /**
+ * 子视图 3: 内嵌式主动呼出控制台 (直接联动剧本工坊)
+ */
+function renderDialConsole($container) {
+    const statusTexts = getCallStatusTexts();
+    const enriched = WorldInfoExtractor.getEnrichedContext({ maxMessages: 12 });
+    const boundSpeakers = _boundSpeakersCache.length > 0 ? _boundSpeakersCache : (enriched.speakers.length > 0 ? enriched.speakers : [enriched.charName]);
+    const defaultSpeaker = boundSpeakers.includes(enriched.charName) ? enriched.charName : boundSpeakers[0];
+
+    const callerOptions = boundSpeakers.map(s => `<option value="${s}" ${s === defaultSpeaker ? 'selected' : ''}>${s}</option>`).join('');
+
+    // 联动剧本工坊的预设列表
+    const presets = _presetsCache.length > 0 ? _presetsCache : [{ id: 'standard_call', name: '日常电话问候', description: '日常问候与闲聊' }];
+    const presetOptions = presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+    const defaultLangInfo = getSpeakerLanguageHint(defaultSpeaker);
+
+    const quickMotivations = ["深夜想念与挂念", "突发险情与紧急求助", "日常分享与问候", "吃醋质问与试探", "秘密商量与约定", "生病探望与关心"];
+    const quickTagsHtml = quickMotivations.map(m => `<span class="pc-quick-tag" data-val="${m}">${m}</span>`).join('');
+
+    const html = `
+        <div class="pc-dial-panel">
+            <!-- 沉浸式设定感应提示 -->
+            <div class="pc-system-hint">
+                ${statusTexts.systemHint}
+            </div>
+
+            <!-- 发起角色 -->
+            <div class="pc-form-group">
+                <label class="pc-form-label">发起角色</label>
+                <select class="pc-form-select" id="pc-form-caller">
+                    ${callerOptions}
+                </select>
+            </div>
+
+            <!-- 接听目标 -->
+            <div class="pc-form-group">
+                <label class="pc-form-label">接听目标</label>
+                <input type="text" class="pc-form-input" id="pc-form-target" value="${enriched.userName}" placeholder="${statusTexts.targetPlaceholder}">
+            </div>
+
+            <!-- 剧本工坊预设选择 -->
+            <div class="pc-form-group">
+                <div class="pc-form-label">
+                    <span>剧本预设</span>
+                    <span style="font-size:11px; color:rgba(196,155,79,0.85);">已同步工坊</span>
+                </div>
+                <select class="pc-form-select" id="pc-form-preset">
+                    ${presetOptions}
+                </select>
+                <div class="pc-preset-hint" id="pc-preset-desc">
+                    ${presets[0] ? presets[0].description : ''}
+                </div>
+            </div>
+
+            <!-- 对话语言选择器 -->
+            <div class="pc-form-group">
+                <div class="pc-form-label">
+                    <span>对话语言</span>
+                    <span id="pc-form-lang-hint" style="font-size:11px; color:rgba(196,155,79,0.85);">${defaultLangInfo.hint}</span>
+                </div>
+                <select class="pc-form-select" id="pc-form-language">
+                    <option value="auto" selected>智能自适应 (根据角色模型与语境)</option>
+                    <option value="zh">中文 (Chinese)</option>
+                    <option value="ja">日文 (Japanese)</option>
+                    <option value="en">英文 (English)</option>
+                </select>
+            </div>
+
+            <!-- 通话事由 / 传讯契机 -->
+            <div class="pc-form-group">
+                <label class="pc-form-label">${statusTexts.reasonLabel}</label>
+                <input type="text" class="pc-form-input" id="pc-form-reason" value="${statusTexts.reasonDefault}">
+                <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;">
+                    ${quickTagsHtml}
+                </div>
+            </div>
+
+            <!-- 语气基调 (可选) -->
+            <div class="pc-form-group">
+                <label class="pc-form-label">语气基调 (可选)</label>
+                <input type="text" class="pc-form-input" id="pc-form-tone" placeholder="${statusTexts.tonePlaceholder}">
+            </div>
+
+            <!-- 拨出大按钮 -->
+            <button class="pc-main-btn" id="pc-form-submit-btn">
+                ${statusTexts.btnIdle}
+            </button>
+        </div>
+    `;
+
+    $container.html(html);
+
+    // 发起人改变联动语言提示
+    $('#pc-form-caller').on('change', function () {
+        const langInfo = getSpeakerLanguageHint($(this).val());
+        $('#pc-form-lang-hint').text(langInfo.hint);
+    });
+
+    // 预设改变联动描述
+    $('#pc-form-preset').on('change', function () {
+        const pid = $(this).val();
+        const found = _presetsCache.find(p => p.id === pid);
+        if (found) {
+            $('#pc-preset-desc').text(found.description || '');
+        }
+    });
+
+    // 快捷动机点选
+    $container.find('.pc-quick-tag').on('click', function () {
+        $('#pc-form-reason').val($(this).data('val'));
+    });
+
+    // 点击提交发起呼出
+    $('#pc-form-submit-btn').on('click', async function () {
+        const caller = $('#pc-form-caller').val();
+        const target = $('#pc-form-target').val().trim() || enriched.userName;
+        const presetId = $('#pc-form-preset').val();
+        const reason = $('#pc-form-reason').val().trim();
+        const tone = $('#pc-form-tone').val().trim();
+        const selectedLang = $('#pc-form-language').val();
+
+        let effectiveLang = selectedLang;
+        if (selectedLang === 'auto') {
+            const langInfo = getSpeakerLanguageHint(caller);
+            effectiveLang = langInfo.recommended;
+        }
+
+        await generateAndLaunchPhoneCall({
+            caller,
+            target,
+            presetId,
+            reason,
+            tone,
+            language: effectiveLang,
+            enriched
+        });
+    });
+}
+
+/**
  * 创建单条通话卡片 (支持重播、重新生成与注入聊天)
  */
 function createCallCard(call, isLatest = false) {
-    const caller = call.selected_speaker || call.char_name || "未知角色";
-    const target = call.target_user || "用户";
+    const caller = call.char_name || call.selected_speaker || "神秘角色";
+    const target = call.target_user || "你";
     const timeStr = call.created_at ? formatTime(call.created_at) : "刚刚";
-    const reason = call.trigger_reason || call.call_reason || "主动问候与交流";
+    const reason = call.call_reason || "主动致电";
     const audioUrl = call.audio_url || (call.audio ? `data:audio/wav;base64,${call.audio}` : null);
 
-    // 格式化对话片段
     let segments = call.segments || [];
     if (typeof segments === 'string') {
         try { segments = JSON.parse(segments); } catch (e) { segments = []; }
@@ -304,15 +719,15 @@ function createCallCard(call, isLatest = false) {
 
     const previewTexts = segments.map(s => {
         const t = s.translation || s.text || '';
-        return `<div><strong>${s.speaker || caller}:</strong> ${t}</div>`;
+        return `<div>${t}</div>`;
     }).join('');
 
     const $card = $(`
         <div class="pc-card ${isLatest ? 'highlight' : ''}">
             <div class="pc-card-header">
                 <div class="pc-caller-name">
-                    ${SVG.phone} ${caller} ➔ ${target}
-                    ${isLatest ? '<span style="font-size:10px; background:#10b981; color:#fff; padding:1px 6px; border-radius:10px;">最新</span>' : ''}
+                    ${SVG.phone} ${caller} → ${target}
+                    ${isLatest ? '<span style="font-size:10px; background:#10b981; color:#fff; padding:1px 6px; border-radius:10px;">最新通话</span>' : ''}
                 </div>
                 <span class="pc-time">${timeStr}</span>
             </div>
@@ -329,10 +744,10 @@ function createCallCard(call, isLatest = false) {
                         ${SVG.play} 播放录音
                     </button>
                 ` : ''}
-                <button class="pc-action-btn ws-btn-regen" title="修改参数重新生成">
+                <button class="pc-action-btn ws-btn-regen" title="以相同参数重新生成">
                     ${SVG.refresh} 重新生成
                 </button>
-                <button class="pc-action-btn inject ws-btn-inject" title="将通话记录追加到 SillyTavern 聊天消息">
+                <button class="pc-action-btn inject ws-btn-inject" title="将通话内容追加到 SillyTavern 聊天消息中">
                     ${SVG.inject} 注入当前聊天
                 </button>
             </div>
@@ -351,44 +766,51 @@ function createCallCard(call, isLatest = false) {
         }
 
         cleanupGlobalPlayer();
-        _currentAudioPlayer = new AudioPlayer(audioUrl, {
-            onPlay: () => $btn.html(`${SVG.pause} 暂停播放`),
-            onPause: () => $btn.html(`${SVG.play} 播放录音`),
-            onEnded: () => $btn.html(`${SVG.play} 播放录音`)
-        });
+        _currentAudioPlayer = new AudioPlayer({ audioUrl });
         setGlobalPlayer(_currentAudioPlayer);
+
+        _currentAudioPlayer.on('ended', () => {
+            $btn.html(`${SVG.play} 播放录音`);
+        });
+
         _currentAudioPlayer.play();
+        $btn.html(`${SVG.pause} 暂停`);
     });
 
-    // 调参重新生成
-    $card.find('.ws-btn-regen').on('click', () => {
-        openDialModal({
-            caller: caller,
-            target: target,
-            reason: reason,
-            presetId: call.preset_id
-        });
+    // 重新生成
+    $card.find('.ws-btn-regen').on('click', async () => {
+        _activeTab = 'dial';
+        $('.pc-nav-tab-btn').removeClass('active');
+        $(`.pc-nav-tab-btn[data-tab="dial"]`).addClass('active');
+        renderDialConsole($('#pc-tab-content'));
+        $('#pc-form-caller').val(caller).trigger('change');
+        $('#pc-form-target').val(target);
+        if (call.preset_id) $('#pc-form-preset').val(call.preset_id).trigger('change');
+        $('#pc-form-reason').val(reason);
     });
 
     // 注入当前聊天
     $card.find('.ws-btn-inject').on('click', async function () {
         const $btn = $(this);
-        $btn.text('正在写入...');
+        $btn.prop('disabled', true).text('注入中...');
         try {
             await ChatInjector.appendToLastAIMessage({
                 type: 'phone_call',
+                caller: caller,
+                target: target,
+                callReason: reason,
                 segments: segments,
-                speaker: caller,
-                callId: call.call_id || Date.now(),
-                audioUrl: audioUrl,
-                callReason: reason
+                callId: call.call_id || call.id || Date.now(),
+                audioUrl: audioUrl
             });
-            $btn.html(`✅ 已写入聊天`);
-            setTimeout(() => $btn.html(`${SVG.inject} 注入当前聊天`), 2500);
+            $btn.html(`${SVG.inject} 已注入`);
+            setTimeout(() => $btn.html(`${SVG.inject} 注入当前聊天`), 2000);
         } catch (e) {
-            console.error('[PhoneCallApp] 注入聊天失败:', e);
-            alert(`写入聊天失败: ${e.message}`);
+            console.error('[PhoneCallApp] 注入失败:', e);
+            alert(`注入失败: ${e.message}`);
             $btn.html(`${SVG.inject} 注入当前聊天`);
+        } finally {
+            $btn.prop('disabled', false);
         }
     });
 
@@ -396,150 +818,22 @@ function createCallCard(call, isLatest = false) {
 }
 
 /**
- * 弹出【主动拨打电话】控制台模态框
+ * 执行主动电话生成全链路
  */
-async function openDialModal(defaultParams = {}) {
-    $('#pc-dial-modal-overlay').remove();
-
+async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, tone, language, enriched }) {
     const apiHost = getApiHost();
-    const enriched = WorldInfoExtractor.getEnrichedContext({ maxMessages: 12 });
-
-    // 1. 获取已绑定 TTS 模型的 Speaker 列表
-    let boundSpeakers = [];
-    try {
-        const dataRes = await fetch(`${apiHost}/api/get_data`).then(r => r.json());
-        if (dataRes && dataRes.mappings) {
-            boundSpeakers = Object.keys(dataRes.mappings);
-        }
-    } catch (e) {
-        console.warn('[PhoneCallApp] 获取 mappings 失败:', e);
-    }
-
-    if (boundSpeakers.length === 0) {
-        boundSpeakers = enriched.speakers.length > 0 ? enriched.speakers : [enriched.charName];
-    }
-
-    // 2. 获取可选剧本 Presets
-    let presets = [];
-    try {
-        const pRes = await fetch(`${apiHost}/api/presets?category=phone_call`).then(r => r.json());
-        presets = (pRes && pRes.presets) || [];
-    } catch (e) {
-        console.warn('[PhoneCallApp] 获取剧本预设失败:', e);
-    }
-
-    const defaultSpeaker = defaultParams.caller || (boundSpeakers.includes(enriched.charName) ? enriched.charName : boundSpeakers[0]);
-    const callerOptions = boundSpeakers.map(s => `<option value="${s}" ${s === defaultSpeaker ? 'selected' : ''}>🎙️ 说话人: ${s}</option>`).join('');
-
-    const defaultPreset = defaultParams.presetId || (presets[0] ? presets[0].id : 'standard_call');
-    const presetOptions = presets.map(p => `<option value="${p.id}" ${p.id === defaultPreset ? 'selected' : ''}>📜 ${p.name} - ${p.description || ''}</option>`).join('');
-
-    const quickMotivations = ["深夜想念与挂念", "突发险情与紧急求助", "日常分享与问候", "吃醋质问与试探", "秘密商量与约定", "生病探望与关心"];
-    const quickTagsHtml = quickMotivations.map(m => `<span class="ws-quick-tag" data-val="${m}" style="background:rgba(255,255,255,0.06); border:1px solid rgba(196,155,79,0.25); color:rgba(220,200,160,0.9); padding:3px 8px; border-radius:12px; font-size:11px; cursor:pointer;">${m}</span>`).join('');
-
-    const modalHtml = `
-        <div class="ws-modal-overlay show" id="pc-dial-modal-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:100000; display:flex; align-items:center; justify-content:center;">
-            <div style="background:linear-gradient(145deg, #1c172b, #120f1e); border:1px solid rgba(196,155,79,0.35); border-radius:14px; width:92%; max-width:500px; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 16px 40px rgba(0,0,0,0.8); color:#fff; overflow:hidden;">
-                <div style="padding:12px 16px; border-bottom:1px solid rgba(196,155,79,0.2); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25);">
-                    <h3 style="margin:0; font-size:15px; font-weight:600; color:#fef08a; display:flex; align-items:center; gap:6px;">
-                        ${SVG.dial} 主动拨打电话控制台
-                    </h3>
-                    <button style="background:none; border:none; color:#9ca3af; font-size:18px; cursor:pointer;" id="pc-dial-close-btn">✕</button>
-                </div>
-
-                <div style="padding:14px 16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
-                    <!-- 人设与世界书自动注入提示 -->
-                    <div style="background:rgba(196,155,79,0.1); border:1px solid rgba(196,155,79,0.25); padding:6px 10px; border-radius:6px; font-size:11px; color:rgba(220,200,160,0.9);">
-                        ${SVG.sparkles} 已自动挂载酒馆当前【角色人设】、【世界书】及【前情提要总结】。
-                    </div>
-
-                    <!-- 发起人与接听人 -->
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:12px; color:#d1d5db;">📞 呼叫发起人 (Speaker):</label>
-                            <select id="pc-input-caller" style="background:rgba(0,0,0,0.4); border:1px solid rgba(196,155,79,0.25); border-radius:6px; padding:7px; color:#fff; font-size:12.5px;">
-                                ${callerOptions}
-                            </select>
-                        </div>
-                        <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
-                            <label style="font-size:12px; color:#d1d5db;">🎯 接听对象 (可随意指定):</label>
-                            <input type="text" id="pc-input-target" value="${defaultParams.target || enriched.userName}" style="background:rgba(0,0,0,0.4); border:1px solid rgba(196,155,79,0.25); border-radius:6px; padding:7px; color:#fff; font-size:12.5px;">
-                        </div>
-                    </div>
-
-                    <!-- 剧本选择 -->
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <label style="font-size:12px; color:#d1d5db;">📜 通话剧本 Preset:</label>
-                        <select id="pc-input-preset" style="background:rgba(0,0,0,0.4); border:1px solid rgba(196,155,79,0.25); border-radius:6px; padding:7px; color:#fff; font-size:12.5px;">
-                            ${presetOptions}
-                        </select>
-                    </div>
-
-                    <!-- 通话事由 -->
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <label style="font-size:12px; color:#d1d5db;">💬 通话事由 / 动机 (Call Reason):</label>
-                        <input type="text" id="pc-input-reason" value="${defaultParams.reason || '想与你通电话聊聊近况'}" style="background:rgba(0,0,0,0.4); border:1px solid rgba(196,155,79,0.25); border-radius:6px; padding:7px; color:#fff; font-size:12.5px;">
-                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;">
-                            ${quickTagsHtml}
-                        </div>
-                    </div>
-
-                    <!-- 语气氛围 -->
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <label style="font-size:12px; color:#d1d5db;">🎭 情绪氛围 / 语气 (Tone, 可选):</label>
-                        <input type="text" id="pc-input-tone" placeholder="如: 温柔轻语、急促慌张、傲娇质问..." style="background:rgba(0,0,0,0.4); border:1px solid rgba(196,155,79,0.25); border-radius:6px; padding:7px; color:#fff; font-size:12.5px;">
-                    </div>
-                </div>
-
-                <div style="padding:12px 16px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:flex-end; gap:8px; background:rgba(0,0,0,0.2);">
-                    <button style="background:rgba(255,255,255,0.08); border:none; color:#d1d5db; padding:7px 14px; border-radius:8px; font-size:12px; cursor:pointer;" id="pc-dial-cancel-btn">取消</button>
-                    <button class="pc-main-btn" id="pc-dial-submit-btn">
-                        🚀 立即拨出电话
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    $('body').append(modalHtml);
-
-    const closeModal = () => $('#pc-dial-modal-overlay').remove();
-    $('#pc-dial-close-btn, #pc-dial-cancel-btn').on('click', closeModal);
-
-    // 快捷标签点选
-    $('#pc-dial-modal-overlay .ws-quick-tag').on('click', function () {
-        $('#pc-input-reason').val($(this).data('val'));
-    });
-
-    // 提交拨号
-    $('#pc-dial-submit-btn').on('click', async () => {
-        const caller = $('#pc-input-caller').val();
-        const target = $('#pc-input-target').val().trim() || enriched.userName;
-        const presetId = $('#pc-input-preset').val();
-        const reason = $('#pc-input-reason').val().trim();
-        const tone = $('#pc-input-tone').val().trim();
-
-        closeModal();
-        await generateAndLaunchPhoneCall({ caller, target, presetId, reason, tone, enriched });
-    });
-}
-
-/**
- * 执行主动电话生成全链路 (Prompt构建 -> LLM生成 -> TTS合成 -> 渲染与自动播放)
- */
-async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, tone, enriched }) {
-    const apiHost = getApiHost();
+    const statusTexts = getCallStatusTexts();
 
     if (!window.LLM_Client || typeof window.LLM_Client.callLLM !== 'function') {
-        alert('LLM_Client 未就绪，无法调用大模型');
+        alert('LLM_Client 未就绪，无法建立通讯');
         return;
     }
 
-    const $btn = $('#pc-btn-open-dial');
-    $btn.prop('disabled', true).text('正在编排电话...');
+    const $btn = $('#pc-form-submit-btn');
+    $btn.prop('disabled', true).html(statusTexts.btnLoading(statusTexts.step1Prompt));
 
     try {
-        // 1. 构建 Prompt
+        // 1. 构建 Prompt (直接对接工坊预设)
         const buildPayload = {
             char_name: caller,
             context: enriched.context,
@@ -552,7 +846,8 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
             call_reason: reason,
             call_tone: tone,
             character_persona: enriched.characterPersona,
-            world_info: enriched.worldInfo
+            world_info: enriched.worldInfo,
+            text_lang: language || 'zh'
         };
 
         const buildRes = await fetch(`${apiHost}/api/phone_call/build_prompt`, {
@@ -563,12 +858,12 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
 
         if (!buildRes.ok) {
             const err = await buildRes.text();
-            throw new Error(`构建提示词失败: ${err}`);
+            throw new Error(`连接失败: ${err}`);
         }
         const buildData = await buildRes.json();
 
         // 2. 调用 LLM
-        $btn.text('大模型思考生成中...');
+        $btn.html(statusTexts.btnLoading(statusTexts.step2LLM));
         const llmConfig = {
             api_url: buildData.llm_config.api_url,
             api_key: buildData.llm_config.api_key,
@@ -580,27 +875,31 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
 
         const llmResponse = await window.LLM_Client.callLLM(llmConfig);
 
-        // 3. TTS 合成
-        $btn.text('正在合成专属语音...');
+        // 3. TTS 合成 (携带 text_lang 动态语言参数)
+        $btn.html(statusTexts.btnLoading(statusTexts.step3TTS));
         const parseRes = await fetch(`${apiHost}/api/phone_call/parse_and_generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 char_name: caller,
                 llm_response: llmResponse,
-                generate_audio: true
+                generate_audio: true,
+                chat_branch: enriched.chatBranch,
+                context_fingerprint: enriched.contextFingerprint,
+                target_user: target,
+                text_lang: language || 'zh'
             })
         });
 
         if (!parseRes.ok) {
             const err = await parseRes.text();
-            throw new Error(`TTS 合成失败: ${err}`);
+            throw new Error(`语音通道建立失败: ${err}`);
         }
         const parseData = await parseRes.json();
 
         // 组装生成结果对象
         _lastGeneratedCall = {
-            call_id: `manual_${Date.now()}`,
+            call_id: parseData.call_id || `manual_${Date.now()}`,
             char_name: caller,
             selected_speaker: caller,
             target_user: target,
@@ -611,21 +910,30 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
             created_at: new Date().toISOString()
         };
 
-        // 重新渲染历史列表，并将最新生成的电话高亮置顶
-        await loadCallHistory();
+        // 自动切换到「当前对话」Tab 并自动播放
+        _activeTab = 'current';
+        $('.pc-nav-tab-btn').removeClass('active');
+        $(`.pc-nav-tab-btn[data-tab="current"]`).addClass('active');
+        await renderActiveTabContent();
 
-        // 自动播放生成的音频
         if (_lastGeneratedCall.audio_url) {
             cleanupGlobalPlayer();
-            _currentAudioPlayer = new AudioPlayer(_lastGeneratedCall.audio_url);
+            _currentAudioPlayer = new AudioPlayer({ audioUrl: _lastGeneratedCall.audio_url });
             setGlobalPlayer(_currentAudioPlayer);
             _currentAudioPlayer.play();
         }
 
     } catch (e) {
-        console.error('[PhoneCallApp] 主动电话生成失败:', e);
-        alert(`电话呼叫失败: ${e.message}`);
+        console.error('[PhoneCallApp] 通话呼叫异常:', e);
+        alert(`呼叫失败: ${e.message}`);
     } finally {
-        $btn.prop('disabled', false).html(`${SVG.dial} 主动拨打电话`);
+        $btn.prop('disabled', false).html(statusTexts.btnIdle);
     }
+}
+
+/**
+ * 清理函数
+ */
+export function cleanup() {
+    cleanupGlobalPlayer();
 }

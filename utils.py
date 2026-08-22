@@ -81,17 +81,17 @@ def scan_audio_files(directory):
             duration = get_audio_duration(full_path)
             
             if duration is None:
-                warnings.append(f"⚠️ 无法读取: {f}")
+                warnings.append(f"[WARN] 无法读取: {f}")
                 continue
             
             # 检查时长范围 (3-10秒)
             if duration < 2.99:  # 使用 2.99 避免浮点数精度问题
-                warnings.append(f"⚠️ 音频过短 ({duration:.2f}s < 3s): {f}")
-                print(f"⚠️ 跳过过短音频: {f} ({duration:.2f}秒)")
+                warnings.append(f"[WARN] 音频过短 ({duration:.2f}s < 3s): {f}")
+                print(f"[WARN] 跳过过短音频: {f} ({duration:.2f}秒)")
                 continue
             elif duration > 10.01:  # 使用 10.01 避免浮点数精度问题
-                warnings.append(f"⚠️ 音频过长 ({duration:.2f}s > 10s): {f}")
-                print(f"⚠️ 跳过过长音频: {f} ({duration:.2f}秒)")
+                warnings.append(f"[WARN] 音频过长 ({duration:.2f}s > 10s): {f}")
+                print(f"[WARN] 跳过过长音频: {f} ({duration:.2f}秒)")
                 continue
             
             # 正常音频,添加到列表
@@ -106,12 +106,12 @@ def scan_audio_files(directory):
     
     # 如果有警告,打印汇总
     if warnings:
-        print(f"\n⚠️ 发现 {len(warnings)} 个不合格的参考音频:")
+        print(f"\n[WARN] 发现 {len(warnings)} 个不合格的参考音频:")
         for warning in warnings[:5]:  # 只显示前5个
             print(f"  {warning}")
         if len(warnings) > 5:
             print(f"  ... 还有 {len(warnings) - 5} 个")
-        print("💡 提示: 请在管理页面重新上传这些音频,系统会自动处理时长问题\n")
+        print("[INFO] 提示: 请在管理页面重新上传这些音频,系统会自动处理时长问题\n")
     
     return refs
 

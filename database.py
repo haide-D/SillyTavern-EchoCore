@@ -353,6 +353,8 @@ class DatabaseManager:
             return None
         finally:
             conn.close()
+
+    create_auto_call = add_auto_phone_call
     
     def is_auto_call_generated(self, chat_branch: str, context_fingerprint: str) -> bool:
         """
@@ -499,6 +501,31 @@ class DatabaseManager:
                 ORDER BY created_at DESC 
                 LIMIT ?
             ''', (chat_branch, limit))
+            rows = cursor.fetchall()
+            return [self._auto_call_row_to_dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_all_auto_phone_calls(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        获取所有自动电话历史记录 (全量)
+        
+        Args:
+            limit: 返回记录数量限制
+            
+        Returns:
+            全量记录列表,按创建时间倒序
+        """
+        conn = self._get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                SELECT * FROM auto_phone_calls 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            ''', (limit,))
             rows = cursor.fetchall()
             return [self._auto_call_row_to_dict(row) for row in rows]
         finally:
@@ -712,19 +739,27 @@ class DatabaseManager:
         finally:
             conn.close()
     
-    def get_eavesdrop_history(self, chat_branch: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """获取对话追踪历史记录"""
+    def get_eavesdrop_history(self, chat_branch: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """获取对话追踪历史记录 (支持分支过滤或全量查询)"""
         conn = self._get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
         try:
-            cursor.execute('''
-                SELECT * FROM eavesdrop_records 
-                WHERE chat_branch = ? AND status = 'completed'
-                ORDER BY created_at DESC 
-                LIMIT ?
-            ''', (chat_branch, limit))
+            if chat_branch:
+                cursor.execute('''
+                    SELECT * FROM eavesdrop_records 
+                    WHERE chat_branch = ? AND status = 'completed'
+                    ORDER BY created_at DESC 
+                    LIMIT ?
+                ''', (chat_branch, limit))
+            else:
+                cursor.execute('''
+                    SELECT * FROM eavesdrop_records 
+                    WHERE status = 'completed'
+                    ORDER BY created_at DESC 
+                    LIMIT ?
+                ''', (limit,))
             rows = cursor.fetchall()
             return [self._eavesdrop_row_to_dict(row) for row in rows]
         finally:

@@ -12,56 +12,125 @@ import { formatTime, formatDuration, resolveAudioUrl } from './utils.js';
  */
 export class AudioPlayer {
     /**
-     * @param {Object} options - 配置选项
-     * @param {jQuery} options.$container - 播放器容器
-     * @param {Array} options.segments - 音频句段数据
-     * @param {boolean} options.showSpeaker - 是否显示说话人
-     * @param {Function} options.onEnd - 播放结束回调
-     * @param {Function} options.onError - 错误回调
+     * @param {Object|string} options - 配置选项或音频 URL
+     * @param {jQuery} [options.$container] - 播放器容器
+     * @param {string} [options.audioUrl] - 音频 URL
+     * @param {Array} [options.segments] - 音频句段数据
+     * @param {boolean} [options.showSpeaker] - 是否显示说话人
+     * @param {Function} [options.onEnd] - 播放结束回调
+     * @param {Function} [options.onError] - 错误回调
      */
     constructor(options = {}) {
-        this.$container = options.$container;
+        if (typeof options === 'string') {
+            options = { audioUrl: options };
+        }
+
+        this.audioUrl = options.audioUrl || null;
+        this.$container = options.$container || null;
         this.segments = options.segments || [];
         this.showSpeaker = options.showSpeaker || false;
         this.onEnd = options.onEnd || (() => { });
         this.onError = options.onError || ((err) => console.error('[AudioPlayer] 错误:', err));
+        this._eventListeners = {};
 
         // 内部状态
         this.audio = null;
         this.durationInterval = null;
         this.startTime = null;
         this.subtitleRenderer = null;
+        this._isPlaying = false;
 
-        // 缓存 DOM 元素
-        this.$progressFill = this.$container.find('.progress-bar-fill');
-        this.$currentTime = this.$container.find('.current-time');
-        this.$totalTime = this.$container.find('.total-time');
-        this.$duration = this.$container.find('.call-duration, .listening-duration');
+        // 安全缓存 DOM 元素（仅在 $container 有效时）
+        if (this.$container && typeof this.$container.find === 'function') {
+            this.$progressFill = this.$container.find('.progress-bar-fill');
+            this.$currentTime = this.$container.find('.current-time');
+            this.$totalTime = this.$container.find('.total-time');
+            this.$duration = this.$container.find('.call-duration, .listening-duration');
 
-        // 初始化字幕渲染器
-        const $subtitleArea = this.$container.find('.call-subtitle-area, .listening-subtitle-area');
-        if ($subtitleArea.length) {
-            this.subtitleRenderer = new SubtitleRenderer({
-                $container: $subtitleArea,
-                showSpeaker: this.showSpeaker
+            // 初始化字幕渲染器
+            const $subtitleArea = this.$container.find('.call-subtitle-area, .listening-subtitle-area');
+            if ($subtitleArea.length) {
+                this.subtitleRenderer = new SubtitleRenderer({
+                    $container: $subtitleArea,
+                    showSpeaker: this.showSpeaker
+                });
+            }
+        } else {
+            this.$progressFill = null;
+            this.$currentTime = null;
+            this.$totalTime = null;
+            this.$duration = null;
+        }
+    }
+
+    /**
+     * 判断当前是否处于播放中
+     * @returns {boolean}
+     */
+    isPlaying() {
+        return !!(this.audio && !this.audio.paused && !this.audio.ended && this.audio.readyState > 2);
+    }
+
+    /**
+     * 事件监听注册
+     * @param {string} event - 事件名 (ended, play, pause, timeupdate 等)
+     * @param {Function} callback
+     */
+    on(event, callback) {
+        if (typeof callback !== 'function') return this;
+        if (!this._eventListeners[event]) {
+            this._eventListeners[event] = [];
+        }
+        this._eventListeners[event].push(callback);
+        return this;
+    }
+
+    /**
+     * 触发内部事件
+     * @param {string} event
+     * @param  {...any} args
+     */
+    emit(event, ...args) {
+        if (this._eventListeners[event]) {
+            this._eventListeners[event].forEach(cb => {
+                try {
+                    cb(...args);
+                } catch (e) {
+                    console.error(`[AudioPlayer] 事件 ${event} 回调异常:`, e);
+                }
             });
         }
     }
 
     /**
      * 播放音频
-     * @param {string} audioUrl - 音频 URL
+     * @param {string} [audioUrl] - 可选的音频 URL，缺省时使用构造时传入的 audioUrl
      */
     play(audioUrl) {
-        const fullUrl = resolveAudioUrl(audioUrl);
+        const targetUrl = audioUrl || this.audioUrl;
+        const fullUrl = resolveAudioUrl(targetUrl);
         if (!fullUrl) {
             this.onError(new Error('无效的音频 URL'));
+            this.emit('ended');
             this.onEnd();
             return;
         }
 
         console.log('[AudioPlayer] 播放音频:', fullUrl);
 
+        // 如果已有 audio 且 url 相同且仅是暂停，则直接继续播放
+        if (this.audio && this.audio.src === fullUrl && this.audio.paused) {
+            this.audio.play().then(() => {
+                this._isPlaying = true;
+                this.emit('play');
+            }).catch(err => {
+                console.error('[AudioPlayer] 恢复播放失败:', err);
+                this.onError(err);
+            });
+            return;
+        }
+
+        this.cleanup();
         this.audio = new Audio(fullUrl);
         this.startTime = Date.now();
 
@@ -75,10 +144,14 @@ export class AudioPlayer {
         this.audio.addEventListener('error', (e) => this._onAudioError(e));
 
         // 播放
-        this.audio.play().catch(err => {
+        this.audio.play().then(() => {
+            this._isPlaying = true;
+            this.emit('play');
+        }).catch(err => {
             console.error('[AudioPlayer] 播放失败:', err);
-            alert('音频播放失败: ' + err.message);
+            this.onError(err);
             this.cleanup();
+            this.emit('ended');
             this.onEnd();
         });
     }
@@ -89,6 +162,8 @@ export class AudioPlayer {
     pause() {
         if (this.audio) {
             this.audio.pause();
+            this._isPlaying = false;
+            this.emit('pause');
         }
     }
 
@@ -138,9 +213,12 @@ export class AudioPlayer {
      * @private
      */
     _startDurationTimer() {
+        if (!this.$duration || !this.$duration.length) return;
         this.durationInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-            this.$duration.text(formatDuration(elapsed));
+            if (this.$duration && this.$duration.length) {
+                this.$duration.text(formatDuration(elapsed));
+            }
         }, 1000);
     }
 
@@ -149,8 +227,11 @@ export class AudioPlayer {
      * @private
      */
     _onLoadedMetadata() {
+        if (!this.audio) return;
         const duration = this.audio.duration;
-        this.$totalTime.text(formatTime(duration));
+        if (this.$totalTime && this.$totalTime.length) {
+            this.$totalTime.text(formatTime(duration));
+        }
     }
 
     /**
@@ -158,15 +239,23 @@ export class AudioPlayer {
      * @private
      */
     _onTimeUpdate() {
+        if (!this.audio) return;
         const currentTime = this.audio.currentTime;
         const duration = this.audio.duration;
 
         // 更新进度条
-        const progress = (currentTime / duration) * 100;
-        this.$progressFill.css('width', progress + '%');
+        if (this.$progressFill && this.$progressFill.length && duration) {
+            const progress = (currentTime / duration) * 100;
+            this.$progressFill.css('width', progress + '%');
+        }
 
         // 更新当前时间
-        this.$currentTime.text(formatTime(currentTime));
+        if (this.$currentTime && this.$currentTime.length) {
+            this.$currentTime.text(formatTime(currentTime));
+        }
+
+        // 触发外部进度更新事件
+        this.emit('timeupdate', currentTime, duration);
 
         // 字幕同步
         this._syncSubtitle(currentTime);
@@ -211,6 +300,8 @@ export class AudioPlayer {
      */
     _onEnded() {
         console.log('[AudioPlayer] 播放结束');
+        this._isPlaying = false;
+        this.emit('ended');
         this.cleanup();
         this.onEnd();
     }
@@ -221,7 +312,9 @@ export class AudioPlayer {
      */
     _onAudioError(e) {
         console.error('[AudioPlayer] 音频错误:', e);
+        this._isPlaying = false;
         this.onError(e);
+        this.emit('error', e);
         this.cleanup();
         this.onEnd();
     }

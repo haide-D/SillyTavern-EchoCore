@@ -3,10 +3,11 @@
   "name": "私下闲谈",
   "category": "eavesdrop",
   "author": "官方",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "角色们在私底下的日常交流、吐槽或秘密对话。",
   "tags": ["日常", "闲聊", "多人互动", "官方出厂"],
-  "prompt_template": "你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。\n\n**剧情主题与基调**:\n- 讨论主题: {{theme}}\n- 剧情起因: {{call_reason}}\n- 氛围张力: {{call_tone}}\n\n**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**创作要求**:\n1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. **text 字段必须使用{{lang_display}}进行对话**。\n4. **translation 字段必须填写中文翻译**。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"scene_description\": \"场景描述\",\n  \"segments\": [\n    {\n      \"speaker\": \"角色名 (必须是参与角色之一)\",\n      \"emotion\": \"情绪标签\",\n      \"text\": \"纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.5\n    }\n  ]\n}\n```\n\n规则: 生成 10-25 个对话片段，让参与角色自然交替说话。",
+  "plot_template": "你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。\n\n**剧情主题与基调**:\n- 讨论主题: {{theme}}\n- 剧情起因: {{call_reason}}\n- 氛围张力: {{call_tone}}\n\n**剧本创作要求与细节设定**:\n1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. 展现角色之间私底下的互动、真实心声或不为人知的秘密。",
+  "system_template": "**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**角色卡与世界书背景**:\n- 角色人设: {{character_persona}}\n- 世界书背景: {{world_info}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"scene_description\": \"场景描述\",\n  \"segments\": [\n    {\n      \"speaker\": \"角色名 (必须是参与角色之一)\",\n      \"emotion\": \"情绪标签\",\n      \"text\": \"纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填)\",\n      \"pause_after\": 0.5\n    }\n  ]\n}\n```\n\n生成 10-25 个对话片段，让参与角色自然交替说话。",
   "recommended_params": {
     "temperature": 0.7
   },

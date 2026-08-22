@@ -25,6 +25,7 @@ import { WebSocketManager } from './frontend/js/websocket_manager.js';
 import { ChatEventListener } from './frontend/js/chat_event_listener.js';
 import { ThemeTesterUI } from './frontend/js/theme_tester_ui.js';
 import { initSettingsUI } from './frontend/js/settings_ui.js';
+import { PromptInjector } from './frontend/js/prompt_injector.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
@@ -63,6 +64,7 @@ window.TTS_Parser = TTS_Parser;
 window.TTS_Scheduler = TTS_Scheduler;
 window.TTS_Events = TTS_Events;
 window.TTS_Templates = TTS_Templates;
+window.TTS_PromptInjector = PromptInjector;  // 暴露 PromptInjector 供全局消费
 window.LLM_Client = LLM_Client;  // 暴露 LLM_Client 供 mobile_ui.js 使用
 window.TTS_ThemeEngine = ThemeEngine;  // 暴露 ThemeEngine 供通知处理器等使用
 // 不要覆盖整个 window.TTS_UI,只添加 Templates
@@ -91,6 +93,7 @@ function initPlugin() {
     if (TTS_Parser.init) TTS_Parser.init();
     if (TTS_Events.init) TTS_Events.init();
     if (TTS_Scheduler.init) TTS_Scheduler.init();
+    if (PromptInjector.init) PromptInjector.init();
 
     // 3. 建立局部引用
     const CACHE = TTS_State.CACHE;
@@ -428,6 +431,9 @@ setTimeout(() => {
 eventSource.on(event_types.APP_READY, () => {
     console.log("🛠️ [Loader] APP_READY: 正在挂载酒馆原生扩展设置面板...");
     initSettingsUI();
+    if (PromptInjector && PromptInjector.refreshAndInject) {
+        PromptInjector.refreshAndInject();
+    }
 });
 
 console.log("✅ [TTS] 插件初始化完成");

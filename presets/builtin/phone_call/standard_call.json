@@ -3,10 +3,11 @@
   "name": "日常闲聊",
   "category": "phone_call",
   "author": "官方",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "角色主动来电分享近况、闲聊或倾诉日常心事。",
   "tags": ["日常", "自然", "官方出厂"],
-  "prompt_template": "你是一个沉浸式剧情编剧。角色 {{caller}} 正在主动拨打电话联系 {{target}}。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 通话事由: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**创作要求:**\n1. 真实还原打电话的口语质感与呼吸感，开头有符合人设与亲密度的问候，围绕「{{call_reason}}」自然展开。\n2. speaker 字段必须为 {{caller}}（或列表中合适的角色）。\n3. 情绪标签必须从可用情绪列表中选取，情绪自然起伏。\n{{followup_call_instructions}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填，若已是中文则一致)\",\n      \"pause_after\": 0.4,\n      \"speed\": 1.0,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有真实生活感的情感片段。",
+  "plot_template": "你是一个沉浸式剧情编剧。角色 {{caller}} 正在主动拨打电话联系 {{target}}。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 通话事由: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**剧本创作要求与细节设定**:\n1. 真实还原打电话的口语质感与呼吸感，开头有符合人设与亲密度的问候，围绕「{{call_reason}}」自然展开。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. speaker 字段必须为 {{caller}}（或列表中合适的角色）。\n{{followup_call_instructions}}",
+  "system_template": "**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**角色卡人设与世界书设定**:\n- 角色人设: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  \"speaker\": \"{{caller}}\",\n  \"segments\": [\n    {\n      \"emotion\": \"emotion_tag\",\n      \"text\": \"纯对话内容，**必须使用{{lang_display}}**\",\n      \"translation\": \"中文翻译 (必填，若已是中文则一致)\",\n      \"pause_after\": 0.4,\n      \"speed\": 1.0,\n      \"filler_word\": null\n    }\n  ]\n}\n```\n\n生成 10-15 个具有真实生活感的情感片段。",
   "recommended_params": {
     "temperature": 0.7,
     "speed": 1.0

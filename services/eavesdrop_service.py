@@ -77,9 +77,9 @@ class EavesdropService:
         print(f"[EavesdropService] 构建 Prompt: speakers={speakers}, 目标={effective_target}, text_lang={text_lang}, 指定预设={preset_id}")
         
         if eavesdrop_config:
-            print(f"[EavesdropService] 🎭 使用分析 LLM 提供的配置:")
-            print(f"  - 对话主题: {eavesdrop_config.get('conversation_theme', '未指定')}")
-            print(f"  - 戏剧张力: {eavesdrop_config.get('dramatic_tension', '未指定')}")
+            print(f"[EavesdropService] [CONFIG] LLM analysis config:")
+            print(f"  - Theme: {eavesdrop_config.get('conversation_theme', 'none')}")
+            print(f"  - Tension: {eavesdrop_config.get('dramatic_tension', 'none')}")
         
         # 获取所有说话人的可用情绪
         speakers_emotions = {}
@@ -92,9 +92,9 @@ class EavesdropService:
                     emotions = ["default", "neutral"]
                 speakers_emotions[speaker] = emotions
                 valid_speakers.append(speaker)
-                print(f"[EavesdropService] {speaker} 可用情绪: {emotions}")
+                print(f"[EavesdropService] {speaker} emotions: {emotions}")
             except Exception as e:
-                print(f"[EavesdropService] ⚠️ 角色 {speaker} 未绑定模型，采用默认情绪: {e}")
+                print(f"[EavesdropService] [WARN] Speaker {speaker} has no model, fallback to defaults: {e}")
                 speakers_emotions[speaker] = ["default", "neutral", "whisper"]
                 valid_speakers.append(speaker)
         
@@ -120,7 +120,7 @@ class EavesdropService:
 
             if preset and preset.get("prompt_template"):
                 custom_template = preset["prompt_template"]
-                print(f"[EavesdropService] 🎨 采用窃听剧本模板: 「{preset.get('name', '未命名')}」 (id={preset.get('id')})")
+                print(f"[EavesdropService] [PRESET] Adopt preset: {preset.get('name', 'unnamed')} (id={preset.get('id')})")
 
 
         # 尝试从数据库补充前情剧情总结 (三级梯队：指纹 -> 分支ID -> 角色最近记录)
@@ -140,8 +140,8 @@ class EavesdropService:
                         s = history[0].get("summary", "")
                         sc = history[0].get("scene_summary", "")
                         parts = []
-                        if s: parts.append(f"【前情剧情总结】: {s}")
-                        if sc: parts.append(f"【当前场景背景】: {sc}")
+                        if s: parts.append(f"[前情剧情总结]: {s}")
+                        if sc: parts.append(f"[当前场景背景]: {sc}")
                         effective_summary = "\n".join(parts)
                         break
 
@@ -166,7 +166,7 @@ class EavesdropService:
         # 读取 LLM 配置
         llm_config = phone_call_config.get("llm", {})
         
-        print(f"[EavesdropService] ✅ Prompt 构建完成: {len(prompt)} 字符")
+        print(f"[EavesdropService] [SUCCESS] Prompt built: {len(prompt)} chars")
         
         return {
             "prompt": prompt,
@@ -206,7 +206,7 @@ class EavesdropService:
         from phone_call_utils.response_parser import EmotionSegment
         from collections import defaultdict
         
-        print(f"[EavesdropService] 开始解析响应并生成音频")
+        print(f"[EavesdropService] Parse response and start TTS")
         
         # 1. 解析响应
         segments = self.response_parser.parse_multi_speaker_response(
@@ -217,11 +217,13 @@ class EavesdropService:
         if not segments:
             raise ValueError("未能解析出任何对话片段")
         
-        print(f"[EavesdropService] 解析到 {len(segments)} 个对话片段")
+        print(f"[EavesdropService] Parsed {len(segments)} segments")
         
         # 读取 TTS 配置
         settings = load_json(SETTINGS_FILE)
-        tts_config = settings.get("phone_call", {}).get("tts_config", {})
+        tts_config = dict(settings.get("phone_call", {}).get("tts_config", {}))
+        if text_lang and text_lang != "auto":
+            tts_config["text_lang"] = text_lang
         
         # 2. 按说话人分组，记录原始索引
         # 格式: {speaker: [(original_index, segment, ref_audio), ...]}
@@ -230,23 +232,23 @@ class EavesdropService:
         for i, seg in enumerate(segments):
             ref_audio = self._select_ref_audio(seg.speaker, seg.emotion)
             if not ref_audio:
-                print(f"[EavesdropService] ⚠️ 跳过片段 {i}: 无参考音频 (speaker={seg.speaker})")
+                print(f"[EavesdropService] [WARN] Skip segment {i}: No ref audio for {seg.speaker}")
                 continue
             speaker_groups[seg.speaker].append((i, seg, ref_audio))
         
-        print(f"[EavesdropService] 🎭 按说话人分组: {', '.join(f'{s}({len(items)}个)' for s, items in speaker_groups.items())}")
+        print(f"[EavesdropService] Grouped speakers: {', '.join(f'{s}({len(items)})' for s, items in speaker_groups.items())}")
         
         # 3. 按说话人批量生成音频（每个说话人只切换一次模型）
         # 格式: {original_index: audio_bytes}
         audio_results = {}
         
         for speaker, items in speaker_groups.items():
-            print(f"[EavesdropService] 🔊 开始生成 {speaker} 的 {len(items)} 个片段")
+            print(f"[EavesdropService] Synthesizing {len(items)} segments for {speaker}")
             
             # 使用 ModelWeightService 切换到该说话人的模型
             async with model_weight_service.use_model(speaker, f"eavesdrop_{speaker}") as success:
                 if not success:
-                    print(f"[EavesdropService] ❌ 无法切换到 {speaker} 的模型，跳过该角色")
+                    print(f"[EavesdropService] [ERROR] Cannot switch model to {speaker}, skipped")
                     continue
                 
                 # 批量生成该说话人的所有片段
@@ -266,10 +268,10 @@ class EavesdropService:
                         )
                         
                         audio_results[original_index] = audio_bytes
-                        print(f"[EavesdropService] ✅ 片段 {original_index} ({speaker}) 生成成功")
+                        print(f"[EavesdropService] [SUCCESS] Segment {original_index} ({speaker}) synthesized")
                         
                     except Exception as e:
-                        print(f"[EavesdropService] ⚠️ 生成片段 {original_index} ({speaker}) TTS 失败: {e}")
+                        print(f"[EavesdropService] [WARN] Segment {original_index} ({speaker}) TTS failed: {e}")
                         continue
         
         # 4. 按原始顺序重组音频列表
@@ -285,7 +287,7 @@ class EavesdropService:
         if not audio_bytes_list:
             raise ValueError("所有片段的 TTS 生成都失败了")
         
-        print(f"[EavesdropService] ✅ 共生成 {len(audio_bytes_list)} 个有效音频片段")
+        print(f"[EavesdropService] [SUCCESS] Total valid segments: {len(audio_bytes_list)}")
         
         # 5. 合并音频
         settings = load_json(SETTINGS_FILE)
@@ -302,7 +304,7 @@ class EavesdropService:
             config=audio_merger_config
         )
         
-        print(f"[EavesdropService] ✅ 音频合并完成: {len(merged_audio)} bytes")
+        print(f"[EavesdropService] [SUCCESS] Audio merged: {len(merged_audio)} bytes")
         
         # 6. 保存音频文件
         import time

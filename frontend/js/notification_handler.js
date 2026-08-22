@@ -31,9 +31,17 @@ export class NotificationHandler {
         // selected_speaker 是 LLM 选择的实际打电话人
         const actualCaller = selected_speaker || char_name;
 
-        // 将相对路径转换为完整 API URL
+        // 将相对路径转换为完整 API URL (防止对 data: 或已包含 http 的 URL 重复拼接)
         const apiHost = PhoneCallAPIClient.getApiHost();
-        const fullAudioUrl = audio_url ? `${apiHost}${audio_url}` : (audio_path ? `${apiHost}${audio_path}` : null);
+        const resolveUrl = (rawUrl) => {
+            if (!rawUrl) return null;
+            if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+                return rawUrl;
+            }
+            return `${apiHost}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+        };
+
+        const fullAudioUrl = resolveUrl(audio_url) || resolveUrl(audio_path);
 
         console.log('[NotificationHandler] 🎵 音频 URL 转换:');
         console.log('  - 原始 audio_url:', audio_url);
@@ -85,7 +93,14 @@ export class NotificationHandler {
 
         // 将相对路径转换为完整 API URL
         const apiHost = PhoneCallAPIClient.getApiHost();
-        const fullAudioUrl = audio_url ? `${apiHost}${audio_url}` : null;
+        const resolveUrl = (rawUrl) => {
+            if (!rawUrl) return null;
+            if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+                return rawUrl;
+            }
+            return `${apiHost}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+        };
+        const fullAudioUrl = resolveUrl(audio_url);
 
         // 存储对话追踪数据
         window.TTS_EavesdropData = {

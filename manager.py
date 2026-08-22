@@ -142,10 +142,13 @@ async def serve_eavesdrop_audio(filename: str):
         }
     )
 
-# 3. 注册路由
+# 3. 注册路由 (同时支持根路径与 /api 前缀)
 app.include_router(data.router, tags=["Data Management"])
+app.include_router(data.router, prefix="/api", tags=["Data Management (API)"])
 app.include_router(tts.router, tags=["TTS Core"])
+app.include_router(tts.router, prefix="/api", tags=["TTS Core (API)"])
 app.include_router(system.router, tags=["System Settings"])
+app.include_router(system.router, prefix="/api", tags=["System Settings (API)"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin Panel"])
 app.include_router(phone_call.router, prefix="/api", tags=["Phone Call"])
 app.include_router(speakers.router, prefix="/api", tags=["Speakers Management"])

@@ -16,6 +16,146 @@ class PresetService:
     
     VALID_CATEGORIES = {"phone_call", "eavesdrop"}
 
+    # 官方标准系统注入与输出规范模板 (电话)
+    DEFAULT_PHONE_SYSTEM_TEMPLATE = """**可用角色与情绪:**
+{{speakers_emotions}}
+
+**近期对话上下文:**
+{{context}}
+
+**角色卡人设与世界书设定**:
+- 角色人设: {{character_persona}}
+- 世界观设定: {{world_info}}
+
+**上次通话摘要** (若有):
+{{last_call_summary}}
+
+**⚠️ 纯语音输出铁律 (TTS 规范)**:
+text 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 `（叹气）`、`（看向窗外）`、`*笑*`）。
+
+**输出格式 (严格 JSON)**:
+```json
+{
+  "speaker": "{{caller}}",
+  "segments": [
+    {
+      "emotion": "emotion_tag",
+      "text": "纯对话内容，**必须使用{{lang_display}}**",
+      "translation": "中文翻译 (必填，若已是中文则一致)",
+      "pause_after": 0.4,
+      "speed": 1.0,
+      "filler_word": null
+    }
+  ]
+}
+```
+
+生成 10-15 个具有真实生活感的情感片段。"""
+
+    # 官方标准系统注入与输出规范模板 (偷听)
+    DEFAULT_EAVESDROP_SYSTEM_TEMPLATE = """**参与角色及其可用情绪**:
+{{speakers_emotions}}
+
+**对话历史参考**:
+{{context}}
+
+**角色卡与世界书背景**:
+- 角色人设: {{character_persona}}
+- 世界书背景: {{world_info}}
+
+**⚠️ 纯语音输出铁律 (TTS 规范)**:
+text 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白（如 `（轻微吸气）`、`（身体僵硬）`）。
+
+**输出格式 (严格 JSON)**:
+```json
+{
+  "scene_description": "场景描述",
+  "segments": [
+    {
+      "speaker": "角色名 (必须是参与角色之一)",
+      "emotion": "情绪标签",
+      "text": "纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**",
+      "translation": "中文翻译 (必填)",
+      "pause_after": 0.5
+    }
+  ]
+}
+```
+
+生成 10-25 个对话片段，让参与角色自然交替说话。"""
+
+    # 官方标准剧情与细节默认模板 (电话)
+    DEFAULT_PHONE_PLOT_TEMPLATE = """你是一个沉浸式剧情编剧。角色 {{caller}} 正在主动拨打电话联系 {{target}}。
+
+**呼叫背景与动机**:
+- 发起角色: {{caller}}
+- 接听对象: {{target}}
+- 通话事由: {{call_reason}}
+- 情绪基调: {{call_tone}}
+
+**剧本创作要求与细节设定**:
+1. 真实还原打电话的口语质感与呼吸感，开头有符合人设与亲密度的问候，围绕「{{call_reason}}」自然展开。
+2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。
+3. speaker 字段必须为 {{caller}}（或列表中合适的角色）。
+{{followup_call_instructions}}"""
+
+    # 官方标准剧情与细节默认模板 (偷听)
+    DEFAULT_EAVESDROP_PLOT_TEMPLATE = """你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。
+
+**剧情主题与基调**:
+- 讨论主题: {{theme}}
+- 剧情起因: {{call_reason}}
+- 氛围张力: {{call_tone}}
+
+**剧本创作要求与细节设定**:
+1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。
+2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。
+3. 展现角色之间私底下的互动、真实心声或不为人知的秘密。"""
+
+    @classmethod
+    def get_default_templates(cls, category: str) -> Dict[str, str]:
+        """获取指定分类的官方默认模板 (剧情模版 + 系统注入模版)"""
+        if category == "eavesdrop":
+            return {
+                "plot_template": cls.DEFAULT_EAVESDROP_PLOT_TEMPLATE,
+                "system_template": cls.DEFAULT_EAVESDROP_SYSTEM_TEMPLATE
+            }
+        return {
+            "plot_template": cls.DEFAULT_PHONE_PLOT_TEMPLATE,
+            "system_template": cls.DEFAULT_PHONE_SYSTEM_TEMPLATE
+        }
+
+    @classmethod
+    def _normalize_preset_data(cls, data: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """标准化预设数据结构，确保 plot_template、system_template 与 prompt_template 齐备"""
+        defaults = cls.get_default_templates(category)
+        
+        plot_template = data.get("plot_template")
+        system_template = data.get("system_template")
+        prompt_template = data.get("prompt_template", "")
+
+        # 如果已有 plot_template 和 system_template
+        if plot_template is not None or system_template is not None:
+            plot_val = (plot_template or "").strip()
+            sys_val = (system_template if system_template is not None else defaults["system_template"]).strip()
+            data["plot_template"] = plot_val
+            data["system_template"] = sys_val
+            # 动态组装合成 prompt_template
+            if plot_val and sys_val:
+                data["prompt_template"] = f"{plot_val}\n\n{sys_val}"
+            elif plot_val:
+                data["prompt_template"] = plot_val
+            else:
+                data["prompt_template"] = sys_val
+        else:
+            # 兼容旧版本单一 prompt_template
+            raw_prompt = prompt_template.strip()
+            data["plot_template"] = raw_prompt
+            data["system_template"] = defaults["system_template"]
+            data["prompt_template"] = raw_prompt
+
+        return data
+
     @classmethod
     def ensure_dirs(cls):
         """确保预设存储目录完整"""
@@ -55,6 +195,7 @@ class PresetService:
                             data["category"] = cat
                             if "id" not in data:
                                 data["id"] = json_file.stem
+                            data = cls._normalize_preset_data(data, cat)
                             presets.append(data)
                             seen_ids.add((cat, data["id"]))
                     except Exception as e:
@@ -71,7 +212,7 @@ class PresetService:
                             data["category"] = cat
                             if "id" not in data:
                                 data["id"] = json_file.stem
-                            # 若自定义存在同名则不强行覆盖，但标记
+                            data = cls._normalize_preset_data(data, cat)
                             presets.append(data)
                     except Exception as e:
                         logger.warning(f"读取出厂预设文件失败 {json_file}: {e}")
@@ -96,7 +237,7 @@ class PresetService:
                     data["is_builtin"] = False
                     data["category"] = category
                     data["id"] = clean_id
-                    return data
+                    return cls._normalize_preset_data(data, category)
             except Exception as e:
                 logger.error(f"读取自定义预设失败 {custom_file}: {e}")
 
@@ -109,7 +250,7 @@ class PresetService:
                     data["is_builtin"] = True
                     data["category"] = category
                     data["id"] = clean_id
-                    return data
+                    return cls._normalize_preset_data(data, category)
             except Exception as e:
                 logger.error(f"读取内置预设失败 {builtin_file}: {e}")
 
@@ -126,9 +267,19 @@ class PresetService:
         if not name:
             raise ValueError("预设名称不能为空")
 
+        defaults = cls.get_default_templates(category)
+        plot_template = preset_data.get("plot_template", "").strip()
+        system_template = preset_data.get("system_template", defaults["system_template"]).strip()
         prompt_template = preset_data.get("prompt_template", "").strip()
-        if not prompt_template:
-            raise ValueError("提示词模板 (prompt_template) 不能为空")
+
+        if not plot_template and not prompt_template:
+            raise ValueError("剧情与细节设定 (plot_template) 不能为空")
+
+        if not plot_template and prompt_template:
+            plot_template = prompt_template
+
+        # 合成完整的 prompt_template
+        combined_prompt = f"{plot_template}\n\n{system_template}".strip() if system_template else plot_template
 
         raw_id = preset_data.get("id") or name
         clean_id = cls._sanitize_id(raw_id)
@@ -147,7 +298,9 @@ class PresetService:
             "version": preset_data.get("version", "1.0.0"),
             "description": preset_data.get("description", "").strip(),
             "tags": preset_data.get("tags", []),
-            "prompt_template": prompt_template,
+            "plot_template": plot_template,
+            "system_template": system_template,
+            "prompt_template": combined_prompt,
             "recommended_params": preset_data.get("recommended_params", {}),
             "is_builtin": False
         }
@@ -195,10 +348,11 @@ class PresetService:
             category = "phone_call"
 
         name = data.get("name", "").strip()
+        plot_template = data.get("plot_template", "").strip()
         prompt_template = data.get("prompt_template", "").strip()
 
-        if not name or not prompt_template:
-            raise ValueError("导入的预设缺少必要字段 (name 或 prompt_template)")
+        if not name or (not plot_template and not prompt_template):
+            raise ValueError("导入的预设缺少必要字段 (name，以及 plot_template 或 prompt_template)")
 
         return cls.save_preset(category, data)
 

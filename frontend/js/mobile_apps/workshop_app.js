@@ -18,10 +18,11 @@ import { createNavbar as defaultCreateNavbar } from '../themes/theme_utils.js';
 import { NotificationHandler } from '../notification_handler.js';
 import { PhoneCallAPIClient } from '../phone_call_api_client.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
+import { STATUS_SVGS, getWorkshopStepTexts } from '../themes/theme_status_helper.js';
 
 export const id = 'workshop';
 export const defaultName = '剧本工坊';
-export const defaultIcon = '📜';
+export const defaultIcon = STATUS_SVGS.wand;
 export const sceneId = 'workshop';
 export const hidden = false;
 
@@ -410,7 +411,7 @@ const injectCSS = () => {
             border: 1px solid rgba(196, 155, 79, 0.35);
             border-radius: 14px;
             width: 92%;
-            max-width: 520px;
+            max-width: 540px;
             max-height: 88vh;
             display: flex;
             flex-direction: column;
@@ -419,6 +420,59 @@ const injectCSS = () => {
             transform: translateY(16px);
             transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             overflow: hidden;
+        }
+        .ws-modal-lg {
+            max-width: 680px !important;
+            max-height: 90vh !important;
+        }
+        .ws-section-box {
+            background: rgba(14, 11, 22, 0.65);
+            border: 1px solid rgba(196, 155, 79, 0.22);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .ws-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .ws-section-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #fef08a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ws-section-subtitle {
+            font-size: 11px;
+            color: rgba(220, 200, 160, 0.65);
+            margin: 0;
+            line-height: 1.4;
+        }
+        .ws-btn-mini {
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            color: #fef08a;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+        .ws-btn-mini:hover {
+            background: rgba(234, 179, 8, 0.25);
+            color: #fff;
+            transform: translateY(-1px);
         }
         .ws-modal-overlay.show .ws-modal {
             transform: translateY(0);
@@ -700,7 +754,9 @@ async function getContextInfo() {
         boundSpeakers: validBoundSpeakers, 
         userName: enriched.userName, 
         characterPersona: enriched.characterPersona, 
-        worldInfo: enriched.worldInfo 
+        worldInfo: enriched.worldInfo,
+        chatBranch: enriched.chatBranch,
+        contextFingerprint: enriched.contextFingerprint
     };
 }
 
@@ -1040,8 +1096,8 @@ async function openDirectedCallModal(preset) {
     // 1. 发起人严格限制为已绑定 TTS 模型的 Speaker
     const availableSpeakers = ctxInfo.boundSpeakers.length > 0 ? ctxInfo.boundSpeakers : [ctxInfo.charName];
     const defaultSpeaker = availableSpeakers.includes(ctxInfo.charName) ? ctxInfo.charName : availableSpeakers[0];
-
     const callerOptions = availableSpeakers.map(s => `<option value="${s}" ${s === defaultSpeaker ? 'selected' : ''}>🎙️ 说话人: ${s}</option>`).join('');
+    const defaultReason = (preset && preset.description) || (isPhone ? "想与你通电话聊聊近况" : "私下商讨重要事宜");
 
     // 常用动机快捷标签
     const phoneQuickMotivations = ["深夜想念与挂念", "突发险情与紧急示警", "日常分享与问候", "吃醋试探与质问", "秘密商量与约定", "生病求助与探望"];
@@ -1058,7 +1114,28 @@ async function openDirectedCallModal(preset) {
         </label>
     `).join('');
 
-    const defaultReason = preset.description || (isPhone ? "想与你通电话聊聊近况" : "私下商讨重要事宜");
+    // 角色模型语言感知
+    function getSpeakerLanguageHint(speakerName) {
+        if (!speakerName) return { recommended: 'zh', hint: '默认' };
+        const models = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.models) || {};
+        const speakerModel = models[speakerName];
+        if (!speakerModel || !speakerModel.languages) {
+            return { recommended: 'zh', hint: '默认' };
+        }
+        const langs = Object.keys(speakerModel.languages);
+        if (langs.includes('Japanese') && !langs.includes('Chinese')) {
+            return { recommended: 'ja', hint: '💡 模型含纯日语音频，推荐日文' };
+        }
+        if (langs.includes('English') && !langs.includes('Chinese')) {
+            return { recommended: 'en', hint: '💡 模型含英文音频，推荐英文' };
+        }
+        if (langs.includes('Japanese')) {
+            return { recommended: 'ja', hint: '✨ 支持中/日双语' };
+        }
+        return { recommended: 'zh', hint: '🇨🇳 中文' };
+    }
+
+    const defaultLangInfo = getSpeakerLanguageHint(defaultSpeaker);
 
     const modalHtml = `
         <div class="ws-modal-overlay show" id="ws-directed-modal-overlay">
@@ -1101,6 +1178,20 @@ async function openDirectedCallModal(preset) {
                         </div>
                     `}
 
+                    <!-- 语言偏好选择器 (带模型感知提示) -->
+                    <div class="ws-form-group">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <label class="ws-form-label" style="margin-bottom:0;">🌐 对话语言 (Language):</label>
+                            <span id="ws-lang-hint" style="font-size:11px; color:#d19a66;">${defaultLangInfo.hint}</span>
+                        </div>
+                        <select class="ws-form-select" id="ws-direct-language">
+                            <option value="auto" selected>🤖 智能自动 (根据角色模型与语境自适应)</option>
+                            <option value="zh">🇨🇳 中文 (Chinese)</option>
+                            <option value="ja">🇯🇵 日文 (Japanese)</option>
+                            <option value="en">🇺🇸 英文 (English)</option>
+                        </select>
+                    </div>
+
                     <!-- 通话事由 / 密谈主题 -->
                     <div class="ws-form-group">
                         <label class="ws-form-label">
@@ -1137,6 +1228,12 @@ async function openDirectedCallModal(preset) {
     const closeModal = () => $('#ws-directed-modal-overlay').remove();
     $('#ws-directed-close-btn').on('click', closeModal);
 
+    // 发起人切换联动更新语言感知提示
+    $('#ws-direct-caller').on('change', function () {
+        const langInfo = getSpeakerLanguageHint($(this).val());
+        $('#ws-lang-hint').text(langInfo.hint);
+    });
+
     // 快捷标签点选
     $('#ws-directed-modal-overlay .ws-quick-tag').on('click', function () {
         const val = $(this).data('val');
@@ -1155,7 +1252,9 @@ async function openDirectedCallModal(preset) {
     // 快捷直拨
     $('#ws-directed-quick-btn').on('click', async () => {
         closeModal();
-        await executeDirectedAction(preset, { isQuick: true });
+        const caller = $('#ws-direct-caller').val() || defaultSpeaker;
+        const langInfo = getSpeakerLanguageHint(caller);
+        await executeDirectedAction(preset, { isQuick: true, caller, language: langInfo.recommended });
     });
 
     // 定向发起
@@ -1164,6 +1263,13 @@ async function openDirectedCallModal(preset) {
         const target = $('#ws-direct-target').val() ? $('#ws-direct-target').val().trim() : ctxInfo.userName;
         const reason = $('#ws-direct-reason').val().trim() || defaultReason;
         const tone = $('#ws-direct-tone').val().trim();
+        const selectedLang = $('#ws-direct-language').val();
+
+        let effectiveLang = selectedLang;
+        if (selectedLang === 'auto') {
+            const langInfo = getSpeakerLanguageHint(caller);
+            effectiveLang = langInfo.recommended;
+        }
 
         let selectedSpeakers = [];
         if (!isPhone) {
@@ -1171,7 +1277,7 @@ async function openDirectedCallModal(preset) {
                 selectedSpeakers.push($(this).val());
             });
             if (selectedSpeakers.length < 2) {
-                alert('私下窃听至少需要 2 位已绑定语音的 Speaker 参与交流');
+                alert('请至少勾选 2 位说话人以展开密谈！');
                 return;
             }
         }
@@ -1183,13 +1289,25 @@ async function openDirectedCallModal(preset) {
             reason,
             tone,
             speakers: selectedSpeakers,
-            isQuick: false
+            language: effectiveLang
         });
     });
 }
 
+// 官方标准出厂模板字典
+const DEFAULT_WORKSHOP_TEMPLATES = {
+    phone_call: {
+        plot: `你是一个沉浸式剧情编剧。角色 {{caller}} 正在主动拨打电话联系 {{target}}。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 通话事由: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**剧本创作要求与细节设定**:\n1. 真实还原打电话的口语质感与呼吸感，开头有符合人设与亲密度的问候，围绕「{{call_reason}}」自然展开。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. speaker 字段必须为 {{caller}}（或列表中合适的角色）。\n{{followup_call_instructions}}`,
+        system: `**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**角色卡人设与世界书设定**:\n- 角色人设: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**上次通话摘要** (若有):\n{{last_call_summary}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**可朗读的纯台词文本**，严禁包含任何动作描述、括号心理活动或非台词字符（如 \`（叹气）\`、\`（看向窗外）\`、\`*笑*\`）。\n\n**输出格式 (严格 JSON)**:\n\`\`\`json\n{\n  "speaker": "{{caller}}",\n  "segments": [\n    {\n      "emotion": "emotion_tag",\n      "text": "纯对话内容，**必须使用{{lang_display}}**",\n      "translation": "中文翻译 (必填，若已是中文则一致)",\n      "pause_after": 0.4,\n      "speed": 1.0,\n      "filler_word": null\n    }\n  ]\n}\n\`\`\`\n\n生成 10-15 个具有真实生活感的情感片段。`
+    },
+    eavesdrop: {
+        plot: `你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。\n\n**剧情主题与基调**:\n- 讨论主题: {{theme}}\n- 剧情起因: {{call_reason}}\n- 氛围张力: {{call_tone}}\n\n**剧本创作要求与细节设定**:\n1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。\n2. 每个角色的说话风格严格符合其性格人设与背景设定，情绪自然起伏过渡。\n3. 展现角色之间私底下的互动、真实心声或不为人知的秘密。`,
+        system: `**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**角色卡与世界书背景**:\n- 角色人设: {{character_persona}}\n- 世界书背景: {{world_info}}\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含**纯台词**，严禁包含任何动作描述、括号心理活动或旁白。\n\n**输出格式 (严格 JSON)**:\n\`\`\`json\n{\n  "scene_description": "场景描述",\n  "segments": [\n    {\n      "speaker": "角色名 (必须是参与角色之一)",\n      "emotion": "情绪标签",\n      "text": "纯对话内容，无任何括号或动作描述，**必须使用{{lang_display}}**",\n      "translation": "中文翻译 (必填)",\n      "pause_after": 0.5\n    }\n  ]\n}\n\`\`\`\n\n生成 10-25 个对话片段，让参与角色自然交替说话。`
+    }
+};
+
 /**
- * 弹出编辑/新建 Modal (结构化插槽分类体系)
+ * 弹出编辑/新建 Modal (上下分栏解耦体系)
  */
 function openEditModal(preset) {
     const isNew = !preset;
@@ -1197,42 +1315,40 @@ function openEditModal(preset) {
 
     $('#ws-edit-modal-overlay').remove();
 
+    const categoryDef = DEFAULT_WORKSHOP_TEMPLATES[_currentCategory] || DEFAULT_WORKSHOP_TEMPLATES.phone_call;
+
     const initialData = preset || {
         id: `custom_${Date.now().toString(36)}`,
         name: '',
         category: _currentCategory,
         author: '用户',
-        version: '1.0.0',
+        version: '2.0.0',
         description: '',
-        prompt_template: _currentCategory === 'phone_call' 
-            ? '你是一个沉浸式剧情编剧。角色 {{caller}} 正在主动拨打电话给 {{target}}。\n\n**呼叫背景与动机**:\n- 发起角色: {{caller}}\n- 接听对象: {{target}}\n- 通话事由: {{call_reason}}\n- 情绪基调: {{call_tone}}\n\n**角色卡人设与世界书设定**:\n- 人设背景: {{character_persona}}\n- 世界观设定: {{world_info}}\n\n**可用角色与情绪:**\n{{speakers_emotions}}\n\n**近期对话上下文:**\n{{context}}\n\n**创作要求:**\n1. 真实还原打电话的口语质感与呼吸感，围绕「{{call_reason}}」展开。\n2. speaker 字段必须为 {{caller}}。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含纯台词，严禁包含任何动作描述与括号心理。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  "speaker": "{{caller}}",\n  "segments": [\n    {\n      "emotion": "emotion_tag",\n      "text": "纯对话内容，**必须使用{{lang_display}}**",\n      "translation": "中文翻译 (必填)",\n      "pause_after": 0.4,\n      "speed": 1.0,\n      "filler_word": null\n    }\n  ]\n}\n```\n\n生成 10-15 个片段。'
-            : '你是一个创意编剧，正在编写参与角色 {{speakers}} 之间的私下对话。\n\n**剧情主题与基调**:\n- 讨论主题: {{theme}}\n- 剧情起因: {{call_reason}}\n- 氛围张力: {{call_tone}}\n\n**角色卡与世界书背景**:\n- 角色人设: {{character_persona}}\n- 世界书背景: {{world_info}}\n\n**参与角色及其可用情绪**:\n{{speakers_emotions}}\n\n**对话历史参考**:\n{{context}}\n\n**创作要求:**\n1. 紧扣主题「{{theme}}」，生成自然交替的多人对话。\n2. 每个角色的说话风格严格符合其性格与世界观。\n\n**⚠️ 纯语音输出铁律 (TTS 规范)**:\ntext 字段只能包含纯台词，严禁任何动作与心理括号。\n\n**输出格式 (严格 JSON)**:\n```json\n{\n  "scene_description": "场景描述",\n  "segments": [\n    {\n      "speaker": "角色名",\n      "emotion": "情绪标签",\n      "text": "纯对话内容，**必须使用{{lang_display}}**",\n      "translation": "中文翻译 (必填)",\n      "pause_after": 0.5\n    }\n  ]\n}\n```\n\n生成 10-25 个对话片段。',
+        plot_template: categoryDef.plot,
+        system_template: categoryDef.system,
         recommended_params: { temperature: 0.8, speed: 1.0 }
     };
 
-    // 结构化插槽分类定义
-    const slotCategories = _currentCategory === 'phone_call' ? [
-        { title: "【身份与角色】", slots: ["{{caller}}", "{{target}}", "{{receiver}}", "{{speakers}}", "{{speakers_emotions}}"] },
-        { title: "【剧情与动机】", slots: ["{{call_reason}}", "{{call_tone}}"] },
-        { title: "【人设与世界书】", slots: ["{{character_persona}}", "{{world_info}}", "{{story_summary}}"] },
-        { title: "【系统与上下文】", slots: ["{{context}}", "{{lang_display}}", "{{last_call_summary}}", "{{followup_call_instructions}}"] }
-    ] : [
-        { title: "【角色组】", slots: ["{{speakers}}", "{{speakers_emotions}}"] },
-        { title: "【主题与张力】", slots: ["{{theme}}", "{{call_reason}}", "{{call_tone}}"] },
-        { title: "【人设与世界书】", slots: ["{{character_persona}}", "{{world_info}}", "{{story_summary}}"] },
-        { title: "【系统与上下文】", slots: ["{{context}}", "{{lang_display}}", "{{max_context_messages}}"] }
+    const initialPlot = initialData.plot_template || initialData.prompt_template || categoryDef.plot;
+    const initialSystem = initialData.system_template || categoryDef.system;
+
+    // 上栏（剧情与细节设定）快捷插槽
+    const plotSlots = _currentCategory === 'phone_call'
+        ? ["{{caller}}", "{{target}}", "{{receiver}}", "{{call_reason}}", "{{call_tone}}", "{{followup_call_instructions}}"]
+        : ["{{speakers}}", "{{theme}}", "{{call_reason}}", "{{call_tone}}"];
+
+    // 下栏（系统注入与格式规范）快捷插槽
+    const systemSlots = [
+        "{{context}}", "{{character_persona}}", "{{world_info}}", "{{speakers_emotions}}",
+        "{{lang_display}}", "{{last_call_summary}}", "{{story_summary}}"
     ];
 
-    const slotSectionHtml = slotCategories.map(cat => `
-        <div class="ws-slot-category">
-            <span class="ws-slot-cat-title">${cat.title}</span>
-            ${cat.slots.map(s => `<button type="button" class="ws-slot-btn" data-slot="${s}">${s}</button>`).join('')}
-        </div>
-    `).join('');
+    const plotSlotHtml = plotSlots.map(s => `<button type="button" class="ws-slot-btn" data-target="#ws-input-plot" data-slot="${s}">${s}</button>`).join('');
+    const systemSlotHtml = systemSlots.map(s => `<button type="button" class="ws-slot-btn" data-target="#ws-input-system" data-slot="${s}">${s}</button>`).join('');
 
     const modalHtml = `
         <div class="ws-modal-overlay show" id="ws-edit-modal-overlay">
-            <div class="ws-modal">
+            <div class="ws-modal ws-modal-lg">
                 <div class="ws-modal-header">
                     <h3 class="ws-modal-title">
                         ${SVG.edit} ${isNew ? '新建剧本预设' : (isBuiltin ? '查看出厂剧本 (另存为自定义)' : '编辑剧本预设')}
@@ -1240,28 +1356,57 @@ function openEditModal(preset) {
                     <button class="ws-modal-close" id="ws-modal-close-btn">✕</button>
                 </div>
                 <div class="ws-modal-body">
-                    <div class="ws-form-group">
-                        <label class="ws-form-label">剧本标识 (ID):</label>
-                        <input type="text" class="ws-form-input" id="ws-input-id" value="${initialData.id}" ${(!isNew && !isBuiltin) ? 'readonly' : ''}>
+                    <!-- 基础信息行 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="ws-form-group">
+                            <label class="ws-form-label">剧本标识 (ID):</label>
+                            <input type="text" class="ws-form-input" id="ws-input-id" value="${initialData.id}" ${(!isNew && !isBuiltin) ? 'readonly' : ''}>
+                        </div>
+                        <div class="ws-form-group">
+                            <label class="ws-form-label">剧本名称:</label>
+                            <input type="text" class="ws-form-input" id="ws-input-name" placeholder="如: 午夜私语、紧急求援..." value="${initialData.name}">
+                        </div>
                     </div>
-                    <div class="ws-form-group">
-                        <label class="ws-form-label">剧本名称:</label>
-                        <input type="text" class="ws-form-input" id="ws-input-name" placeholder="如: 午夜私语、紧急求援..." value="${initialData.name}">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                        <div class="ws-form-group">
+                            <label class="ws-form-label">作者 ID / 署名:</label>
+                            <input type="text" class="ws-form-input" id="ws-input-author" placeholder="作者名" value="${initialData.author || '用户'}">
+                        </div>
+                        <div class="ws-form-group">
+                            <label class="ws-form-label">场景描述:</label>
+                            <input type="text" class="ws-form-input" id="ws-input-desc" placeholder="简要描述触发场景与互动风格..." value="${initialData.description}">
+                        </div>
                     </div>
-                    <div class="ws-form-group">
-                        <label class="ws-form-label">作者 ID / 署名:</label>
-                        <input type="text" class="ws-form-input" id="ws-input-author" placeholder="作者名" value="${initialData.author || '用户'}">
+
+                    <!-- 上栏：主题与剧情细节设定 -->
+                    <div class="ws-section-box">
+                        <div class="ws-section-header">
+                            <span class="ws-section-title">📝 上栏：主题与剧情细节设定 (核心创作区)</span>
+                            <span style="font-size:11px; color:#fde047;">✨ 剧情插槽</span>
+                        </div>
+                        <p class="ws-section-subtitle">编写剧情主题、通话动机、语气张力与角色行为要求：</p>
+                        <textarea class="ws-textarea" id="ws-input-plot" style="height: 130px;" placeholder="编写主题、剧情起因与创作细节...">${initialPlot}</textarea>
+                        <div class="ws-slot-section" style="padding: 5px 8px;">
+                            <div class="ws-slot-category">
+                                <span class="ws-slot-cat-title">剧情插槽:</span>
+                                ${plotSlotHtml}
+                            </div>
+                        </div>
                     </div>
-                    <div class="ws-form-group">
-                        <label class="ws-form-label">场景描述:</label>
-                        <input type="text" class="ws-form-input" id="ws-input-desc" placeholder="简要描述触发场景与互动风格..." value="${initialData.description}">
-                    </div>
-                    <div class="ws-form-group">
-                        <label class="ws-form-label">Prompt 模板体系:</label>
-                        <textarea class="ws-textarea" id="ws-input-prompt">${initialData.prompt_template}</textarea>
-                        <div class="ws-slot-section">
-                            <div style="font-size:11px; color:#fef08a; font-weight:600; margin-bottom:2px;">✨ 快捷动态插槽 (点击插入至光标处):</div>
-                            ${slotSectionHtml}
+
+                    <!-- 下栏：系统上下文注入与输出规范 -->
+                    <div class="ws-section-box">
+                        <div class="ws-section-header">
+                            <span class="ws-section-title">⚙️ 下栏：系统上下文注入与输出规范</span>
+                            <button type="button" class="ws-btn-mini" id="ws-reset-system-btn">↺ 恢复官方默认模板</button>
+                        </div>
+                        <p class="ws-section-subtitle">包含聊天历史、角色卡/世界书设定、情绪列表、TTS纯台词铁律及严格 JSON 格式。新建时固定预填官方模板，支持直接自由微调：</p>
+                        <textarea class="ws-textarea" id="ws-input-system" style="height: 140px;" placeholder="系统注入与输出规范...">${initialSystem}</textarea>
+                        <div class="ws-slot-section" style="padding: 5px 8px;">
+                            <div class="ws-slot-category">
+                                <span class="ws-slot-cat-title">系统插槽:</span>
+                                ${systemSlotHtml}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1275,17 +1420,26 @@ function openEditModal(preset) {
 
     $('body').append(modalHtml);
 
-    // 插槽点击插入
+    // 插槽点击插入至对应文本框
     $('#ws-edit-modal-overlay .ws-slot-btn').on('click', function () {
         const slot = $(this).data('slot');
-        const $textarea = $('#ws-input-prompt');
+        const targetSelector = $(this).data('target') || '#ws-input-plot';
+        const $textarea = $(targetSelector);
+        if (!$textarea.length) return;
+        
         const dom = $textarea[0];
-        const start = dom.selectionStart;
-        const end = dom.selectionEnd;
+        const start = dom.selectionStart || 0;
+        const end = dom.selectionEnd || 0;
         const text = $textarea.val();
         $textarea.val(text.substring(0, start) + slot + text.substring(end));
         dom.selectionStart = dom.selectionEnd = start + slot.length;
         $textarea.focus();
+    });
+
+    // 恢复官方默认系统注入模板
+    $('#ws-reset-system-btn').on('click', function () {
+        $('#ws-input-system').val(categoryDef.system);
+        showToast('已恢复为官方标准系统注入模板');
     });
 
     const closeModal = () => $('#ws-edit-modal-overlay').remove();
@@ -1297,14 +1451,15 @@ function openEditModal(preset) {
         const nameVal = $('#ws-input-name').val().trim();
         const authorVal = $('#ws-input-author').val().trim() || '用户';
         const descVal = $('#ws-input-desc').val().trim();
-        const promptVal = $('#ws-input-prompt').val().trim();
+        const plotVal = $('#ws-input-plot').val().trim();
+        const sysVal = $('#ws-input-system').val().trim();
 
         if (!nameVal) {
             alert('请输入剧本名称');
             return;
         }
-        if (!promptVal) {
-            alert('Prompt 模板不能为空');
+        if (!plotVal) {
+            alert('上栏「主题与剧情细节设定」不能为空');
             return;
         }
 
@@ -1312,14 +1467,18 @@ function openEditModal(preset) {
             idVal = `${idVal}_copy_${Date.now().toString(36)}`;
         }
 
+        const combinedPrompt = sysVal ? `${plotVal}\n\n${sysVal}` : plotVal;
+
         const payload = {
             id: idVal,
             name: nameVal,
             category: _currentCategory,
             author: authorVal,
-            version: initialData.version || '1.0.0',
+            version: initialData.version || '2.0.0',
             description: descVal,
-            prompt_template: promptVal,
+            plot_template: plotVal,
+            system_template: sysVal,
+            prompt_template: combinedPrompt,
             recommended_params: initialData.recommended_params || { temperature: 0.8 }
         };
 
@@ -1460,7 +1619,8 @@ async function executeDirectedAction(preset, options = {}) {
                 call_reason: reason,
                 call_tone: tone,
                 character_persona: ctxInfo.characterPersona,
-                world_info: ctxInfo.worldInfo
+                world_info: ctxInfo.worldInfo,
+                text_lang: options.language || 'zh'
             };
 
             const buildRes = await fetch(`${apiHost}/api/phone_call/build_prompt`, {
@@ -1475,8 +1635,10 @@ async function executeDirectedAction(preset, options = {}) {
             }
             const buildData = await buildRes.json();
 
+            const stepTexts = getWorkshopStepTexts('phone_call', { caller, target });
+
             // 2. 调用 LLM
-            showToast(`[2/3] 大模型思考生成中... (${caller} → ${target})`, true);
+            showToast(stepTexts.step2, true);
             const llmConfig = {
                 api_url: buildData.llm_config.api_url,
                 api_key: buildData.llm_config.api_key,
@@ -1489,20 +1651,24 @@ async function executeDirectedAction(preset, options = {}) {
             const llmResponse = await window.LLM_Client.callLLM(llmConfig);
 
             // 3. TTS 合成 (使用真实绑定的 Speaker 模型合成)
-            showToast(`[3/3] 正在合成 ${caller} 的专属语音并拉起通话...`, true);
+            showToast(stepTexts.step3, true);
             const parseRes = await fetch(`${apiHost}/api/phone_call/parse_and_generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     char_name: caller,
                     llm_response: llmResponse,
-                    generate_audio: true
+                    generate_audio: true,
+                    chat_branch: ctxInfo.chatBranch,
+                    context_fingerprint: ctxInfo.contextFingerprint,
+                    target_user: target,
+                    text_lang: options.language || 'zh'
                 })
             });
 
             if (!parseRes.ok) {
                 const err = await parseRes.text();
-                throw new Error(`TTS 合成失败: ${err}`);
+                throw new Error(`TTS 语音生成失败: ${err}`);
             }
             const parseData = await parseRes.json();
 
@@ -1510,7 +1676,7 @@ async function executeDirectedAction(preset, options = {}) {
 
             // 4. 调用 NotificationHandler 拉起沉浸界面
             await NotificationHandler.handlePhoneCallReady({
-                call_id: `directed_${Date.now()}`,
+                call_id: parseData.call_id || `directed_${Date.now()}`,
                 char_name: caller,
                 selected_speaker: caller,
                 target_user: target,
@@ -1524,12 +1690,14 @@ async function executeDirectedAction(preset, options = {}) {
                 ? options.speakers 
                 : (ctxInfo.boundSpeakers.length >= 2 ? ctxInfo.boundSpeakers.slice(0, 2) : [caller, "神秘人"]);
 
+            const stepTexts = getWorkshopStepTexts('eavesdrop', { speakers });
+
             const buildPayload = {
                 context: ctxInfo.context,
                 speakers: speakers,
                 user_name: ctxInfo.userName,
                 chat_branch: ctxInfo.chatBranch,
-                text_lang: 'zh',
+                text_lang: options.language || 'zh',
                 preset_id: preset.id,
                 theme: reason,
                 call_reason: reason,
@@ -1546,12 +1714,12 @@ async function executeDirectedAction(preset, options = {}) {
 
             if (!buildRes.ok) {
                 const err = await buildRes.text();
-                throw new Error(`构建窃听提示词失败: ${err}`);
+                throw new Error(`构建密谈连接失败: ${err}`);
             }
             const buildData = await buildRes.json();
 
             // 2. 调用 LLM
-            showToast(`[2/3] 大模型编织密谈中... (${speakers.join(' & ')})`, true);
+            showToast(stepTexts.step2, true);
             const llmConfig = {
                 api_url: buildData.llm_config.api_url,
                 api_key: buildData.llm_config.api_key,
@@ -1564,20 +1732,23 @@ async function executeDirectedAction(preset, options = {}) {
             const llmResponse = await window.LLM_Client.callLLM(llmConfig);
 
             // 3. TTS 合成 (多 Speaker 分别合成)
-            showToast(`[3/3] 正在合成多角色语音并准备拉起...`, true);
+            showToast(stepTexts.step3, true);
             const parseRes = await fetch(`${apiHost}/api/eavesdrop/parse_and_generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     llm_response: llmResponse,
                     speakers: speakers,
-                    text_lang: 'zh'
+                    text_lang: options.language || 'zh',
+                    chat_branch: ctxInfo.chatBranch,
+                    context_fingerprint: ctxInfo.contextFingerprint,
+                    scene_description: `[${preset.name}] ${reason}`
                 })
             });
 
             if (!parseRes.ok) {
                 const err = await parseRes.text();
-                throw new Error(`窃听 TTS 合成失败: ${err}`);
+                throw new Error(`密谈语音合成失败: ${err}`);
             }
             const parseData = await parseRes.json();
 
@@ -1585,7 +1756,7 @@ async function executeDirectedAction(preset, options = {}) {
 
             // 4. 调用 NotificationHandler 拉起窃听界面
             await NotificationHandler.handleEavesdropReady({
-                record_id: `directed_${Date.now()}`,
+                record_id: parseData.record_id || `directed_${Date.now()}`,
                 speakers: speakers,
                 segments: parseData.segments || [],
                 audio_url: parseData.audio_url,

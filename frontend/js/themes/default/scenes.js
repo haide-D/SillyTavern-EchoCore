@@ -60,9 +60,9 @@ export const scenes = {
                 }
             });
 
-            // 清理来电 App 资源
-            if (IncomingCallApp.cleanup) {
-                IncomingCallApp.cleanup();
+            // 清理主动电话 App 资源
+            if (PhoneCallApp.cleanup) {
+                PhoneCallApp.cleanup();
             }
         }
     },
@@ -70,11 +70,11 @@ export const scenes = {
     incoming_call: {
         render($container, ctx) {
             const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
-            IncomingCallApp.render($appContainer, createNavbarForApps);
+            PhoneCallApp.render($appContainer, createNavbarForApps);
             $container.append($appContainer);
         },
         cleanup() {
-            if (IncomingCallApp.cleanup) IncomingCallApp.cleanup();
+            if (PhoneCallApp.cleanup) PhoneCallApp.cleanup();
         }
     },
 

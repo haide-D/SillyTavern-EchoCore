@@ -107,6 +107,11 @@ export const SpeakerManager = {
 
             console.log(`[SpeakerManager] ✅ 已更新说话人列表 (${speakers.length}): ${speakers.join(', ')}`);
 
+            // 联动刷新 Prompt 注入器
+            if (window.TTS_PromptInjector && window.TTS_PromptInjector.refreshAndInject) {
+                window.TTS_PromptInjector.refreshAndInject();
+            }
+
         } catch (error) {
             console.warn('[SpeakerManager] ⚠️ 更新失败:', error);
         }
