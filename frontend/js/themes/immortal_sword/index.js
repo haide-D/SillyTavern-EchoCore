@@ -19,7 +19,7 @@ const ImmortalSwordTheme = {
     name: '仙途凌霄',
     version: '1.2.0',
     description: '仙门天机长卷与修真玉简主题，配备悬浮破空飞剑灵器、水墨灵气粒子与全屏飞剑传书',
-    cssUrl: '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/immortal_sword.css',
+    cssUrl: new URL('../../../css/themes/immortal_sword.css', import.meta.url).pathname,
     createNavbar: createNavbarForApps,
 
     // ==================== 1. 生命周期：初始化 ====================

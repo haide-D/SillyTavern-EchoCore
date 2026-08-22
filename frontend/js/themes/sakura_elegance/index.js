@@ -19,7 +19,7 @@ const SakuraEleganceTheme = {
     name: '落樱雅境',
     version: '1.0.0',
     description: '平安京公卿风雅与莫兰迪薄樱美学：和纸莳绘 · 描金折扇 · 纸鹤式神 · 3D 落樱粒子物理系统 · 100% 细线矢量',
-    cssUrl: '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/sakura_elegance.css',
+    cssUrl: new URL('../../../css/themes/sakura_elegance.css', import.meta.url).pathname,
     createNavbar: createNavbarForApps,
 
     // ==================== 1. 生命周期：初始化 ====================

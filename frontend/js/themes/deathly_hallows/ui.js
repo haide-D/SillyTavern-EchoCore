@@ -1049,96 +1049,89 @@ export function bindDragAndClick() {
     const $trigger = $('#tts-dh-trigger');
     if (!$trigger.length) return;
 
-    $trigger.on('mousedown touchstart', function (e) {
-        if (e.type === 'touchstart' && e.touches.length > 1) return;
-        if (e.cancelable) e.preventDefault();
+    $trigger.off('pointerdown pointermove pointerup pointercancel click');
 
-        const point = e.type === 'touchstart' ? e.touches[0] : e;
-        const rect = $trigger[0].getBoundingClientRect();
+    $trigger.on('pointerdown', function (e) {
+        // 忽略多点触控非主要触点
+        if (e.isPrimary === false) return;
 
-        ThemeState.dragState.startX = point.clientX;
-        ThemeState.dragState.startY = point.clientY;
-        ThemeState.dragState.shiftX = point.clientX - rect.left;
-        ThemeState.dragState.shiftY = point.clientY - rect.top;
-        ThemeState.dragState.winW = $(window).width();
-        ThemeState.dragState.winH = $(window).height();
         ThemeState.dragState.isDragging = true;
         ThemeState.dragState.hasMoved = false;
+        ThemeState.dragState.startX = e.clientX;
+        ThemeState.dragState.startY = e.clientY;
 
-        document.addEventListener('mousemove', onDragMove, { passive: false });
-        document.addEventListener('touchmove', onDragMove, { passive: false });
-        document.addEventListener('mouseup', onDragUp);
-        document.addEventListener('touchend', onDragUp);
+        const offset = $trigger.offset();
+        ThemeState.dragState.initialLeft = offset ? offset.left : 0;
+        ThemeState.dragState.initialTop = offset ? offset.top : 0;
+        ThemeState.dragState.winW = window.innerWidth || $(window).width();
+        ThemeState.dragState.winH = window.innerHeight || $(window).height();
+
+        if ($trigger[0].setPointerCapture && e.pointerId) {
+            try { $trigger[0].setPointerCapture(e.pointerId); } catch (_) {}
+        }
     });
+
+    $trigger.on('pointermove', function (e) {
+        if (!ThemeState.dragState.isDragging) return;
+        const dx = e.clientX - ThemeState.dragState.startX;
+        const dy = e.clientY - ThemeState.dragState.startY;
+
+        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+            ThemeState.dragState.hasMoved = true;
+
+            // 拖拽时取消粒子引擎的悬浮微动
+            if (ThemeState.particleEngine) {
+                ThemeState.particleEngine.config.floatAmplitudeX = 0;
+                ThemeState.particleEngine.config.floatAmplitudeY = 0;
+                ThemeState.particleEngine.config.floatSecondaryAmpX = 0;
+                ThemeState.particleEngine.config.floatSecondaryAmpY = 0;
+            }
+        }
+
+        let newLeft = ThemeState.dragState.initialLeft + dx;
+        let newTop = ThemeState.dragState.initialTop + dy;
+
+        newLeft = Math.max(0, Math.min(ThemeState.dragState.winW - 72, newLeft));
+        newTop = Math.max(0, Math.min(ThemeState.dragState.winH - 72, newTop));
+
+        $trigger.css({ left: newLeft + 'px', top: newTop + 'px' });
+
+        if (ThemeState.particleEngine) {
+            ThemeState.particleEngine.elX = newLeft + 36;
+            ThemeState.particleEngine.elY = newTop + 36;
+            ThemeState.particleEngine.config.baseX = (newLeft + 36) / ThemeState.dragState.winW;
+            ThemeState.particleEngine.config.baseY = (newTop + 36) / ThemeState.dragState.winH;
+        }
+    });
+
+    const endDrag = function (e) {
+        if (!ThemeState.dragState.isDragging) return;
+        ThemeState.dragState.isDragging = false;
+
+        if ($trigger[0].releasePointerCapture && e.pointerId) {
+            try { $trigger[0].releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+
+        if (!ThemeState.dragState.hasMoved) {
+            // 点击触发面板开闭
+            if (ThemeState.engine) {
+                ThemeState.engine.toggle();
+            }
+        } else {
+            // 恢复悬浮粒子动画
+            if (ThemeState.particleEngine) {
+                ThemeState.particleEngine.config.floatAmplitudeX = 6;
+                ThemeState.particleEngine.config.floatAmplitudeY = 5;
+                ThemeState.particleEngine.config.floatSecondaryAmpX = 2.5;
+                ThemeState.particleEngine.config.floatSecondaryAmpY = 2;
+            }
+        }
+    };
+
+    $trigger.on('pointerup pointercancel', endDrag);
 
     // 模态框关闭按钮
-    $('.dh-close-btn').click(() => {
+    $('.dh-close-btn').off('click').on('click', () => {
         if (ThemeState.engine) ThemeState.engine.close();
     });
-}
-
-function onDragMove(e) {
-    if (!ThemeState.dragState.isDragging) return;
-    if (e.cancelable) e.preventDefault();
-
-    const point = e.type === 'touchmove' ? e.touches[0] : e;
-    const currentX = point.clientX;
-    const currentY = point.clientY;
-    const el = $('#tts-dh-trigger')[0];
-    if (!el) return;
-
-    if (!ThemeState.dragState.hasMoved) {
-        const moveDis = Math.sqrt(Math.pow(currentX - ThemeState.dragState.startX, 2) + Math.pow(currentY - ThemeState.dragState.startY, 2));
-        if (moveDis < DRAG_THRESHOLD) return;
-        ThemeState.dragState.hasMoved = true;
-        
-        // 拖拽时取消粒子引擎的悬浮计算
-        if (ThemeState.particleEngine) {
-            ThemeState.particleEngine.config.floatAmplitudeX = 0;
-            ThemeState.particleEngine.config.floatAmplitudeY = 0;
-            ThemeState.particleEngine.config.floatSecondaryAmpX = 0;
-            ThemeState.particleEngine.config.floatSecondaryAmpY = 0;
-        }
-    }
-
-    let newLeft = currentX - ThemeState.dragState.shiftX;
-    let newTop = currentY - ThemeState.dragState.shiftY;
-    newLeft = Math.max(0, Math.min(ThemeState.dragState.winW - 72, newLeft));
-    newTop = Math.max(0, Math.min(ThemeState.dragState.winH - 72, newTop));
-
-    el.style.left = newLeft + 'px';
-    el.style.top = newTop + 'px';
-    
-    if (ThemeState.particleEngine) {
-        // 同步粒子引擎的坐标
-        ThemeState.particleEngine.elX = newLeft + 36;
-        ThemeState.particleEngine.elY = newTop + 36;
-        // 修改 baseUrl 等防止它跳回去
-        ThemeState.particleEngine.config.baseX = (newLeft + 36) / ThemeState.dragState.winW;
-        ThemeState.particleEngine.config.baseY = (newTop + 36) / ThemeState.dragState.winH;
-    }
-}
-
-function onDragUp() {
-    ThemeState.dragState.isDragging = false;
-
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('touchmove', onDragMove);
-    document.removeEventListener('mouseup', onDragUp);
-    document.removeEventListener('touchend', onDragUp);
-
-    if (!ThemeState.dragState.hasMoved) {
-        // 点击处理
-        if (ThemeState.engine) {
-            ThemeState.engine.toggle();
-        }
-    } else {
-        // 恢复悬浮浮动
-        if (ThemeState.particleEngine) {
-            ThemeState.particleEngine.config.floatAmplitudeX = 6;
-            ThemeState.particleEngine.config.floatAmplitudeY = 5;
-            ThemeState.particleEngine.config.floatSecondaryAmpX = 2.5;
-            ThemeState.particleEngine.config.floatSecondaryAmpY = 2;
-        }
-    }
 }

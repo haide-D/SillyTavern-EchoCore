@@ -19,7 +19,7 @@ const CyberpunkEdgerunnersTheme = {
     name: '夜之城·边缘行者',
     version: '1.0.0',
     description: '夜之城霓虹故障与斯安威逊极速美学：战术 HUD · 脑机直连 · 深网破冰 · 3D 赛博光子火花物理系统 · 100% 细线矢量',
-    cssUrl: '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/cyberpunk_edgerunners.css',
+    cssUrl: new URL('../../../css/themes/cyberpunk_edgerunners.css', import.meta.url).pathname,
     createNavbar: createNavbarForApps,
 
     // ==================== 1. 生命周期：初始化 ====================

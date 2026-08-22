@@ -2,7 +2,8 @@
 import { resolveBackendUrls } from './utils.js';
 
 const MODULE_NAME = 'st_direct_tts';
-const HTML_PATH = '/scripts/extensions/third-party/st-direct-tts/frontend/settings.html';
+// 动态基于当前模块定位 settings.html，自动兼容任何文件夹名称 (st-direct-tts 或 SillyTavern-GPT-SoVITS 等)
+const HTML_PATH = new URL('../settings.html', import.meta.url).pathname;
 
 const defaultSettings = {
     enabled: true,

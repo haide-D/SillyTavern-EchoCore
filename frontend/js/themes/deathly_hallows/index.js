@@ -18,7 +18,7 @@ const DeathlyHallowsTheme = {
     name: '⚡ 死亡圣器',
     description: '沉浸式魔幻设计，采用金银双色与法阵动画',
     version: '1.0.0',
-    cssUrl: '/scripts/extensions/third-party/st-direct-tts/frontend/css/themes/deathly_hallows.css',
+    cssUrl: new URL('../../../css/themes/deathly_hallows.css', import.meta.url).pathname,
 
     init(engine) {
         ThemeState.engine = engine;
