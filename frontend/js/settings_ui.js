@@ -258,8 +258,8 @@ export async function initSettingsUI() {
             const apiKey = $('#tts-minimax-api-key').val().trim();
             const groupId = $('#tts-minimax-group-id').val().trim();
 
-            if (!apiKey || !groupId) {
-                $res.text('❌ 请先填写 API Key 和 Group ID').css('color', '#ff5555');
+            if (!apiKey) {
+                $res.text('❌ 请先填写 MiniMax API Key').css('color', '#ff5555');
                 return;
             }
 

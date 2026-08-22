@@ -845,10 +845,10 @@ export function bindTestMiniMaxButton() {
         const apiUrl = document.getElementById('setting-minimax-api-url')?.value.trim();
         const resEl = document.getElementById('test-minimax-connection-result');
 
-        if (!apiKey || !groupId) {
-            showNotification('请先填写 MiniMax API Key 和 Group ID', 'warning');
+        if (!apiKey) {
+            showNotification('请先填写 MiniMax API Key', 'warning');
             if (resEl) {
-                resEl.textContent = '❌ 请先填写 API Key 和 Group ID';
+                resEl.textContent = '❌ 请先填写 MiniMax API Key';
                 resEl.style.color = '#ef4444';
             }
             return;

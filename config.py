@@ -5,10 +5,29 @@ import tempfile
 # ================= 路径配置 =================
 # 获取当前文件所在目录作为插件根目录
 PLUGIN_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(PLUGIN_ROOT, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-SETTINGS_FILE = os.path.join(PLUGIN_ROOT, "system_settings.json")
-MAPPINGS_FILE = os.path.join(PLUGIN_ROOT, "character_mappings.json")
+# 持久化配置文件：存储于挂载的 data/ 目录下，保证 Docker 重启与重建时不丢失
+SETTINGS_FILE = os.path.join(DATA_DIR, "system_settings.json")
+MAPPINGS_FILE = os.path.join(DATA_DIR, "character_mappings.json")
 FRONTEND_DIR = os.path.join(PLUGIN_ROOT, "frontend")
+
+# 迁移旧路径配置文件
+LEGACY_SETTINGS = os.path.join(PLUGIN_ROOT, "system_settings.json")
+LEGACY_MAPPINGS = os.path.join(PLUGIN_ROOT, "character_mappings.json")
+if not os.path.exists(SETTINGS_FILE) and os.path.isfile(LEGACY_SETTINGS):
+    try:
+        import shutil
+        shutil.copy2(LEGACY_SETTINGS, SETTINGS_FILE)
+    except:
+        pass
+if not os.path.exists(MAPPINGS_FILE) and os.path.isfile(LEGACY_MAPPINGS):
+    try:
+        import shutil
+        shutil.copy2(LEGACY_MAPPINGS, MAPPINGS_FILE)
+    except:
+        pass
 
 # 默认值
 DEFAULT_BASE_DIR = os.path.join(PLUGIN_ROOT, "MyCharacters")
