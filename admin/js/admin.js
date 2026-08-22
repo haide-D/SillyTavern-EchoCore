@@ -3,7 +3,7 @@
 // Version: 3.0.1 (Modularized)
 // ==========================================================================
 
-import { API_BASE } from './core/api.js';
+import { API_BASE, setAuthToken } from './core/api.js';
 import { state } from './core/state.js';
 import { showNotification, showDialog, closeDialog } from './core/ui.js';
 import { formatFileSize, escapeHtml } from './core/utils.js';
@@ -61,7 +61,8 @@ import {
     bindAnalysisLLMButtons,
     bindPromptAndEmotionControls,
     bindTextReplacementControls,
-    bindTunnelAndNginxControls
+    bindTunnelAndNginxControls,
+    bindSecurityControls
 } from './modules/settings.js';
 import {
     checkVersion,
@@ -203,6 +204,106 @@ Object.assign(window, {
     handlePresetFileSelected
 });
 
+// ==================== 登录鉴权弹窗与防护逻辑 ====================
+window.showAdminLoginModal = function () {
+    const dialog = document.getElementById('admin-login-dialog');
+    const input = document.getElementById('admin-login-password-input');
+    const errorMsg = document.getElementById('admin-login-error-msg');
+    if (dialog) {
+        dialog.style.display = 'flex';
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        if (errorMsg) errorMsg.style.display = 'none';
+    }
+};
+
+async function handleAdminLoginSubmit() {
+    const input = document.getElementById('admin-login-password-input');
+    const errorMsg = document.getElementById('admin-login-error-msg');
+    const submitBtn = document.getElementById('btn-submit-admin-login');
+    const password = (input ? input.value : '').trim();
+
+    if (!password) {
+        if (errorMsg) {
+            errorMsg.textContent = '请输入管理员密码';
+            errorMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ 正在验证...';
+    }
+
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            setAuthToken(data.token);
+            closeDialog('admin-login-dialog');
+            showNotification('🔓 管理员身份验证成功！', 'success');
+            // 重新刷新核心数据
+            loadDashboard();
+            loadModels();
+            loadSettings();
+            initPromptEmotionsPage();
+        } else {
+            if (errorMsg) {
+                errorMsg.textContent = data.detail || data.message || '密码错误';
+                errorMsg.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = `登录请求失败: ${err.message}`;
+            errorMsg.style.display = 'block';
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔓 验证并解锁控制台';
+        }
+    }
+}
+
+// 检查鉴权状态并绑定登录事件
+async function initAuthProtection() {
+    const submitBtn = document.getElementById('btn-submit-admin-login');
+    const input = document.getElementById('admin-login-password-input');
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleAdminLoginSubmit);
+    }
+    if (input) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAdminLoginSubmit();
+            }
+        });
+    }
+
+    try {
+        const res = await fetch('/api/auth/status');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.auth_required && !data.is_authenticated) {
+                window.showAdminLoginModal();
+            }
+        }
+    } catch (e) {
+        console.warn('检查鉴权状态失败:', e);
+    }
+}
+
 // ==================== 页面生命周期初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
     // 导航切换
@@ -214,19 +315,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 初始化鉴权拦截与弹窗
+    initAuthProtection();
+
     // 初始化加载
     loadDashboard();
     loadModels();
     loadSettings();
     initPromptEmotionsPage();
 
-    // 绑定 LLM 与云端服务相关测试与选择
+    // 绑定 LLM、云端服务与安全测试
     bindFetchModelsButton();
     bindTestConnectionButton();
     bindTestMiniMaxButton();
     bindAnalysisLLMButtons();
     bindTextReplacementControls();
     bindTunnelAndNginxControls();
+    bindSecurityControls();
     bindSettingsTabs();
 
     // 显示通告弹窗

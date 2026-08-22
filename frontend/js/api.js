@@ -1,14 +1,30 @@
 // static/js/api.js
 export const TTS_API = {
     baseUrl: "",
+    apiToken: "",
 
-    init: function (url) {
+    init: function (url, token = "") {
         this.baseUrl = url;
-        console.log("🔵 [API] 服务地址已设定:", this.baseUrl);
+        this.apiToken = token || "";
+        console.log("🔵 [API] 服务地址已设定:", this.baseUrl, this.apiToken ? "(已携带访问 Token)" : "(免密模式)");
+    },
+
+    _headers: function (extra = {}) {
+        const headers = { ...extra };
+        if (this.apiToken) {
+            headers["Authorization"] = `Bearer ${this.apiToken}`;
+            headers["X-Api-Token"] = this.apiToken;
+        }
+        return headers;
     },
 
     _url: function (endpoint) {
-        return `${this.baseUrl}${endpoint}`;
+        let url = `${this.baseUrl}${endpoint}`;
+        if (this.apiToken) {
+            const separator = url.includes('?') ? '&' : '?';
+            url = `${url}${separator}token=${encodeURIComponent(this.apiToken)}`;
+        }
+        return url;
     },
 
     async getData() {
@@ -18,7 +34,8 @@ export const TTS_API = {
 
         try {
             const res = await fetch(this._url('/get_data'), {
-                signal: controller.signal
+                signal: controller.signal,
+                headers: this._headers()
             });
             clearTimeout(timeoutId);
 
@@ -36,7 +53,7 @@ export const TTS_API = {
     async updateSettings(payload) {
         await fetch(this._url('/update_settings'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this._headers({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload)
         });
     },

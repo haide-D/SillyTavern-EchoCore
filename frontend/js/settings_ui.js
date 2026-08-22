@@ -10,6 +10,7 @@ const defaultSettings = {
     use_remote: false,
     remote_ip: '',
     remote_port: 3000,
+    remote_token: '',
     active_provider: 'gpt_sovits',
     auto_inject_on_answer: false,
     speaker_avatars: {},
@@ -30,7 +31,7 @@ export function loadExtensionSettings() {
     const extensionSettings = context.extensionSettings;
     if (!extensionSettings[MODULE_NAME]) {
         // 尝试从老版本的 localStorage 迁移远程配置
-        let oldRemote = { useRemote: false, ip: '', port: 3000 };
+        let oldRemote = { useRemote: false, ip: '', port: 3000, token: '' };
         try {
             const saved = localStorage.getItem('tts_plugin_remote_config');
             if (saved) oldRemote = JSON.parse(saved);
@@ -40,11 +41,15 @@ export function loadExtensionSettings() {
             ...defaultSettings,
             use_remote: oldRemote.useRemote || false,
             remote_ip: oldRemote.ip || '',
-            remote_port: oldRemote.port || 3000
+            remote_port: oldRemote.port || 3000,
+            remote_token: oldRemote.token || ''
         };
     }
 
     const config = extensionSettings[MODULE_NAME];
+    if (config.remote_token === undefined) {
+        config.remote_token = '';
+    }
     if (config.auto_inject_on_answer === undefined) {
         config.auto_inject_on_answer = false;
     }
@@ -101,6 +106,7 @@ export async function initSettingsUI() {
         $('#tts-ext-remote-fields').toggle(!!config.use_remote);
         $('#tts-ext-remote-ip').val(config.remote_ip || '');
         $('#tts-ext-remote-port').val(config.remote_port || 3000);
+        $('#tts-ext-remote-token').val(config.remote_token || '');
         $('#tts-ext-auto-inject').prop('checked', !!config.auto_inject_on_answer);
 
         const $providerSelect = $('#tts-provider-select');
@@ -121,6 +127,9 @@ export async function initSettingsUI() {
         const updateAdminLink = () => {
             const urls = getCurrentManagerUrls(config);
             $('#tts-ext-open-admin-btn').attr('href', urls.adminUrl);
+            if (window.TTS_API) {
+                window.TTS_API.init(urls.httpUrl, config.remote_token || '');
+            }
         };
         updateAdminLink();
 
@@ -149,7 +158,8 @@ export async function initSettingsUI() {
             localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
                 useRemote: isRemote,
                 ip: config.remote_ip || '',
-                port: config.remote_port || 3000
+                port: config.remote_port || 3000,
+                token: config.remote_token || ''
             }));
             updateAdminLink();
             context.saveSettingsDebounced();
@@ -161,7 +171,8 @@ export async function initSettingsUI() {
             localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
                 useRemote: config.use_remote,
                 ip: config.remote_ip,
-                port: config.remote_port || 3000
+                port: config.remote_port || 3000,
+                token: config.remote_token || ''
             }));
             updateAdminLink();
             context.saveSettingsDebounced();
@@ -173,7 +184,21 @@ export async function initSettingsUI() {
             localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
                 useRemote: config.use_remote,
                 ip: config.remote_ip || '',
-                port: config.remote_port
+                port: config.remote_port,
+                token: config.remote_token || ''
+            }));
+            updateAdminLink();
+            context.saveSettingsDebounced();
+        });
+
+        // 远程 Token
+        $('#tts-ext-remote-token').on('input', (e) => {
+            config.remote_token = $(e.target).val().trim();
+            localStorage.setItem('tts_plugin_remote_config', JSON.stringify({
+                useRemote: config.use_remote,
+                ip: config.remote_ip || '',
+                port: config.remote_port || 3000,
+                token: config.remote_token
             }));
             updateAdminLink();
             context.saveSettingsDebounced();

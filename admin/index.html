@@ -415,6 +415,7 @@
                 <!-- Tab 标签栏 -->
                 <div class="settings-tabs">
                     <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
+                    <button class="settings-tab" data-tab="security">🔒 安全与鉴权</button>
                     <button class="settings-tab" data-tab="minimax">☁️ MiniMax 云端 TTS</button>
                     <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
                     <button class="settings-tab" data-tab="phone">📞 电话功能</button>
@@ -503,6 +504,43 @@
 
                         <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
                             <!-- 动态渲染替换列表 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 安全与鉴权 Tab -->
+                <div id="settings-tab-security" class="settings-tab-content">
+                    <div class="settings-form">
+                        <h3 class="settings-section-title">🔒 公网安全与 API 防盗刷保护</h3>
+                        <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
+                            在 VPS 或公网环境下部署时，强烈建议配置管理员密码与 API Token，未提供凭证的外部请求将直接被 401 拦截。
+                        </small>
+
+                        <div class="form-group">
+                            <label>启用安全鉴权拦截</label>
+                            <select id="setting-security-enabled" class="select">
+                                <option value="false">禁用 (内网免密公开)</option>
+                                <option value="true">启用 (强力拦截未授权请求)</option>
+                            </select>
+                            <small>开启后，访问管理面板需验证管理员密码，酒馆调用需携带 API Token</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                                <label>管理员登录密码 (Admin Password)</label>
+                                <button type="button" id="btn-gen-admin-pass" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成随机密码</button>
+                            </div>
+                            <input type="password" id="setting-security-admin-password" class="input" placeholder="留空则不设控制台密码">
+                            <small>用于登录此管理控制台 (/admin) 的专属密码</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                                <label>酒馆客户端 API Token (防盗刷)</label>
+                                <button type="button" id="btn-gen-api-token" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成高强度 Token</button>
+                            </div>
+                            <input type="text" id="setting-security-api-token" class="input" placeholder="例: st_sec_xxxx (留空则不校验 Token)">
+                            <small>用于在 SillyTavern 插件设置中填入的访问密钥，只有携带正确 Token 才能调用 TTS 与电话接口</small>
                         </div>
                     </div>
                 </div>
@@ -1234,6 +1272,30 @@
             <div class="dialog-footer">
                 <button class="btn btn-secondary" onclick="closeDialog('delete-preset-dialog')">取消</button>
                 <button class="btn btn-danger" id="confirm-delete-preset-btn" onclick="executePresetDeletion()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员密码登录弹窗 -->
+    <div id="admin-login-dialog" class="dialog-overlay" style="display: none; z-index: 99999; backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.85);">
+        <div class="dialog" style="max-width: 420px; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+            <div class="dialog-header" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <h3>🔒 管理控制台已受保护</h3>
+            </div>
+            <div class="dialog-body" style="padding: 20px 0;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">
+                    该服务已开启公网安全防护，请输入管理员密码以解锁并管理系统配置：
+                </p>
+                <div class="form-group">
+                    <label>管理员密码</label>
+                    <input type="password" id="admin-login-password-input" class="input" placeholder="请输入管理员密码..." autofocus>
+                    <div id="admin-login-error-msg" style="color: #ef4444; font-size: 12px; margin-top: 6px; display: none;"></div>
+                </div>
+            </div>
+            <div class="dialog-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" id="btn-submit-admin-login" class="btn btn-primary" style="width: 100%;">
+                    🔓 验证并解锁控制台
+                </button>
             </div>
         </div>
     </div>

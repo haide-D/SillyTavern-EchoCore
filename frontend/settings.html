@@ -37,6 +37,10 @@
                         <input type="number" id="tts-ext-remote-port" class="text_pole" placeholder="3000" min="1" max="65535" />
                     </div>
                 </div>
+                <div style="margin-bottom: 8px;">
+                    <small>🔒 访问凭证 / API Token (可选):</small>
+                    <input type="password" id="tts-ext-remote-token" class="text_pole" placeholder="若 VPS 或服务端开启了密码鉴权，请在此填入 Token 或管理员密码" />
+                </div>
                 <small style="display:block; color:#888; font-size:11px; margin-top:2px;">
                     💡 提示：若填写完整 <code>http(s)://</code> 反代地址，系统将直接连接该地址且自动升级 <code>wss://</code>，不追加额外端口。
                 </small>

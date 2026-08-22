@@ -10,19 +10,21 @@ from fastapi.responses import JSONResponse
 from config import FRONTEND_DIR, init_settings, get_manager_port
 from routers import (
     data, tts, system, admin, phone_call, speakers,
-    eavesdrop, continuous_analysis, sovits_installer, themes, workshop
+    eavesdrop, continuous_analysis, sovits_installer, themes, workshop, auth
 )
 
-# 导入自定义日志中间件
+# 导入自定义中间件
 from middleware.logging_middleware import LoggingMiddleware
+from middleware.auth_middleware import AuthMiddleware
 
 # 初始化配置(确保 system_settings.json 和目录存在)
 init_settings()
 
 app = FastAPI()
 
-# 0. 添加自定义日志中间件
+# 0. 添加中间件 (日志 + 鉴权防护)
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(AuthMiddleware)
 
 # 1. 强力 CORS 支持 (带自定义 CORS 静态文件与全局兜底)
 class CORSStaticFiles(StaticFiles):
@@ -187,6 +189,7 @@ app.include_router(sovits_installer.router, tags=["GPT-SoVITS Installation"])
 app.include_router(themes.router, prefix="/api/themes", tags=["Themes Management"])
 app.include_router(workshop.router, prefix="/api", tags=["Presets Workshop"])
 app.include_router(workshop.router, prefix="/api/workshop", tags=["Creative Workshop"])
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])
 
 
 

@@ -240,6 +240,16 @@ export async function loadSettings() {
         if (extractTagEl) extractTagEl.value = msgProcessing.extract_tag || '';
         if (filterTagsEl) filterTagsEl.value = msgProcessing.filter_tags || '';
 
+        // 安全与鉴权配置
+        const sec = settings.security || {};
+        const secEnabledEl = document.getElementById('setting-security-enabled');
+        const secAdminPassEl = document.getElementById('setting-security-admin-password');
+        const secApiTokenEl = document.getElementById('setting-security-api-token');
+
+        if (secEnabledEl) secEnabledEl.value = String(sec.enabled || false);
+        if (secAdminPassEl) secAdminPassEl.value = sec.admin_password || '';
+        if (secApiTokenEl) secApiTokenEl.value = sec.api_token || '';
+
         // MiniMax TTS 配置
         const mm = settings.minimax_tts || {};
         const mmEnabledEl = document.getElementById('setting-minimax-enabled');
@@ -288,6 +298,10 @@ export async function saveSettings() {
     const devModeEl = document.getElementById('setting-developer-mode');
     const autoShareTunnelEl = document.getElementById('setting-auto-share-tunnel');
 
+    const secEnabledEl = document.getElementById('setting-security-enabled');
+    const secAdminPassEl = document.getElementById('setting-security-admin-password');
+    const secApiTokenEl = document.getElementById('setting-security-api-token');
+
     const mmEnabledEl = document.getElementById('setting-minimax-enabled');
     const mmApiKeyEl = document.getElementById('setting-minimax-api-key');
     const mmGroupIdEl = document.getElementById('setting-minimax-group-id');
@@ -334,6 +348,12 @@ export async function saveSettings() {
         default_lang: defaultLangEl ? defaultLangEl.value : 'Chinese',
         developer_mode: devModeEl ? devModeEl.value === 'true' : false,
         auto_share_tunnel: autoShareTunnelEl ? autoShareTunnelEl.value === 'true' : false,
+
+        security: {
+            enabled: secEnabledEl ? secEnabledEl.value === 'true' : false,
+            admin_password: secAdminPassEl ? secAdminPassEl.value.trim() : '',
+            api_token: secApiTokenEl ? secApiTokenEl.value.trim() : ''
+        },
 
         minimax_tts: {
             enabled: mmEnabledEl ? mmEnabledEl.value === 'true' : false,
@@ -1045,3 +1065,41 @@ export function bindTunnelAndNginxControls() {
         });
     }
 }
+
+/**
+ * 绑定安全设置中的密码/Token 生成器
+ */
+export function bindSecurityControls() {
+    const genPassBtn = document.getElementById('btn-gen-admin-pass');
+    const genTokenBtn = document.getElementById('btn-gen-api-token');
+    const passInput = document.getElementById('setting-security-admin-password');
+    const tokenInput = document.getElementById('setting-security-api-token');
+
+    const generateRandomStr = (len) => {
+        const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*';
+        let str = '';
+        for (let i = 0; i < len; i++) {
+            str += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return str;
+    };
+
+    if (genPassBtn && passInput) {
+        genPassBtn.addEventListener('click', () => {
+            const pass = generateRandomStr(12);
+            passInput.value = pass;
+            passInput.type = 'text'; // 生成后短暂明文展示给用户记录
+            showNotification('已生成随机管理员密码 (请保存配置并记下)', 'info');
+        });
+    }
+
+    if (genTokenBtn && tokenInput) {
+        genTokenBtn.addEventListener('click', () => {
+            const token = 'st_sec_' + Array.from(crypto.getRandomValues(new Uint8Array(16)))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            tokenInput.value = token;
+            showNotification('已生成高强度 API Token (请保存配置并填入酒馆)', 'info');
+        });
+    }
+}
+

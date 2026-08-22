@@ -277,10 +277,19 @@ def init_settings():
     if "minimax_tts" not in settings or not isinstance(settings["minimax_tts"], dict):
         settings["minimax_tts"] = minimax_tts_defaults
         dirty = True
+    # security 访问控制与密码保护默认配置
+    security_defaults = {
+        "enabled": False,
+        "admin_password": "",
+        "api_token": ""
+    }
+    if "security" not in settings or not isinstance(settings["security"], dict):
+        settings["security"] = security_defaults
+        dirty = True
     else:
-        if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
+        if deep_merge(security_defaults, settings["security"]):
             dirty = True
-    
+
     # 迁移旧配置（兼容性处理）
     if "analysis_llm" in settings:
         # 如果用户有旧的 analysis_llm 配置，迁移到 analysis_engine.llm
@@ -436,4 +445,49 @@ def apply_text_replacements(text: str, replacements: dict = None) -> str:
             processed = processed.replace(old_word, str(new_word))
             
     return processed
+
+
+def get_security_settings() -> dict:
+    """
+    获取安全鉴权配置 (支持环境变量优先覆盖)
+    """
+    s = init_settings()
+    sec = s.get("security", {})
+    
+    env_admin_pass = os.environ.get("ADMIN_PASSWORD", "").strip()
+    env_api_token = os.environ.get("API_TOKEN", "").strip()
+
+    admin_password = env_admin_pass if env_admin_pass else sec.get("admin_password", "")
+    api_token = env_api_token if env_api_token else sec.get("api_token", "")
+    
+    # 若配置了密码或 Token，或者显式开启了 enabled，则激活安全拦截
+    enabled = sec.get("enabled", False) or bool(admin_password or api_token)
+
+    return {
+        "enabled": enabled,
+        "admin_password": admin_password,
+        "api_token": api_token
+    }
+
+
+def verify_auth_token(token: str) -> bool:
+    """
+    校验给定的 Token 或密码是否合法
+    """
+    sec = get_security_settings()
+    if not sec["enabled"] and not sec["admin_password"] and not sec["api_token"]:
+        return True # 未配置密码或 Token，免密放行
+
+    clean_token = (token or "").strip()
+    if not clean_token:
+        return False
+
+    valid_tokens = []
+    if sec["admin_password"]:
+        valid_tokens.append(sec["admin_password"].strip())
+    if sec["api_token"]:
+        valid_tokens.append(sec["api_token"].strip())
+
+    return clean_token in valid_tokens
+
 

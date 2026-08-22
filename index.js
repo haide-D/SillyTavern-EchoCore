@@ -30,7 +30,7 @@ import { CallQueueManager } from './frontend/js/call_queue_manager.js';
 
 // ================= 1. 配置区域 =================
 const lsConfig = localStorage.getItem('tts_plugin_remote_config');
-let remoteConfig = lsConfig ? JSON.parse(lsConfig) : { useRemote: false, ip: "", port: 3000 };
+let remoteConfig = lsConfig ? JSON.parse(lsConfig) : { useRemote: false, ip: "", port: 3000, token: "" };
 
 // 统一解析后端 API 地址 (彻底支持反代 HTTPS 与动态端口，解决 Issue #2)
 const backendUrls = TTS_Utils.resolveBackendUrls(remoteConfig);
@@ -68,7 +68,7 @@ function initPlugin() {
     console.log(`🎨 [Init] 皮肤已加载: ${styleToApply}`);
 
     // 2. 模块初始化
-    TTS_API.init(MANAGER_API);
+    TTS_API.init(MANAGER_API, remoteConfig.token || "");
     TTS_State.init();
     TTS_State.CACHE.API_URL = MANAGER_API; // 保存 API URL 供其他模块使用
     if (TTS_Parser.init) TTS_Parser.init();
