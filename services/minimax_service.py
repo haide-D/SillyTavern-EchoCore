@@ -156,7 +156,7 @@ class MiniMaxTTSService:
         if hasattr(self, "_initialized") and self._initialized:
             return
         self._initialized = True
-        self._lock = asyncio.Lock()
+        self._lock = None
 
     @staticmethod
     def get_config() -> Dict[str, Any]:
