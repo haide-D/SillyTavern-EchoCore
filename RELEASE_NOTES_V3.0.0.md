@@ -1,4 +1,4 @@
-# 🚀 ST-Direct-TTS V3.0.0 全量发布更新日志与白皮书 (Comprehensive Release Notes)
+# 🚀 SillyTavern-GPT-SoVITS V3.0.0 全量发布更新日志与白皮书 (Comprehensive Release Notes)
 
 > **版本号**: `v3.0.0` (旗舰大版本)  
 > **发布日期**: 2026-08-22  
@@ -8,11 +8,11 @@
 
 ## 🌟 重磅更新概览 (Highlights)
 
-V3.0.0 是 ST-Direct-TTS 自诞生以来**规模最大、架构最纯净、视觉与交互最震撼**的里程碑大版本。
+V3.0.0 是 SillyTavern-GPT-SoVITS 自诞生以来**规模最大、架构最纯净、视觉与交互最震撼**的里程碑大版本。
 我们在底层架构、交互范式、视觉美学、音频调度以及扩展性上进行了全方位的彻底重塑，共计落地并验证了 **38+ 个专项架构演进与功能迭代**：
 
 ```
-                                  ST-Direct-TTS V3.0.0 架构全景
+                              SillyTavern-GPT-SoVITS V3.0.0 架构全景
   ┌─────────────────────────────────────────────────────────────────────────────────────────┐
   │                               SillyTavern 原生前端接入层                                 │
   ├───────────────────┬────────────────────────────┬────────────────────┬───────────────────┤
@@ -144,12 +144,12 @@ V3.0.0 是 ST-Direct-TTS 自诞生以来**规模最大、架构最纯净、视�
 
 ### 方式 2：SillyTavern 酒馆原生插件界面更新
 1. 在 SillyTavern 界面打开右侧扩展插件抽屉；
-2. 找到 **`GPT-SoVITS TTS Support (ST-Direct-TTS)`**；
+2. 找到 **`SillyTavern-GPT-SoVITS`**；
 3. 点击 **「Check for Updates / 检查更新」** 即可一键更新。
 
 ### 方式 3：Git 命令行手动更新
 ```bash
-cd SillyTavern/data/default-user/extensions/st-direct-tts
+cd SillyTavern/data/default-user/extensions/SillyTavern-GPT-SoVITS
 git pull origin main
 ```
 更新完成后重启后端服务即可（Windows 双击 `start.bat` / Linux 运行 `./start.sh`）。

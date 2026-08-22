@@ -1,6 +1,6 @@
 {
-    "name": "GPT-SoVITS Connector",
-    "display_name": "GPT-SoVITS TTS Support",
+    "name": "SillyTavern-GPT-SoVITS",
+    "display_name": "SillyTavern-GPT-SoVITS",
     "version": "3.0.0",
     "author": "haide-D",
     "description": "Adds deep integration for GPT-SoVITS with voice bubbles, creative workshop, multiple flagship themes, auto-switching models, and non-blocking audio caching.",

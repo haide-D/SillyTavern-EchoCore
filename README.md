@@ -1,4 +1,4 @@
-# SillyTavern-GPT-SoVITS Middleware (ST-Direct-TTS)
+# SillyTavern-GPT-SoVITS
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
@@ -75,11 +75,11 @@
 进入 SillyTavern 插件目录克隆本项目：
 ```bash
 cd SillyTavern/data/default-user/extensions/
-git clone -b V3.0.0 https://github.com/haide-D/SillyTavern-GPT-SoVITS.git st-direct-tts
+git clone -b V3.0.0 https://github.com/haide-D/SillyTavern-GPT-SoVITS.git SillyTavern-GPT-SoVITS
 ```
 
 ### 步骤 2: 启动插件后端服务
-在 `st-direct-tts` 目录下：
+在 `SillyTavern-GPT-SoVITS` 目录下：
 * **Windows**: 双击 `start.bat`
 * **Linux / macOS**: 终端运行 `./start.sh`
 

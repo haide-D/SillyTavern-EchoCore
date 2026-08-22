@@ -1,4 +1,4 @@
-🎙️ SillyTavern GPT-SoVITS (ST-Direct-TTS) V3.0 官方保姆级教程
+🎙️ SillyTavern-GPT-SoVITS V3.0 官方保姆级教程
 
 💬 官方交流与模型/剧本预设分享社区 (Discord)：https://discord.gg/usSz6XPdK
 GitHub 仓库地址：https://github.com/haide-D/SillyTavern-GPT-SoVITS
@@ -24,7 +24,7 @@ GitHub 仓库地址：https://github.com/haide-D/SillyTavern-GPT-SoVITS
    （若是手机端连接电脑酒馆，直接按照手机远程连接模式输入电脑 IP 即可）。
 
 2. 启动后端管理器 (超级重要！)：
-   进入插件目录（通常为 `SillyTavern/data/default-user/extensions/st-direct-tts`）
+   进入插件目录（通常为 `SillyTavern/data/default-user/extensions/SillyTavern-GPT-SoVITS`）
    双击运行 `start.bat`（Windows）或 `./start.sh`（Linux/Mac）。
    此时会自动安装依赖并启动后端服务，黑窗请保持运行不要关闭。
 
@@ -100,7 +100,7 @@ GitHub 仓库地址：https://github.com/haide-D/SillyTavern-GPT-SoVITS
 1. 方式 1（首推）：
    - 打开管理后台 `http://localhost:3000/admin`，进入仪表盘，点击「⬇️ 立即更新」即可全自动拉取重启！
 2. 方式 2：
-   - 在酒馆扩展管理页面找到 ST-Direct-TTS，点击「Check for Updates / 检查更新」；
+   - 在酒馆扩展管理页面找到 SillyTavern-GPT-SoVITS，点击「Check for Updates / 检查更新」；
 3. 方式 3：
    - 在插件目录运行 `git pull origin main`，重启 `start.bat`。
 

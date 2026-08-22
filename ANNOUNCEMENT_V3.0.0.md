@@ -1,4 +1,4 @@
-# 📢 ST-Direct-TTS V3.0.0 重磅官方发布公告
+# 📢 SillyTavern-GPT-SoVITS V3.0.0 重磅官方发布公告
 
 > 本文档准备了多种不同长度与平台的公告文案草案，方便直接复制发送至 Discord 频道、Telegram 频道、B站动态或论坛。
 
@@ -7,9 +7,9 @@
 ## 选项 A: Discord / Telegram 完整排版版 (推荐)
 
 ```markdown
-🎉【重磅发布】SillyTavern 直接语音插件 ST-Direct-TTS V3.0.0 旗舰大版本正式上线！
+🎉【重磅发布】SillyTavern 深度语音扩展 SillyTavern-GPT-SoVITS V3.0.0 旗舰大版本正式上线！
 
-经过持续的深度重构与打磨，ST-Direct-TTS 迎来史上最大版本更新 —— V3.0.0 创作者工坊与高定主题版！
+经过持续的深度重构与打磨，SillyTavern-GPT-SoVITS 迎来史上最大版本更新 —— V3.0.0 创作者工坊与高定主题版！
 
 🌟 本次两大核心杀手级进化：
 
@@ -45,7 +45,7 @@
 
 🚀【如何一键轻松升级】
 - 方式 1（首推）：打开管理后台 http://localhost:3000/admin，在仪表盘点击「⬇️ 立即更新」一键自动升级；
-- 方式 2：在 SillyTavern 酒馆扩展设置中，找到 ST-Direct-TTS 点击「Check for Updates / 检查更新」；
+- 方式 2：在 SillyTavern 酒馆扩展设置中，找到 SillyTavern-GPT-SoVITS 点击「Check for Updates / 检查更新」；
 - 方式 3（命令行）：进入插件目录运行 git pull origin main，重启 start.bat 即可。
 
 📖 详细 38 项更新白皮书：查看仓库 RELEASE_NOTES_V3.0.0.md
@@ -57,7 +57,7 @@
 ## 选项 B: 纯文字精简版 (适合弹窗/通知栏/社交聊天)
 
 ```markdown
-📢 ST-Direct-TTS V3.0.0 重磅发布！
+📢 SillyTavern-GPT-SoVITS V3.0.0 重磅发布！
 1. 彻底告别预设词条：采用 ElevenLabs V3 格式，全自动识别角色情绪并动态注入系统提示词！
 2. 创作者工坊：自由编排来电/窃听剧情场景、智能变量插槽、AI 生成剧本与一键导入导出；
 3. 四大旗舰主题：仙途凌霄（太极八卦水墨剑气）、落樱雅境（3D折扇薄樱）、边缘行者（战术黑客终端光刃V）、死亡圣器；
