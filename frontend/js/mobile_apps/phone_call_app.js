@@ -459,9 +459,12 @@ export async function render(container, createNavbar) {
         _playingCardElement = null;
     }
     _currentAppContainer = container;
-    _currentCreateNavbar = createNavbar;
+    const navFunc = (typeof createNavbar === 'function') 
+        ? createNavbar 
+        : (createNavbar && typeof createNavbar.createNavbar === 'function' ? createNavbar.createNavbar : () => $('<div></div>'));
+    _currentCreateNavbar = navFunc;
     container.empty();
-    container.append(createNavbar("主动电话"));
+    container.append(navFunc("主动电话"));
 
     const statusTexts = getCallStatusTexts();
 

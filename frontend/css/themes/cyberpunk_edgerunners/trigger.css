@@ -1,0 +1,270 @@
+/* =========================================================
+   夜之城·边缘行者 (cyberpunk_edgerunners) - 修长飘逸光刃字母 V (trigger.css)
+   修长锋利 · 飘逸流线 · 激光细缝穿透 · 残影流光 · 锋芒屏闪
+   ========================================================= */
+
+:root {
+    --cyber-yellow: #FFE600;
+    --cyber-yellow-rgb: 255, 230, 0;
+
+    --cyber-cyan: #00F0FF;
+    --cyber-cyan-rgb: 0, 240, 255;
+
+    --cyber-red: #FF003C;
+    --cyber-red-rgb: 255, 0, 60;
+}
+
+/* ==================== 1. 悬浮入口容器 (纯粹透明 · 自由悬浮) ==================== */
+#tts-cyber-trigger.cyber-edgerunners-trigger,
+#tts-cyber-trigger {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    cursor: pointer;
+    z-index: 9999;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 10px rgba(var(--cyber-yellow-rgb), 0.7)) drop-shadow(0 0 18px rgba(var(--cyber-cyan-rgb), 0.35));
+    transition: filter 0.25s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+#tts-cyber-trigger:hover {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 20px rgba(var(--cyber-yellow-rgb), 0.95)) drop-shadow(0 0 16px rgba(var(--cyber-cyan-rgb), 0.85));
+}
+
+/* ==================== 2. 内层结构 ==================== */
+.cyber-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+/* ==================== 3. 矢量 SVG 图元分层 ==================== */
+.cyber-trigger-svg {
+    width: 58px;
+    height: 58px;
+    overflow: visible;
+    display: block;
+}
+
+.cyber-v-root {
+    transform-origin: 32px 32px;
+    animation: cyberBladeFlicker 5s infinite;
+}
+
+/* ① 修长主光刃 */
+.cyber-v-blade-main {
+    filter: drop-shadow(0 0 6px #FFE600);
+    animation: cyberBladeGlitch 4.2s infinite;
+}
+
+/* ② 飞掠残影线条 */
+.cyber-v-speed-trail {
+    animation: cyberTrailPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes cyberTrailPulse {
+    0% { opacity: 0.5; transform: translateX(0); }
+    100% { opacity: 0.95; transform: translateX(1px); }
+}
+
+/* ④ RGB 故障色散层 */
+.cyber-v-rgb-layer {
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+.cyber-v-rgb-red {
+    fill: #FF003C;
+    animation: cyberBladeGlitchRed 4.2s infinite;
+}
+
+.cyber-v-rgb-cyan {
+    fill: #00F0FF;
+    animation: cyberBladeGlitchCyan 4.2s infinite;
+}
+
+/* ==================== 4. 悬停暴走动效 ==================== */
+#tts-cyber-trigger:hover .cyber-v-root {
+    animation: cyberBladeFlickerHover 0.7s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-blade-main {
+    animation: cyberBladeGlitchHover 0.5s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-rgb-red {
+    animation: cyberBladeGlitchRedHover 0.5s infinite;
+}
+
+#tts-cyber-trigger:hover .cyber-v-rgb-cyan {
+    animation: cyberBladeGlitchCyanHover 0.5s infinite;
+}
+
+/* ==================== 5. 锋芒 Glitch 动画帧定义 ==================== */
+
+/* --- 1. 屏闪与锋芒微震 (Flicker) --- */
+@keyframes cyberBladeFlicker {
+    0%, 88%, 93%, 96%, 100% {
+        opacity: 1;
+        transform: scale(1) skew(0deg);
+    }
+    89% {
+        opacity: 0.3;
+        transform: scale(1.04) skew(-5deg);
+    }
+    94% {
+        opacity: 0.7;
+        transform: scale(0.97) skew(4deg);
+    }
+}
+
+@keyframes cyberBladeFlickerHover {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    15% { opacity: 0.35; transform: scale(1.06) skew(-7deg); }
+    40% { opacity: 0.95; transform: scale(0.96) skew(5deg); }
+    65% { opacity: 0.3; transform: scale(1.04); }
+    85% { opacity: 1; transform: skew(-3deg); }
+}
+
+/* --- 2. 主刃撕裂与扭曲 (Blade Cut Glitch) --- */
+@keyframes cyberBladeGlitch {
+    0%, 86%, 92%, 96%, 100% {
+        transform: translate(0, 0) skew(0deg);
+    }
+    87% {
+        transform: translate(-3px, 1px) skew(-8deg);
+    }
+    88% {
+        transform: translate(3px, -1px) skew(6deg);
+    }
+    93% {
+        transform: translate(-2px, -1px) skew(-4deg);
+    }
+    95% {
+        transform: translate(2px, 1px) skew(5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchHover {
+    0%, 100% { transform: translate(0, 0) skew(0deg); }
+    10% { transform: translate(-3.5px, 2px) skew(-10deg); }
+    25% { transform: translate(3.5px, -2px) skew(8deg); }
+    45% { transform: translate(-2.5px, -1px) skew(-6deg); }
+    70% { transform: translate(3px, 1.5px) skew(7deg); }
+    85% { transform: translate(-2px, 2px) skew(-4deg); }
+}
+
+/* --- 3. 绯红故障分离 --- */
+@keyframes cyberBladeGlitchRed {
+    0%, 86%, 92%, 96%, 100% {
+        opacity: 0;
+        transform: translate(0, 0);
+    }
+    87% {
+        opacity: 0.95;
+        transform: translate(-4px, 2px) skew(-8deg);
+    }
+    88% {
+        opacity: 0.85;
+        transform: translate(2.5px, -1.5px);
+    }
+    93% {
+        opacity: 0.9;
+        transform: translate(-3px, -1px) skew(5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchRedHover {
+    0%, 100% { opacity: 0; transform: translate(0, 0); }
+    12% { opacity: 0.95; transform: translate(-4.5px, 2.5px) skew(-10deg); }
+    30% { opacity: 0.85; transform: translate(3.5px, -2px); }
+    55% { opacity: 1; transform: translate(-4px, -1.5px) skew(7deg); }
+    80% { opacity: 0.9; transform: translate(3px, 1px); }
+}
+
+/* --- 4. 电青故障分离 --- */
+@keyframes cyberBladeGlitchCyan {
+    0%, 86%, 92%, 96%, 100% {
+        opacity: 0;
+        transform: translate(0, 0);
+    }
+    87% {
+        opacity: 0.95;
+        transform: translate(4px, -2px) skew(8deg);
+    }
+    88% {
+        opacity: 0.85;
+        transform: translate(-2.5px, 2px);
+    }
+    93% {
+        opacity: 0.9;
+        transform: translate(3.5px, 1px) skew(-5deg);
+    }
+}
+
+@keyframes cyberBladeGlitchCyanHover {
+    0%, 100% { opacity: 0; transform: translate(0, 0); }
+    12% { opacity: 0.95; transform: translate(4.5px, -2.5px) skew(10deg); }
+    30% { opacity: 0.85; transform: translate(-3.5px, 2px); }
+    55% { opacity: 1; transform: translate(4px, 1.5px) skew(-7deg); }
+    80% { opacity: 0.9; transform: translate(-3px, -1px); }
+}
+
+/* ==================== 6. 状态指示光环 (纯粹底层微光) ==================== */
+.cyber-status-ring {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    opacity: 0;
+    z-index: -1;
+}
+
+.cyber-status-ring.ready {
+    opacity: 0.85;
+    box-shadow: 0 0 24px rgba(var(--cyber-cyan-rgb), 0.95);
+    animation: cyber-ready-pulse 2s ease-in-out infinite;
+}
+
+.cyber-status-ring.calling {
+    opacity: 1;
+    box-shadow: 0 0 32px rgba(var(--cyber-red-rgb), 1);
+    animation: cyber-calling-pulse 0.8s ease-in-out infinite;
+}
+
+.cyber-status-ring.playing {
+    opacity: 0.9;
+    box-shadow: 0 0 26px rgba(var(--cyber-yellow-rgb), 0.95);
+    animation: cyber-playing-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cyber-ready-pulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0.95; }
+}
+
+@keyframes cyber-calling-pulse {
+    0%, 100% { transform: scale(0.85); opacity: 0.7; }
+    50% { transform: scale(1.25); opacity: 1; }
+}
+
+@keyframes cyber-playing-pulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.65; }
+    50% { transform: scale(1.15); opacity: 0.9; }
+}

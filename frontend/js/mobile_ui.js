@@ -17,6 +17,7 @@ import DefaultTheme from './themes/default/index.js';
 import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
 import ImmortalSwordTheme from './themes/immortal_sword/index.js';
 import SakuraEleganceTheme from './themes/sakura_elegance/index.js';
+import CyberpunkEdgerunnersTheme from './themes/cyberpunk_edgerunners/index.js';
 
 // ==================== 全局 SDK 挂载 ====================
 // 引入共享库
@@ -66,6 +67,7 @@ ThemeEngine.registerTheme(DefaultTheme);
 ThemeEngine.registerTheme(DeathlyHallowsTheme);
 ThemeEngine.registerTheme(ImmortalSwordTheme);
 ThemeEngine.registerTheme(SakuraEleganceTheme);
+ThemeEngine.registerTheme(CyberpunkEdgerunnersTheme);
 
 // ==================== 向后兼容 ====================
 // 保持 window.TTS_Mobile 接口不变，代理到 ThemeEngine

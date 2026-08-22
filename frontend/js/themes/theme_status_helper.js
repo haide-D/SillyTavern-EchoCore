@@ -38,6 +38,10 @@ export const STATUS_SVGS = {
     // 平安落樱：和风折扇
     fan: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18 A 12 12 0 0 1 21 18 L 17 19 A 7 7 0 0 0 7 19 Z"/><line x1="12" y1="21" x2="12" y2="10"/><circle cx="12" cy="21" r="1.5" fill="currentColor"/></svg>`,
 
+    // 赛博边缘：脑机芯片 / 准星
+    cyberChip: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="7,2 17,2 22,7 22,17 17,22 7,22 2,17 2,7"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>`,
+    cyberSignal: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M7 7 A 7 7 0 0 0 7 17"/><path d="M17 7 A 7 7 0 0 1 17 17"/></svg>`,
+
     // 魔法微光 / 星芒
     sparkles: `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
     
@@ -127,7 +131,31 @@ export function getCallStatusTexts() {
         return _themeStatusRegistry[themeId].call;
     }
 
-    // 3. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
+    // 3. 内置：夜之城·边缘行者 (cyberpunk_edgerunners) - 100% 高精矢量 SVG 结构
+    if (themeId === 'cyberpunk_edgerunners') {
+        return {
+            tabCurrent: `${STATUS_SVGS.chat} 实时通讯`,
+            tabAll: `${STATUS_SVGS.history} 通讯日志`,
+            tabDial: `${STATUS_SVGS.cyberSignal} 神经直连`,
+            systemHint: `${STATUS_SVGS.cyberChip} 脑机接口已接入角色神经协议与当前记忆矩阵。`,
+            step1Prompt: '正在建立量子加密神经链路...',
+            step2LLM: '斯安威逊超频运算中，等待对方回音...',
+            step3TTS: '神经音频流解码成型，声音即将呈现...',
+            btnIdle: `${STATUS_SVGS.cyberSignal} 发起脑机直连`,
+            btnLoading: (text) => `${STATUS_SVGS.spinner} ${text}`,
+            reasonLabel: '通讯动机与事件触发',
+            reasonDefault: '想通过神经链路与你实时交换情报',
+            targetPlaceholder: '如: 边缘行者 / 义体医生 / 佣兵队长...',
+            tonePlaceholder: '如: 压低嗓音密谋、急促警报、冷峻交涉、傲娇调侃...',
+            emptyIcon: STATUS_SVGS.cyberSignal,
+            emptyCurrentTitle: '当前频段暂无通讯数据',
+            emptyAllTitle: '深网总库暂无通讯记录',
+            emptySub: '点击上方【神经直连】发起直连脑机呼叫',
+            emptyBtnText: `${STATUS_SVGS.history} 查阅通讯日志`
+        };
+    }
+
+    // 4. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
     if (themeId === 'sakura_elegance') {
         return {
             tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
@@ -243,7 +271,30 @@ export function getEavesdropStatusTexts() {
         return _themeStatusRegistry[themeId].eavesdrop;
     }
 
-    // 3. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
+    // 3. 内置：夜之城·边缘行者 (cyberpunk_edgerunners) - 100% 高精矢量 SVG 结构
+    if (themeId === 'cyberpunk_edgerunners') {
+        return {
+            tabCurrent: `${STATUS_SVGS.chat} 实时截获`,
+            tabAll: `${STATUS_SVGS.history} 破冰日志`,
+            tabLaunch: `${STATUS_SVGS.cyberChip} 深网破冰`,
+            systemHint: `${STATUS_SVGS.cyberSignal} ICE 破冰协议已部署，正在侦测周围暗语频段。`,
+            step1Prompt: '正在注入深网 ICE 破冰算法...',
+            step2LLM: (speakers) => `正在解密拦截到的神经暗语 (${(speakers || []).join(' // ')})...`,
+            step3TTS: '声纹数据流还原中，窃听音频即将接入...',
+            btnIdle: `${STATUS_SVGS.cyberChip} 开启深网破冰`,
+            btnLoading: (text) => `${STATUS_SVGS.spinner} ${text}`,
+            reasonLabel: '破冰目标场景与暗语背景',
+            reasonDefault: '在夜之城隐秘会所外的加密私语',
+            tonePlaceholder: '如: 压低嗓音密谋、神情紧张、暗中交易、冷酷质问...',
+            emptyIcon: STATUS_SVGS.cyberChip,
+            emptyCurrentTitle: '当前频段暂无破冰数据',
+            emptyAllTitle: '深网总库暂无截获记录',
+            emptySub: '点击上方【深网破冰】锁定目标频段开启监听',
+            emptyBtnText: `${STATUS_SVGS.history} 查阅破冰日志`
+        };
+    }
+
+    // 4. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
     if (themeId === 'sakura_elegance') {
         return {
             tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
@@ -344,6 +395,23 @@ export function getWorkshopStepTexts(type, { caller = '角色', speakers = [] } 
     if (typeof currentTheme?.getWorkshopStepTexts === 'function') {
         const customRes = currentTheme.getWorkshopStepTexts(type, { caller, speakers });
         if (customRes) return customRes;
+    }
+
+    if (themeId === 'cyberpunk_edgerunners') {
+        if (type === 'phone_call') {
+            return {
+                step1: '[1/3] 正在建立量子加密神经链路...',
+                step2: `[2/3] 斯安威逊超频运算中，等待 ${caller} 神经回音...`,
+                step3: `[3/3] 神经音频流解码成型，即将接通 ${caller} 的脑机语音...`
+            };
+        } else {
+            const spkStr = (speakers && speakers.length) ? speakers.join(' // ') : '目标神经频段';
+            return {
+                step1: '[1/3] 正在注入深网 ICE 破冰算法...',
+                step2: `[2/3] 正在解密拦截到的暗语频段... (${spkStr})`,
+                step3: '[3/3] 声纹数据流还原中，窃听音频即将接入...'
+            };
+        }
     }
 
     if (themeId === 'sakura_elegance') {

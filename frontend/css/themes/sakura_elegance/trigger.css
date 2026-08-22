@@ -182,40 +182,13 @@
     100% { transform: translateY(-1.5px) rotate(8deg); opacity: 0.95; }
 }
 
-/* --- Layer 4: 晴明结界五芒印与流光灵核 --- */
+/* --- Layer 4: 晴明结界五芒印 (工笔纯净细线 · 极简风雅) --- */
 .seimei-star {
     fill: none;
-    stroke: rgba(var(--sakura-gold-rgb), 0.35);
-    stroke-width: 0.5;
-    stroke-linejoin: round;
-}
-
-.seimei-star-flow {
-    fill: none;
-    stroke: #FFF0F5;
-    stroke-width: 0.9;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-dasharray: 12 30;
-    animation: seimei-star-stream 3.2s linear infinite;
-}
-
-@keyframes seimei-star-stream {
-    from { stroke-dashoffset: 0; }
-    to { stroke-dashoffset: -84; }
-}
-
-.sakura-gem-core {
-    fill: #FFF0F5;
-    stroke: rgba(var(--sakura-gold-rgb), 0.8);
-    stroke-width: 0.4;
-    filter: drop-shadow(0 0 4px #F4A6B8);
-}
-
-.sakura-gem-halo {
-    fill: none;
-    stroke: rgba(var(--sakura-pink-rgb), 0.6);
+    stroke: rgba(var(--sakura-gold-rgb), 0.55);
     stroke-width: 0.6;
+    stroke-linejoin: round;
+    opacity: 0.85;
 }
 
 /* --- Layer 5: 水引同心结与流苏 --- */

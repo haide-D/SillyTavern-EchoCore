@@ -1,0 +1,308 @@
+/* =========================================================
+   夜之城·边缘行者 (cyberpunk_edgerunners) - 全屏赛博黑客终端样式 (modal.css)
+   极简硬核终端美学：0 模糊 · 极致清晰度 · 等宽字符交互 · 深度暗黑高对比度
+   ========================================================= */
+
+/* ==================== 1. 全屏终端模态层 (零模糊 · 纯粹深黑) ==================== */
+#tts-cyber-modal.cyber-terminal-modal,
+#tts-cyber-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    overflow: hidden !important;
+    background: #03060B !important;
+    color: #CBD5E1 !important;
+    box-sizing: border-box !important;
+    font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, "Fira Code", monospace, "PingFang SC", "Microsoft YaHei" !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+}
+
+/* ==================== 2. 场景挂载容器 ==================== */
+#tts-cyber-scene-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background: #03060B !important;
+}
+
+/* 终端光标闪烁 */
+.cyber-terminal-cursor {
+    display: inline-block;
+    color: #FFE600;
+    font-weight: 700;
+    animation: cyberBlinkCursor 0.8s infinite;
+}
+
+@keyframes cyberBlinkCursor {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
+/* 终端退出按钮悬停 */
+.cyber-term-exit-btn:hover {
+    background: #FF003C !important;
+    color: #04070D !important;
+    box-shadow: 0 0 12px rgba(255, 0, 60, 0.7);
+}
+
+/* 终端细窄滚动条 */
+#tts-cyber-modal *::-webkit-scrollbar,
+#tts-cyber-scene-content *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+#tts-cyber-modal *::-webkit-scrollbar-track,
+#tts-cyber-scene-content *::-webkit-scrollbar-track {
+    background: #04070D;
+}
+#tts-cyber-modal *::-webkit-scrollbar-thumb,
+#tts-cyber-scene-content *::-webkit-scrollbar-thumb {
+    background: #00F0FF;
+}
+#tts-cyber-modal *::-webkit-scrollbar-thumb:hover,
+#tts-cyber-scene-content *::-webkit-scrollbar-thumb:hover {
+    background: #FFE600;
+}
+
+/* ==================== 3. 终端子页面通用导航栏 (NavBar) ==================== */
+#tts-cyber-modal .cyber-terminal-navbar,
+#tts-cyber-modal .default-navbar,
+#tts-cyber-modal .tts-navbar,
+#tts-cyber-modal .ws-navbar,
+#tts-cyber-modal .ed-navbar,
+#tts-cyber-modal .cyber-navbar {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    min-height: 44px !important;
+    padding: 8px 24px !important;
+    background: #070B12 !important;
+    border-bottom: 1px solid #00F0FF !important;
+    color: #F8FAFC !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#tts-cyber-modal .nav-left,
+#tts-cyber-modal .navbar-btn-back,
+#tts-cyber-modal .ws-btn-back {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    font-size: 12.5px !important;
+    color: #FFE600 !important;
+    background: transparent !important;
+    border: none !important;
+    font-family: monospace !important;
+    font-weight: 700 !important;
+    transition: color 0.15s ease !important;
+}
+
+#tts-cyber-modal .nav-left:hover,
+#tts-cyber-modal .navbar-btn-back:hover,
+#tts-cyber-modal .ws-btn-back:hover {
+    color: #00F0FF !important;
+    text-decoration: underline !important;
+}
+
+#tts-cyber-modal .nav-title,
+#tts-cyber-modal .navbar-title,
+#tts-cyber-modal .ws-nav-title {
+    color: #00F0FF !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    font-size: 14px !important;
+    font-family: monospace !important;
+}
+
+/* ==================== 4. 终端子应用全局卡片与面板暗黑重写 (彻底杜绝纯白) ==================== */
+#tts-cyber-modal .mobile-settings-content,
+#tts-cyber-modal .tts-panel,
+#tts-cyber-modal #tts-dashboard,
+#tts-cyber-modal .ws-container,
+#tts-cyber-modal .pc-app-container,
+#tts-cyber-modal .ed-container,
+#tts-cyber-modal .fav-container {
+    background: #03060B !important;
+    color: #CBD5E1 !important;
+    box-sizing: border-box !important;
+    padding: 16px 24px 40px 24px !important;
+    width: 100% !important;
+}
+
+/* 所有设置卡片 / 模块块 */
+#tts-cyber-modal .tts-card,
+#tts-cyber-modal .settings-group,
+#tts-cyber-modal .pc-card,
+#tts-cyber-modal .ws-card,
+#tts-cyber-modal .fav-card,
+#tts-cyber-modal .ed-history-card {
+    background: #080D16 !important;
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+    border-left: 3.5px solid #00F0FF !important;
+    border-radius: 2px !important;
+    margin-bottom: 16px !important;
+    padding: 12px 16px !important;
+    box-shadow: none !important;
+    color: #F8FAFC !important;
+}
+
+/* 卡片标题 */
+#tts-cyber-modal .tts-card-title,
+#tts-cyber-modal .settings-title,
+#tts-cyber-modal .pc-card-title,
+#tts-cyber-modal h3,
+#tts-cyber-modal h4 {
+    color: #FFE600 !important;
+    font-weight: 700 !important;
+    font-size: 13.5px !important;
+    font-family: monospace !important;
+    letter-spacing: 1px !important;
+    background: transparent !important;
+    border: none !important;
+    margin-bottom: 10px !important;
+    padding: 0 !important;
+}
+
+/* 设置项行 */
+#tts-cyber-modal .tts-switch-row,
+#tts-cyber-modal .tts-input-row,
+#tts-cyber-modal .tts-list-item,
+#tts-cyber-modal .settings-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+    color: #CBD5E1 !important;
+}
+
+#tts-cyber-modal .tts-switch-row:last-child,
+#tts-cyber-modal .tts-input-row:last-child,
+#tts-cyber-modal .settings-item:last-child {
+    border-bottom: none !important;
+}
+
+/* 标签文字与描述 */
+#tts-cyber-modal .tts-switch-label,
+#tts-cyber-modal .tts-input-label,
+#tts-cyber-modal label,
+#tts-cyber-modal span {
+    color: #CBD5E1 !important;
+    font-size: 13px !important;
+}
+
+#tts-cyber-modal .tts-card-title span,
+#tts-cyber-modal .cmd-cursor {
+    color: #FFE600 !important;
+}
+
+/* 输入框与下拉选择框 */
+#tts-cyber-modal input[type="text"],
+#tts-cyber-modal input[type="number"],
+#tts-cyber-modal input[type="password"],
+#tts-cyber-modal textarea,
+#tts-cyber-modal select {
+    background: #04070D !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+    color: #00F0FF !important;
+    font-family: ui-monospace, "Cascadia Code", monospace !important;
+    font-size: 12.5px !important;
+    padding: 6px 10px !important;
+    border-radius: 2px !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+}
+
+#tts-cyber-modal input:focus,
+#tts-cyber-modal textarea:focus,
+#tts-cyber-modal select:focus {
+    border-color: #FFE600 !important;
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.3) !important;
+    color: #FFE600 !important;
+}
+
+/* 下拉选项 option */
+#tts-cyber-modal select option {
+    background: #080D16 !important;
+    color: #F8FAFC !important;
+}
+
+/* 选项卡 (Tabs) */
+#tts-cyber-modal .nav-tabs,
+#tts-cyber-modal .ws-tabs,
+#tts-cyber-modal .pc-nav-tabs,
+#tts-cyber-modal .tabs-header {
+    display: flex !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    border-bottom: 1px dashed rgba(0, 240, 255, 0.3) !important;
+    padding: 10px 0 12px 0 !important;
+    background: transparent !important;
+    margin-bottom: 16px !important;
+}
+
+#tts-cyber-modal .nav-tab-item,
+#tts-cyber-modal .ws-tab-btn,
+#tts-cyber-modal .pc-nav-tab-btn,
+#tts-cyber-modal .tab-button {
+    background: #080D16 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #94A3B8 !important;
+    font-family: monospace !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 6px 14px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+#tts-cyber-modal .nav-tab-item.active,
+#tts-cyber-modal .ws-tab-btn.active,
+#tts-cyber-modal .pc-nav-tab-btn.active,
+#tts-cyber-modal .tab-button.active {
+    background: #FFE600 !important;
+    color: #04070D !important;
+    font-weight: 700 !important;
+    border-color: #FFE600 !important;
+}
+
+/* 终端通用按钮 */
+#tts-cyber-modal button:not(.navbar-btn-back):not(.ws-btn-back):not(.pc-nav-tab-btn),
+#tts-cyber-modal .btn-primary,
+#tts-cyber-modal .ws-btn-action,
+#tts-cyber-modal .btn-action {
+    background: #080D16 !important;
+    border: 1px solid #00F0FF !important;
+    color: #00F0FF !important;
+    font-family: monospace !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    letter-spacing: 0.5px !important;
+    padding: 6px 16px !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+#tts-cyber-modal button:hover,
+#tts-cyber-modal .btn-primary:hover,
+#tts-cyber-modal .ws-btn-action:hover,
+#tts-cyber-modal .btn-action:hover {
+    background: #00F0FF !important;
+    color: #04070D !important;
+}

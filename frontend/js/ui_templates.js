@@ -42,6 +42,7 @@ export function getDashboardHTML(data) {
                                     <div class="option-item theme-option" data-value="deathly_hallows">死亡圣器 (Deathly Hallows)</div>
                                     <div class="option-item theme-option" data-value="immortal_sword">⚔️ 仙途凌霄 (Immortal Sword)</div>
                                     <div class="option-item theme-option" data-value="sakura_elegance">🌸 落樱雅境 (Sakura Elegance)</div>
+                                    <div class="option-item theme-option" data-value="cyberpunk_edgerunners">⚡ 夜之城·边缘行者 (Cyberpunk)</div>
                                 </div>
                             </div>
                             <input type="hidden" id="theme-selector" value="default">

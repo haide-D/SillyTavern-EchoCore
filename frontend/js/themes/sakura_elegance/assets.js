@@ -3,15 +3,10 @@
  * 追求平安公卿风雅与莫兰迪薄樱美学：和纸莳绘 · 描金折扇 · 纸鹤式神 · 莫兰迪烟粉 · 100% 矢量
  */
 
-// 1. 悬浮入口：落樱折扇·晴明结界印 (Sakura Ougi & Seimei Crest)
+// 1. 悬浮入口：落樱折扇·晴明结界印 (Sakura Ougi & Seimei Crest - 方案 B 极简工笔白描)
 export const SAKURA_ELEGANCE_TRIGGER_SVG = `
 <svg class="sakura-ougi-trigger-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 莫兰迪樱粉柔光滤镜 -->
-    <filter id="sakuraPrismGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1.5" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
     <linearGradient id="sakuraFanGold" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#F5D0A9" />
       <stop offset="50%" stop-color="#E5A696" />
@@ -27,25 +22,7 @@ export const SAKURA_ELEGANCE_TRIGGER_SVG = `
   <circle class="sakura-orbit-outer" cx="32" cy="32" r="30" />
   <circle class="sakura-orbit-mid" cx="32" cy="32" r="26.5" />
 
-  <!-- 2. 十二辰宿与落樱星位环 (12 Sakura Nodes Ring) -->
-  <g class="sakura-rune-ring">
-    <circle cx="32" cy="32" r="28.5" fill="none" stroke="rgba(229, 166, 150, 0.2)" stroke-width="0.3" stroke-dasharray="2,3" />
-    <!-- 顶部主樱位 -->
-    <path class="sakura-mini-petal" d="M 32,3.5 C 31,4.5 31,6 32,7 C 33,6 33,4.5 32,3.5 Z" />
-    <!-- 底部主樱位 -->
-    <path class="sakura-mini-petal" d="M 32,57 C 31,58 31,59.5 32,60.5 C 33,59.5 33,58 32,57 Z" />
-    <!-- 右侧星位 -->
-    <circle class="sakura-star-dot" cx="58.5" cy="32" r="0.8" />
-    <!-- 左侧星位 -->
-    <circle class="sakura-star-dot" cx="5.5" cy="32" r="0.8" />
-    <!-- 四维对角小花瓣星位 -->
-    <circle class="sakura-star-dot" cx="50" cy="14" r="0.6" />
-    <circle class="sakura-star-dot" cx="14" cy="14" r="0.6" />
-    <circle class="sakura-star-dot" cx="50" cy="50" r="0.6" />
-    <circle class="sakura-star-dot" cx="14" cy="50" r="0.6" />
-  </g>
-
-  <!-- 3. 和风落樱描金折扇 (Sakura Ougi Fan Geometry) -->
+  <!-- 2. 和风落樱描金折扇 (Sakura Ougi Fan Geometry) -->
   <g class="sakura-fan-group">
     <!-- 折扇扇面外弧轮廓 (透光莫兰迪薄粉) -->
     <path class="sakura-fan-rim" d="M 14,38 A 21,21 0 0,1 50,38 L 45,41 A 15,15 0 0,0 19,41 Z" />
@@ -59,30 +36,20 @@ export const SAKURA_ELEGANCE_TRIGGER_SVG = `
     <line class="sakura-fan-rib" x1="32" y1="46" x2="50" y2="38" />
 
     <!-- 扇轴要心 (Fan Pivot Hub) -->
-    <circle class="sakura-fan-pivot" cx="32" cy="46" r="1.8" />
-    <circle class="sakura-fan-pivot-ring" cx="32" cy="46" r="3.2" />
+    <circle class="sakura-fan-pivot" cx="32" cy="46" r="1.6" />
+    <circle class="sakura-fan-pivot-ring" cx="32" cy="46" r="3.0" />
 
-    <!-- 扇面飘散的三瓣樱花微雕 -->
+    <!-- 扇面飘散樱花微雕 -->
     <path class="sakura-floating-petal p1" d="M 23,32 C 22,30 24,28 26,29 C 27,31 25,33 23,32 Z" />
     <path class="sakura-floating-petal p2" d="M 37,28 C 36,26 38,24 40,25 C 41,27 39,29 37,28 Z" />
-    <path class="sakura-floating-petal p3" d="M 31,18 C 30,16 32,15 33,16 C 34,18 32,19 31,18 Z" />
   </g>
 
-  <!-- 4. 晴明桔梗五芒印与流光阵眼 (Seimei Pentagram Crest & Core Glow) -->
-  <g class="sakura-seimei-crest" filter="url(#sakuraPrismGlow)">
-    <!-- 结界五芒星线 (工笔浅金) -->
+  <!-- 3. 晴明结界五芒印 (方案 B: 纯净工笔细线，移除刺眼白斑与过曝流光) -->
+  <g class="sakura-seimei-crest">
     <path class="seimei-star" d="M 32,15 L 36.8,30 L 24.2,20.8 L 39.8,20.8 L 27.2,30 Z" />
-    <!-- 五芒星流动金芒 (Dash Flow) -->
-    <path class="seimei-star-flow" d="M 32,15 L 36.8,30 L 24.2,20.8 L 39.8,20.8 L 27.2,30 Z" />
-
-    <!-- 中央樱花微晶阵眼 (Sakura Node Gem) -->
-    <circle class="sakura-gem-core" cx="32" cy="24" r="2.2" />
-    <circle class="sakura-gem-halo" cx="32" cy="24" r="4.8">
-      <animate attributeName="opacity" values="0.3;0.85;0.3" dur="3.5s" repeatCount="indefinite" />
-    </circle>
   </g>
 
-  <!-- 5. 扇底同心结与水引流苏 (Mizuhiki Tassels) -->
+  <!-- 4. 扇底同心结与水引流苏 (Mizuhiki Tassels) -->
   <g class="sakura-tassel-group">
     <path class="sakura-tassel-knot" d="M 30,48 C 30,51 34,51 34,48 C 34,51 38,51 38,48 C 38,46 34,46 32,48 C 30,46 26,46 26,48 C 26,51 30,51 30,48 Z" />
     <line class="sakura-tassel-cord left" x1="30.5" y1="50" x2="28" y2="56" />
@@ -91,7 +58,7 @@ export const SAKURA_ELEGANCE_TRIGGER_SVG = `
 </svg>
 `;
 
-// 2. 模态框：和纸莳绘屏风流光框架 (Mizuhiki & 莳绘 Screen Frame - 纯净几何抗拉伸结构)
+// 2. 模态框：和纸莳绘屏风流光框架 (极简几何高定外框，去除繁琐多层内虚线与杂乱点线)
 export const SAKURA_SCROLL_FRAME_SVG = `
 <svg class="sakura-scroll-svg" viewBox="0 0 400 660" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -103,51 +70,24 @@ export const SAKURA_SCROLL_FRAME_SVG = `
     </radialGradient>
     <linearGradient id="sakuraGoldBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="rgba(245, 208, 169, 0.85)" />
-      <stop offset="50%" stop-color="rgba(244, 166, 184, 0.6)" />
-      <stop offset="100%" stop-color="rgba(147, 197, 253, 0.55)" />
+      <stop offset="50%" stop-color="rgba(244, 166, 184, 0.55)" />
+      <stop offset="100%" stop-color="rgba(147, 197, 253, 0.5)" />
     </linearGradient>
   </defs>
 
-  <!-- 1. 和纸屏风主体 (微切角优雅轮廓) -->
+  <!-- 1. 和纸屏风极简主体 (微切角纯粹金边) -->
   <path d="M 22,8 L 378,8 L 392,22 L 392,638 L 378,652 L 22,652 L 8,638 L 8,22 Z" 
         fill="url(#sakuraWashiPaperBg)" 
         stroke="url(#sakuraGoldBorderGrad)" 
         stroke-width="0.9" />
-  
-  <!-- 2. 内层莳绘金粉虚线 (Double 莳绘 Thread) -->
-  <path d="M 24,12 L 376,12 L 388,24 L 388,636 L 376,648 L 24,648 L 12,636 L 12,24 Z" 
-        fill="none" 
-        stroke="rgba(244, 166, 184, 0.3)" 
-        stroke-width="0.6" 
-        stroke-dasharray="6,4" />
 
-  <!-- 3. 四角工笔金丝如意折角 (Corner Insets) -->
-  <!-- 左上角 -->
-  <g stroke="rgba(245, 208, 169, 0.7)" stroke-width="0.8" fill="none">
-    <path d="M 12,30 L 12,24 L 24,12 L 30,12" />
-    <circle cx="18" cy="18" r="1.2" fill="#F5D0A9" />
+  <!-- 2. 四角极简工笔折角 (简练利落，无多余圆点) -->
+  <g stroke="rgba(245, 208, 169, 0.5)" stroke-width="0.75" fill="none">
+    <path d="M 14,28 L 14,22 L 22,14 L 28,14" />
+    <path d="M 386,28 L 386,22 L 378,14 L 372,14" />
+    <path d="M 14,632 L 14,638 L 22,646 L 28,646" />
+    <path d="M 386,632 L 386,638 L 378,646 L 372,646" />
   </g>
-  <!-- 右上角 -->
-  <g stroke="rgba(245, 208, 169, 0.7)" stroke-width="0.8" fill="none">
-    <path d="M 388,30 L 388,24 L 376,12 L 370,12" />
-    <circle cx="382" cy="18" r="1.2" fill="#F5D0A9" />
-  </g>
-  <!-- 左下角 -->
-  <g stroke="rgba(245, 208, 169, 0.7)" stroke-width="0.8" fill="none">
-    <path d="M 12,630 L 12,636 L 24,648 L 30,648" />
-    <circle cx="18" cy="642" r="1.2" fill="#F5D0A9" />
-  </g>
-  <!-- 右下角 -->
-  <g stroke="rgba(245, 208, 169, 0.7)" stroke-width="0.8" fill="none">
-    <path d="M 388,630 L 388,636 L 376,648 L 370,648" />
-    <circle cx="382" cy="642" r="1.2" fill="#F5D0A9" />
-  </g>
-
-  <!-- 4. 顶部与底部极简微光导轨 (Top/Bottom Rails) -->
-  <line x1="140" y1="9" x2="260" y2="9" stroke="rgba(245, 208, 169, 0.45)" stroke-width="0.6" />
-  <circle cx="200" cy="9" r="1.5" fill="#F5D0A9" />
-  <line x1="140" y1="651" x2="260" y2="651" stroke="rgba(245, 208, 169, 0.35)" stroke-width="0.6" />
-  <circle cx="200" cy="651" r="1.2" fill="#F4A6B8" />
 </svg>
 `;
 

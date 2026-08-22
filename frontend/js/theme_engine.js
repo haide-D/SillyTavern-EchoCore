@@ -223,6 +223,7 @@ if (!window.TTS_ThemeEngine) {
         return Object.values(_state.themes).map(t => ({
             id: t.id,
             name: t.name,
+            version: t.version || '1.0.0',
             description: t.description || ''
         }));
     };

@@ -111,8 +111,8 @@ export class SakuraParticleEngine {
     }
 
     _scheduleNextBurst() {
-        // 每 4~7 秒产生一次微风落樱
-        this.nextMicroBurstTime = performance.now() + 4000 + Math.random() * 3000;
+        // 每 10~16 秒产生一次轻柔落樱微风 (极简留白)
+        this.nextMicroBurstTime = performance.now() + 10000 + Math.random() * 6000;
     }
 
     _animate(currentTime) {
@@ -122,8 +122,8 @@ export class SakuraParticleEngine {
         this.lastTime = currentTime;
 
         // 微风扰动周期
-        this.windAngle += dt * 0.8;
-        this.windForce = 0.2 + Math.sin(this.windAngle) * 0.25;
+        this.windAngle += dt * 0.6;
+        this.windForce = 0.15 + Math.sin(this.windAngle) * 0.18;
 
         this._update(dt, currentTime);
         this._render();
@@ -135,19 +135,19 @@ export class SakuraParticleEngine {
         const cx = this.canvasW / 2;
         const cy = this.canvasH / 2;
 
-        // 定期微风激起花瓣
+        // 定期微风轻拂 (偶尔 1~2 片)
         if (currentTime > this.nextMicroBurstTime) {
             this._spawnBreezePetals(cx, cy);
             this._scheduleNextBurst();
         }
 
-        // 常态补充花瓣 (保持 10~16 片，清爽高雅)
-        if (this.petals.length < 12 && Math.random() < 0.08) {
+        // 常态补充花瓣 (保持 3~5 片，极简清雅)
+        if (this.petals.length < 4 && Math.random() < 0.03) {
             this._spawnSinglePetal(cx, cy);
         }
 
-        // 常态补充金粉微尘 (保持 12~18 颗)
-        if (this.goldMotes.length < 15 && Math.random() < 0.15) {
+        // 常态补充金粉微尘 (保持 4~6 颗微粒)
+        if (this.goldMotes.length < 5 && Math.random() < 0.05) {
             this._spawnGoldMote(cx, cy);
         }
 
@@ -165,7 +165,7 @@ export class SakuraParticleEngine {
             p.swingAngle += p.swingSpeed * dt;
 
             // 受微风与重力驱动
-            p.vx += (this.windForce * 12 + Math.sin(p.swingAngle) * 8 - p.vx) * dt * 2;
+            p.vx += (this.windForce * 10 + Math.sin(p.swingAngle) * 6 - p.vx) * dt * 1.8;
             p.x += p.vx * dt;
             p.y += p.vy * dt;
 
@@ -212,30 +212,30 @@ export class SakuraParticleEngine {
 
     _spawnSinglePetal(cx, cy) {
         // 生成在悬浮球上方或周围
-        const offsetX = (Math.random() - 0.5) * 60;
-        const offsetY = -25 - Math.random() * 20;
+        const offsetX = (Math.random() - 0.5) * 48;
+        const offsetY = -20 - Math.random() * 15;
 
         this.petals.push({
             x: cx + offsetX,
             y: cy + offsetY,
-            vx: (Math.random() - 0.3) * 15,
-            vy: 18 + Math.random() * 22,
-            size: 4.5 + Math.random() * 3.5,
+            vx: (Math.random() - 0.3) * 12,
+            vy: 14 + Math.random() * 18,
+            size: 3.8 + Math.random() * 2.8,
             flipAngle: Math.random() * Math.PI * 2,
-            flipSpeed: 1.5 + Math.random() * 2.5,
+            flipSpeed: 1.2 + Math.random() * 1.8,
             swingAngle: Math.random() * Math.PI * 2,
-            swingSpeed: 2.0 + Math.random() * 2.0,
+            swingSpeed: 1.5 + Math.random() * 1.5,
             rotation: Math.random() * Math.PI * 2,
             age: 0,
-            life: 3.5 + Math.random() * 2.0,
+            life: 3.8 + Math.random() * 2.2,
             alpha: 0,
-            maxAlpha: 0.65 + Math.random() * 0.3,
+            maxAlpha: 0.5 + Math.random() * 0.25,
             colorType: Math.random() > 0.4 ? 'petalBase' : 'petalLight'
         });
     }
 
     _spawnBreezePetals(cx, cy) {
-        const count = 3 + Math.floor(Math.random() * 3);
+        const count = 1 + (Math.random() > 0.6 ? 1 : 0);
         for (let i = 0; i < count; i++) {
             this._spawnSinglePetal(cx, cy);
         }
@@ -243,7 +243,7 @@ export class SakuraParticleEngine {
 
     _spawnGoldMote(cx, cy) {
         const angle = Math.random() * Math.PI * 2;
-        const dist = 10 + Math.random() * 32;
+        const dist = 8 + Math.random() * 24;
 
         this.goldMotes.push({
             x: cx + Math.cos(angle) * dist,

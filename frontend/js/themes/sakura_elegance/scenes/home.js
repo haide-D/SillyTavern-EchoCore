@@ -43,7 +43,7 @@ export const homeScene = {
         `);
         $container.append($header);
 
-        // 2. 中央落樱结界引线 (Meridian Spine)
+        // 2. 中央落樱结界引线 (Meridian Spine - 纯净纤细光带)
         const $meridian = $(`
             <div class="sakura-home-meridian" style="
                 position: absolute;
@@ -51,14 +51,12 @@ export const homeScene = {
                 bottom: 24px;
                 left: 50%;
                 width: 1px;
-                background: linear-gradient(to bottom, transparent, rgba(245, 208, 169, 0.3) 15%, rgba(244, 166, 184, 0.35) 85%, transparent);
+                background: linear-gradient(to bottom, transparent, rgba(245, 208, 169, 0.22) 20%, rgba(147, 197, 253, 0.22) 80%, transparent);
                 transform: translateX(-50%);
                 z-index: 0;
                 pointer-events: none;
-            ">
-                <div style="position:absolute; top:35%; left:-3px; width:7px; height:7px; border-radius:50%; border:0.6px solid rgba(245,208,169,0.7); background:#0c1524;"></div>
-                <div style="position:absolute; top:65%; left:-3px; width:7px; height:7px; border-radius:50%; border:0.6px solid rgba(147,197,253,0.7); background:#0c1524;"></div>
-            </div>
+                opacity: 0.75;
+            "></div>
         `);
         $container.append($meridian);
 
