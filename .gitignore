@@ -48,3 +48,9 @@ management/
 .agents/
 .gemini/
 GEMINI.md
+scratch/
+
+# --- docs 内部私有/开发/求职文档 (仅保留公开教程) ---
+docs/*
+!docs/插件教程.txt
+!docs/.gitkeep
