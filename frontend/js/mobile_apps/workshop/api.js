@@ -23,6 +23,34 @@ export function getApiHost() {
 }
 
 /**
+ * 获取当前系统配置的 LLM 参数 (来自设置 phone_call.llm)
+ */
+export async function getLlmConfig() {
+    try {
+        const apiHost = getApiHost();
+        const dataRes = await fetch(`${apiHost}/api/get_data`).then(r => r.json());
+        const phoneCallConfig = (dataRes && dataRes.settings && dataRes.settings.phone_call) || {};
+        const llmConfig = phoneCallConfig.llm || {};
+        return {
+            api_url: (llmConfig.api_url || '').trim(),
+            api_key: (llmConfig.api_key || '').trim(),
+            model: (llmConfig.model || '').trim(),
+            temperature: llmConfig.temperature !== undefined ? llmConfig.temperature : 0.8,
+            max_tokens: llmConfig.max_tokens || 4000
+        };
+    } catch (e) {
+        console.warn('[Workshop] 获取 LLM 配置失败:', e);
+        return {
+            api_url: '',
+            api_key: '',
+            model: '',
+            temperature: 0.8,
+            max_tokens: 4000
+        };
+    }
+}
+
+/**
  * 提取当前角色、已绑定 Speakers、SillyTavern 角色人设与世界书
  */
 export async function getContextInfo() {

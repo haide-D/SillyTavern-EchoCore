@@ -442,12 +442,51 @@
     background: #d1fae5 !important;
 }
 
+#tts-mobile-root .ws-modal-body > *,
+.ws-theme-default .ws-modal-body > * {
+    flex-shrink: 0 !important;
+}
+
 #tts-mobile-root .ws-section-box,
 .ws-theme-default .ws-section-box {
     background: rgba(255, 255, 255, 0.85) !important;
     border: 1px solid #bbf7d0 !important;
     border-radius: 10px !important;
     box-shadow: 0 1px 4px rgba(6, 78, 59, 0.04) !important;
+}
+
+#tts-mobile-root .ws-ai-gen-box,
+.ws-theme-default .ws-ai-gen-box {
+    background: linear-gradient(135deg, #f0fdf4 0%, #f5f3ff 100%) !important;
+    border: 1.5px solid #a7f3d0 !important;
+    box-shadow: 0 2px 8px rgba(6, 78, 59, 0.05) !important;
+}
+
+#tts-mobile-root .ws-ai-gen-title,
+.ws-theme-default .ws-ai-gen-title {
+    color: #065f46 !important;
+}
+
+#tts-mobile-root .ws-ai-chip,
+.ws-theme-default .ws-ai-chip {
+    background: #ffffff !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-weight: 500 !important;
+}
+
+#tts-mobile-root .ws-ai-chip:hover,
+.ws-theme-default .ws-ai-chip:hover {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+}
+
+#tts-mobile-root .ws-ai-chips-label,
+#tts-mobile-root .ws-ai-context-row,
+.ws-theme-default .ws-ai-chips-label,
+.ws-theme-default .ws-ai-context-row {
+    color: #064e3b !important;
 }
 
 #tts-mobile-root .ws-section-title,

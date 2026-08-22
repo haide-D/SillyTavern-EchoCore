@@ -61,7 +61,9 @@ function renderCustomDeathlyHallowsCall(container, callData, ctx) {
                 await ChatInjector.appendToLastAIMessage({
                     type: 'phone_call',
                     segments: callData.segments || [],
-                    callerName: callData.char_name,
+                    callerName: callData.char_name || callData.selected_speaker || callData.caller || '神秘角色',
+                    target: callData.target_user || callData.target || '你',
+                    callReason: callData.call_reason || callData.reason || '主动致电',
                     callId: callData.call_id,
                     audioUrl: callData.audio_url
                 });
@@ -127,7 +129,9 @@ function showCustomInCallUI(container, callData, ctx) {
             await ChatInjector.appendToLastAIMessage({
                 type: 'phone_call',
                 segments: callData.segments || [],
-                callerName: callData.char_name,
+                callerName: callData.char_name || callData.selected_speaker || callData.caller || '神秘角色',
+                target: callData.target_user || callData.target || '你',
+                callReason: callData.call_reason || callData.reason || '主动致电',
                 callId: callData.call_id,
                 audioUrl: callData.audio_url
             });

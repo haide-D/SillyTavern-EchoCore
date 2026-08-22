@@ -17,6 +17,25 @@ export const QUICK_MOTIVATIONS = {
     eavesdrop: ["商议秘密行动与情报", "暗中争执与彼此试探", "讨论当前局势与隐患", "私下交流吐槽"]
 };
 
+export const AI_SCRIPT_INSPIRATIONS = {
+    phone_call: [
+        "深夜醉酒真情流露",
+        "突发险情紧急示警",
+        "傲娇吃醋与故意试探",
+        "生病虚弱寻求陪伴",
+        "吵架后的委屈道歉",
+        "日常甜蜜查岗与分享"
+    ],
+    eavesdrop: [
+        "密谋秘密行动与情报",
+        "暗中争执与互相试探",
+        "背地里吐槽与讨论主角",
+        "商讨突发危机的应对方案",
+        "秘密筹备惊喜计划",
+        "心事吐露与深夜密谈"
+    ]
+};
+
 export const WORKSHOP_SLOTS = {
     phone_call: {
         plot: ["{{caller}}", "{{target}}", "{{receiver}}", "{{call_reason}}", "{{call_tone}}", "{{followup_call_instructions}}"],

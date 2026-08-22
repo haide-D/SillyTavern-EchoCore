@@ -334,6 +334,10 @@
     box-sizing: border-box;
 }
 
+.ws-modal-body > * {
+    flex-shrink: 0;
+}
+
 .ws-modal-footer {
     display: flex;
     align-items: center;
@@ -348,6 +352,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex-shrink: 0;
 }
 
 .ws-form-label {
@@ -385,6 +390,7 @@
     flex-direction: column;
     gap: 6px;
     box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .ws-section-header {
@@ -413,7 +419,160 @@
     cursor: pointer;
 }
 
-/* 10. 插槽与快捷标签 */
+/* 10. AI 智能剧本创作助手 (AI Generator Box) */
+.ws-ai-gen-box {
+    flex-shrink: 0 !important;
+    border-radius: 10px;
+    padding: 11px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    position: relative;
+    min-height: fit-content;
+}
+
+.ws-ai-gen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ws-ai-gen-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ws-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(139, 92, 246, 0.3);
+}
+
+.ws-ai-gen-body {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.ws-ai-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ws-ai-input {
+    flex: 1;
+}
+
+.ws-ai-submit-btn {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+}
+
+.ws-ai-submit-btn:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 3px 8px rgba(99, 102, 241, 0.35);
+}
+
+.ws-ai-submit-btn.loading {
+    opacity: 0.8;
+    cursor: wait;
+}
+
+.ws-ai-chips-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ws-ai-chips-label {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.ws-ai-chips-list {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.ws-ai-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.ws-ai-chip:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.4);
+    transform: translateY(-1px);
+}
+
+.ws-ai-context-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+.ws-ai-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ws-ai-checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: #8b5cf6;
+}
+
+/* 高亮闪烁回填动画 */
+@keyframes ws-pulse-anim {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        border-color: #10b981;
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35);
+        border-color: #10b981;
+    }
+    100% {
+        box-shadow: none;
+    }
+}
+
+.ws-highlight-pulse {
+    animation: ws-pulse-anim 1.2s ease-in-out 2;
+}
+
+/* 11. 插槽与快捷标签 */
 .ws-slot-section {
     display: flex;
     flex-direction: column;

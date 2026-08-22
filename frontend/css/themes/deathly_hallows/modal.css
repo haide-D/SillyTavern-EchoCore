@@ -623,11 +623,49 @@
     background: rgba(196, 155, 79, 0.2) !important;
 }
 
+#tts-dh-modal .ws-modal-body > *,
+.ws-theme-dh .ws-modal-body > * {
+    flex-shrink: 0 !important;
+}
+
 #tts-dh-modal .ws-section-box,
 .ws-theme-dh .ws-section-box {
     background: rgba(14, 11, 22, 0.75) !important;
     border: 1px solid rgba(196, 155, 79, 0.25) !important;
     border-radius: 10px !important;
+}
+
+#tts-dh-modal .ws-ai-gen-box,
+.ws-theme-dh .ws-ai-gen-box {
+    background: linear-gradient(135deg, rgba(30, 20, 48, 0.85) 0%, rgba(18, 12, 30, 0.9) 100%) !important;
+    border: 1px solid rgba(196, 155, 79, 0.45) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(196, 155, 79, 0.08) !important;
+}
+
+#tts-dh-modal .ws-ai-gen-title,
+.ws-theme-dh .ws-ai-gen-title {
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-ai-chip,
+.ws-theme-dh .ws-ai-chip {
+    background: rgba(196, 155, 79, 0.12) !important;
+    border: 1px solid rgba(196, 155, 79, 0.3) !important;
+    color: #fef08a !important;
+}
+
+#tts-dh-modal .ws-ai-chip:hover,
+.ws-theme-dh .ws-ai-chip:hover {
+    background: rgba(196, 155, 79, 0.35) !important;
+    border-color: #fef08a !important;
+    color: #ffffff !important;
+}
+
+#tts-dh-modal .ws-ai-chips-label,
+#tts-dh-modal .ws-ai-context-row,
+.ws-theme-dh .ws-ai-chips-label,
+.ws-theme-dh .ws-ai-context-row {
+    color: rgba(220, 200, 160, 0.85) !important;
 }
 
 #tts-dh-modal .ws-section-title,

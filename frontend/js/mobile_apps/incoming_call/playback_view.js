@@ -104,8 +104,10 @@ export function showHistoryPlaybackUI(container, call, createNavbar, onReturn = 
             await ChatInjector.appendToLastAIMessage({
                 type: 'phone_call',
                 segments: call.segments || [],
-                callerName: call.char_name,
-                callId: call.id,
+                callerName: call.char_name || call.selected_speaker || call.caller || '神秘角色',
+                target: call.target_user || call.target || '你',
+                callReason: call.call_reason || call.reason || '主动致电',
+                callId: call.id || call.call_id,
                 audioUrl: call.audio_url
             });
             hasInjected = true;

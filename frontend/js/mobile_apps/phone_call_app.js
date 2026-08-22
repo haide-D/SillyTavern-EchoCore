@@ -1088,9 +1088,12 @@ function createCallCard(call, isLatest = false) {
         try {
             await ChatInjector.appendToLastAIMessage({
                 type: 'phone_call',
+                callerName: caller,
                 caller: caller,
                 target: target,
+                userName: target,
                 callReason: reason,
+                sceneDescription: reason,
                 segments: segments,
                 callId: call.call_id || call.id || Date.now(),
                 audioUrl: audioUrl
