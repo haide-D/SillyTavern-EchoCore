@@ -19,8 +19,8 @@ DEFAULT_MANAGER_PORT = 3000
 
 # ================= 配置加载逻辑 =================
 def load_json(filename):
-    """读取 JSON 文件，文件不存在返回空字典，解析失败记录错误并返回空字典"""
-    if not os.path.exists(filename):
+    """读取 JSON 文件，文件不存在或被 Docker 挂载为目录时返回空字典"""
+    if not os.path.exists(filename) or os.path.isdir(filename):
         return {}
     try:
         with open(filename, 'r', encoding='utf-8') as f:
@@ -31,7 +31,7 @@ def load_json(filename):
 
 def _safe_load_for_update(filename):
     """写入前的保护性读取：文件存在但读取为空时抛异常，防止覆盖已有数据"""
-    if not os.path.exists(filename):
+    if not os.path.exists(filename) or os.path.isdir(filename):
         return {}
     try:
         with open(filename, 'r', encoding='utf-8') as f:
