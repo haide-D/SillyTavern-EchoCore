@@ -715,14 +715,29 @@ export default {
 .my_cyber_theme-modal { ... }
 ```
 
-# 关键技术规范与避坑原则 (SVG-First 美学铁律)
+# 关键技术规范与避坑原则 (SVG-First 美学与场景铁律)
 1. **SVG-First 矢量美学框架**：模态框背景严禁使用简陋的纯 CSS div 方块！必须在模态框内嵌入 `<svg>` 矢量框架层（包含渐变遮罩、`<filter>` 滤镜、多边形切角边框、几何符文线、装饰角点与顶部/底部导轨），形成多层透光的现代高级质感。
 2. **悬浮球精密复合 SVG**：严禁仅使用简单 emoji 或单层图标。必须构建多层复合 SVG（外圈逆向/顺向旋转符文环、带 `<animate>` 动态发光微节点、双向同心轨迹、中心法阵/核心晶体）。
 3. **主菜单艺术化非线性排列**：Home 场景杜绝单调九宫格方块！应采用中央能量轴/光束连线、左右交错排列的艺术化浮动卡片（配合 `@keyframes` 浮动延迟动效与专属线性 SVG 图标）。
 4. **全套 Canvas 粒子物理系统**：必须在悬浮球或全屏无缝集成 Canvas 粒子物理系统（光尘、微事件、破空流光），并在 `destroy()` 时彻底释放。
 5. **视口计算防溢出**：严禁使用纯 CSS `top:50%/transform:translate(-50%,-50%)`，必须在 `onOpen` 中使用 `visualViewport` 动态计算像素坐标。
-6. **悬浮球拖拽**：必须支持 PointerCapture 拖拽并使用 `hasMoved` 标志位精准区分点击与拖拽。
-7. **样式隔离**：所有 CSS 类名必须带有主题 ID 专属前缀（如 `.my_theme-xxx`），弹窗支持 `.ws-theme-{theme_id}` 剧本工坊定制。
+6. **悬浮球自由拖拽与持久化 (🚫 严禁强行贴边)**：必须支持 PointerCapture 拖拽并使用 `hasMoved` 区分点击与拖动。**严禁在 `pointerup` 中强行将悬浮球向右侧/单侧贴边动画**（会破坏用户的自由停放体验）！应允许停放在全屏任意有效坐标，并在放手后直接将 `top/left` 保存至 `localStorage`。
+7. **主页 App 点击路由唯一定义 (🚫 严禁臆造方法)**：主页卡片点击跳转时，**唯一定义的 API 是 `ctx.engine.showScene(app.id)`**！严禁臆造不存在的 `switchScene()` 或 `openApp()`，引擎会自动识别是专属场景还是挂载原生 App。
+8. **通话/窃听场景 AudioPlayer 与动态字幕绑定铁律 (🚫 严禁写死静态字符串)**：
+   - 必须提供标准字幕容器结构：
+     ```html
+     <div class="call-subtitle-area">
+         <div class="subtitle-line">
+             <span class="subtitle-speaker" style="display:none;"></span>
+             <span class="subtitle-text">感应中...</span>
+         </div>
+     </div>
+     ```
+   - 必须在实例化 `AudioPlayer` 时传入容器与分段数组：`new AudioPlayer({ $container: $content, segments: callData.segments || [] })`，由播放器随音频进度自动驱动逐句滚动高亮渲染；
+   - 必须同时支持手动注入聊天按键（`ChatInjector.appendToLastAIMessage`）与多通排队处理（`CallQueueManager`）。
+9. **主题沉浸式文案与 SVG 动态自省机制 (0 侵入扩展)**：
+   - 外部主题只需在导出的配置对象中声明 `statusTexts: { call: {...}, eavesdrop: {...} }` 或实现 `getStatusTexts(type)` / `getWorkshopStepTexts(type, options)` 方法，系统会全自动优先识别，外部导入时无需修改任何核心文件。
+10. **样式隔离**：所有 CSS 类名必须带有主题 ID 专属前缀（如 `.my_theme-xxx`），弹窗支持 `.ws-theme-{theme_id}` 剧本工坊定制。
 
 请根据我的定制需求，直接输出包含上述文件的纯文本 Markdown 代码。
 我的主题定制需求是：[在此补充你的主题创意、配色基调与特定动效需求]
@@ -740,5 +755,7 @@ export default {
 
 - **《死亡圣器》(deathly_hallows)**：`frontend/js/themes/deathly_hallows/`（西方奇幻与神秘几何法阵标杆，展示了 3D 空间漂浮透视、多重同心轨道逆旋、多场景拆分、Canvas 粒子物理引擎 `particle_engine.js`、高质量 SVG `assets.js`、状态管理与独立弹窗覆盖）。
 - **《仙途凌霄》(immortal_sword)**：`frontend/js/themes/immortal_sword/`（**东方仙侠风骨与 3D 混元法阵标杆**，展示了**拒绝 2D 平面贴纸、采用 3D 工笔白描几何线条法阵**的高阶质感；包含双层反向自转天轨、太极 S 曲线灵气奔流流光 `taiji-flow`、天心本命飞剑破空流芒、玄墨冷玉宋简长卷框架与清冷月白霜华粒子系统）。
+- **《落樱雅境》(sakura_elegance)**：`frontend/js/themes/sakura_elegance/`（**平安公卿风雅与莫兰迪薄樱标杆**，展示了**3D 落樱折扇、晴明五芒结界流光、和纸莳绘透光屏风、Canvas 3D 翻转落樱物理粒子、100% 细线矢量图标与实时高亮字幕流**）。
 - **《极简默认》(default)**：`frontend/js/themes/default/`（默认主题，展示了单文件轻量实现）。
+
 

@@ -1,0 +1,232 @@
+/* =========================================================
+   平安京·落樱雅境 (sakura_elegance) - 全屏沉浸通话与神识窃听样式 (fullscreen_call.css)
+   平安风雅：暮樱幽夜 · 纸鹤微光 · 莫兰迪粉金涟漪 · 优雅字幕
+   ========================================================= */
+
+#sakura-fullscreen-call,
+#sakura-fullscreen-eavesdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 35%, #0f1a2c 0%, #080e18 60%, #04070d 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    animation: sakuraScreenFadeIn 0.35s ease-out both;
+}
+
+@keyframes sakuraScreenFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 背景落樱结界水印 */
+.sakura-bg-watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: rgba(244, 166, 184, 0.04);
+}
+
+.sakura-bg-watermark svg {
+    width: min(68vw, 68vh);
+    height: min(68vw, 68vh);
+}
+
+/* 内容层 */
+.sakura-call-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 24px;
+    text-align: center;
+    max-width: 480px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 头像外圈落樱光环 (粉金波纹) */
+.sakura-call-avatar-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin-bottom: 22px;
+}
+
+.sakura-call-avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 0.8px solid rgba(244, 166, 184, 0.45);
+    animation: sakuraAvatarPulse 3.6s ease-in-out infinite;
+}
+
+.sakura-call-avatar-ring.outer {
+    inset: -12px;
+    border-color: rgba(245, 208, 169, 0.3);
+    animation-delay: 0.9s;
+}
+
+@keyframes sakuraAvatarPulse {
+    0%, 100% { transform: scale(1); opacity: 0.35; }
+    50% { transform: scale(1.05); opacity: 0.85; }
+}
+
+.sakura-call-avatar-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #1c1017;
+    border: 1px solid rgba(245, 208, 169, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 16px rgba(244, 166, 184, 0.2);
+}
+
+.sakura-call-avatar-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sakura-call-name {
+    font-size: clamp(20px, 4.5vw, 26px);
+    font-weight: 300;
+    letter-spacing: 2.5px;
+    color: #FFF0F5;
+    margin: 0 0 6px 0;
+    text-shadow: 0 0 12px rgba(244, 166, 184, 0.4);
+}
+
+.sakura-call-status {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #E8A598;
+    margin: 0 0 20px 0;
+    opacity: 0.9;
+}
+
+/* 莫兰迪粉金声波 (Ripple Silk Wave) */
+.sakura-call-wave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 32px;
+    margin: 12px 0 20px 0;
+}
+
+.sakura-wave-bar {
+    width: 3px;
+    background: linear-gradient(to top, #E5A696, #F4A6B8, #FFF0F5);
+    border-radius: 2px;
+    animation: sakuraWaveBounce 1.4s ease-in-out infinite alternate;
+}
+
+.sakura-wave-bar:nth-child(2) { animation-delay: 0.2s; height: 16px; }
+.sakura-wave-bar:nth-child(3) { animation-delay: 0.4s; height: 26px; }
+.sakura-wave-bar:nth-child(4) { animation-delay: 0.1s; height: 18px; }
+.sakura-wave-bar:nth-child(5) { animation-delay: 0.5s; height: 12px; }
+
+@keyframes sakuraWaveBounce {
+    0% { height: 6px; opacity: 0.4; }
+    100% { height: 28px; opacity: 1; }
+}
+
+/* 字幕区 (AudioPlayer 动态渲染) */
+.sakura-subtitle,
+.call-subtitle-area {
+    max-width: 440px;
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 16px;
+    margin-bottom: 24px;
+    text-align: center;
+    color: #FFF0F5;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 0.8px;
+    box-sizing: border-box;
+}
+
+.sakura-subtitle .subtitle-line,
+.call-subtitle-area .subtitle-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.sakura-subtitle .subtitle-speaker,
+.call-subtitle-area .subtitle-speaker {
+    font-size: 11px;
+    color: #F5D0A9;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.sakura-subtitle .subtitle-text,
+.call-subtitle-area .subtitle-text {
+    font-size: 14px;
+    color: #FFF0F5;
+    text-shadow: 0 0 10px rgba(244, 166, 184, 0.4);
+    transition: all 0.2s ease;
+}
+
+/* 按钮控制条 */
+.sakura-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin-top: 10px;
+}
+
+.sakura-btn-action {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+}
+
+.sakura-btn-action.answer {
+    background: linear-gradient(135deg, rgba(245, 208, 169, 0.25), rgba(244, 166, 184, 0.35));
+    border-color: rgba(245, 208, 169, 0.7);
+    color: #FFF0F5;
+    box-shadow: 0 0 16px rgba(245, 208, 169, 0.3);
+}
+
+.sakura-btn-action.answer:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 24px rgba(245, 208, 169, 0.6);
+}
+
+.sakura-btn-action.hangup {
+    background: linear-gradient(135deg, rgba(212, 140, 158, 0.25), rgba(180, 80, 100, 0.35));
+    border-color: rgba(212, 140, 158, 0.7);
+    color: #FFF0F5;
+    box-shadow: 0 0 16px rgba(212, 140, 158, 0.3);
+}
+
+.sakura-btn-action.hangup:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 24px rgba(212, 140, 158, 0.6);
+}

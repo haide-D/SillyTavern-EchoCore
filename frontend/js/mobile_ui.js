@@ -16,15 +16,18 @@ import { ThemeEngine } from './theme_engine.js';
 import DefaultTheme from './themes/default/index.js';
 import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
 import ImmortalSwordTheme from './themes/immortal_sword/index.js';
+import SakuraEleganceTheme from './themes/sakura_elegance/index.js';
 
 // ==================== 全局 SDK 挂载 ====================
 // 引入共享库
 import { ParticleEngine } from './themes/particle_engine.js';
 import * as theme_utils from './themes/theme_utils.js';
+import * as theme_status_helper from './themes/theme_status_helper.js';
 
 window.TTS_Libs = {
     ParticleEngine,
     theme_utils,
+    theme_status_helper,
 };
 
 // 引入原生 App 模块
@@ -62,6 +65,7 @@ ThemeEngine.registerApp({ id: 'llm_test', defaultName: 'LLM测试', defaultIcon:
 ThemeEngine.registerTheme(DefaultTheme);
 ThemeEngine.registerTheme(DeathlyHallowsTheme);
 ThemeEngine.registerTheme(ImmortalSwordTheme);
+ThemeEngine.registerTheme(SakuraEleganceTheme);
 
 // ==================== 向后兼容 ====================
 // 保持 window.TTS_Mobile 接口不变，代理到 ThemeEngine

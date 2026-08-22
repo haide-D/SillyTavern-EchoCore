@@ -29,6 +29,15 @@ export const STATUS_SVGS = {
     // 仙侠修真：仙符灵篆
     talisman: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><line x1="9" x2="15" y1="7" y2="7"/><line x1="9" x2="15" y1="11" y2="11"/><line x1="9" x2="12" y1="15" y2="15"/></svg>`,
 
+    // 平安落樱：五瓣樱花
+    sakura: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5c-1-2.5-3.5-3-5-2-1.5 1-1.5 3.5 0 5 1.5 1.5 5 1.5 5 1.5s3.5 0 5-1.5c1.5-1.5 1.5-4 0-5-1.5-1-4-.5-5 2z"/><path d="M7.5 12c-2.5-1-3-3.5-2-5 1-1.5 3.5-1.5 5 0 1.5 1.5 1.5 5 1.5 5s0 3.5-1.5 5c-1.5 1.5-4 1.5-5 0-1-1.5-.5-4 2-5z"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>`,
+
+    // 平安落樱：纸鹤式神
+    crane: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L4 11 L12 10 L20 11 Z"/><path d="M12 10 L12 21 L7 16"/><path d="M12 10 L17 16"/></svg>`,
+
+    // 平安落樱：和风折扇
+    fan: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18 A 12 12 0 0 1 21 18 L 17 19 A 7 7 0 0 0 7 19 Z"/><line x1="12" y1="21" x2="12" y2="10"/><circle cx="12" cy="21" r="1.5" fill="currentColor"/></svg>`,
+
     // 魔法微光 / 星芒
     sparkles: `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
     
@@ -118,7 +127,31 @@ export function getCallStatusTexts() {
         return _themeStatusRegistry[themeId].call;
     }
 
-    // 3. 内置：仙途凌霄 (immortal_sword) - 100% 高精矢量 SVG 结构
+    // 3. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
+    if (themeId === 'sakura_elegance') {
+        return {
+            tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
+            tabAll: `${STATUS_SVGS.scroll} 雅阁总录`,
+            tabDial: `${STATUS_SVGS.crane} 纸鹤传音`,
+            systemHint: `${STATUS_SVGS.sakura} 平安法仪已感应式神名号与当下言灵。`,
+            step1Prompt: '正在唤出传信纸鹤...',
+            step2LLM: '结界微光流转，静候式神回音...',
+            step3TTS: '言灵共振，纸鹤传音即刻显现...',
+            btnIdle: `${STATUS_SVGS.crane} 唤出传信纸鹤`,
+            btnLoading: (text) => `${STATUS_SVGS.spinner} ${text}`,
+            reasonLabel: '传音契机与因由',
+            reasonDefault: '欲借纸鹤传音互通近况',
+            targetPlaceholder: '如: 阴阳师大人 / 雅阁知己 / 神社式神...',
+            tonePlaceholder: '如: 呢喃轻语、含蓄温婉、急切传信、从容雅致...',
+            emptyIcon: STATUS_SVGS.crane,
+            emptyCurrentTitle: '当前雅卷暂无纸鹤传讯',
+            emptyAllTitle: '平安总录暂无传书记录',
+            emptySub: '点击上方【纸鹤传音】呼唤式神传音入密',
+            emptyBtnText: `${STATUS_SVGS.scroll} 查阅平安总录`
+        };
+    }
+
+    // 4. 内置：仙途凌霄 (immortal_sword) - 100% 高精矢量 SVG 结构
     if (themeId === 'immortal_sword') {
         return {
             tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
@@ -210,7 +243,30 @@ export function getEavesdropStatusTexts() {
         return _themeStatusRegistry[themeId].eavesdrop;
     }
 
-    // 3. 内置：仙途凌霄 (immortal_sword) - 100% 高精矢量 SVG 结构
+    // 3. 内置：落樱雅境 (sakura_elegance) - 100% 高精矢量 SVG 结构
+    if (themeId === 'sakura_elegance') {
+        return {
+            tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
+            tabAll: `${STATUS_SVGS.scroll} 言灵总卷`,
+            tabLaunch: `${STATUS_SVGS.sakura} 结界灵视`,
+            systemHint: `${STATUS_SVGS.sakura} 结界已悄然展开，感应诸位式神私语。`,
+            step1Prompt: '正在展开落樱灵视结界...',
+            step2LLM: (speakers) => `正在探听言灵私语 (${(speakers || []).join(' ✦ ')})...`,
+            step3TTS: '言灵共鸣，密语私言即将传来...',
+            btnIdle: `${STATUS_SVGS.sakura} 展开结界探查`,
+            btnLoading: (text) => `${STATUS_SVGS.spinner} ${text}`,
+            reasonLabel: '探查场景与因由',
+            reasonDefault: '深夜在花阁门外的密语探讨',
+            tonePlaceholder: '如: 压低嗓音、警惕探寻、暗中私语、柔声交锋...',
+            emptyIcon: STATUS_SVGS.sakura,
+            emptyCurrentTitle: '当前天地暂无言灵回响',
+            emptyAllTitle: '平安总卷暂无私语记录',
+            emptySub: '点击上方【结界灵视】展开结界探查式神私语',
+            emptyBtnText: `${STATUS_SVGS.scroll} 查阅言灵总卷`
+        };
+    }
+
+    // 4. 内置：仙途凌霄 (immortal_sword) - 100% 高精矢量 SVG 结构
     if (themeId === 'immortal_sword') {
         return {
             tabCurrent: `${STATUS_SVGS.chat} 当下前尘`,
@@ -288,6 +344,23 @@ export function getWorkshopStepTexts(type, { caller = '角色', speakers = [] } 
     if (typeof currentTheme?.getWorkshopStepTexts === 'function') {
         const customRes = currentTheme.getWorkshopStepTexts(type, { caller, speakers });
         if (customRes) return customRes;
+    }
+
+    if (themeId === 'sakura_elegance') {
+        if (type === 'phone_call') {
+            return {
+                step1: '[1/3] 正在唤出传信纸鹤...',
+                step2: `[2/3] 结界微光流转，静候 ${caller} 回音...`,
+                step3: `[3/3] 言灵共振，${caller} 纸鹤传音即刻显现...`
+            };
+        } else {
+            const spkStr = (speakers && speakers.length) ? speakers.join(' ✦ ') : '诸位式神';
+            return {
+                step1: '[1/3] 正在展开落樱灵视结界...',
+                step2: `[2/3] 结界正在感应言灵私语... (${spkStr})`,
+                step3: '[3/3] 言灵共鸣，密语私言即将传来...'
+            };
+        }
     }
 
     if (themeId === 'immortal_sword') {
