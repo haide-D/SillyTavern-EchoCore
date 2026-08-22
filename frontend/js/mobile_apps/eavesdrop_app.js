@@ -600,7 +600,7 @@ async function renderCurrentBranchEavesdrops($container, $parentRoot) {
 /**
  * 子视图 2: 渲染全量总历史
  */
-async function renderAllHistoryEavesdrops($container) {
+async function renderAllHistoryEavesdrops($container, $parentRoot = null) {
     $container.html(`
         <div style="padding:10px 14px 0 14px;">
             <div class="ed-search-row">
@@ -613,7 +613,7 @@ async function renderAllHistoryEavesdrops($container) {
         </div>
     `);
 
-    const $list = $('#ed-all-list');
+    const $list = $container.find('#ed-all-list');
     const apiHost = getApiHost();
 
     try {
@@ -627,10 +627,10 @@ async function renderAllHistoryEavesdrops($container) {
                 const themeMatch = (r.scene_description || r.theme || '').toLowerCase().includes(_searchQuery);
                 return spks.includes(_searchQuery) || themeMatch;
             });
-            renderEavesdropsToContainer($list, filtered, false);
+            renderEavesdropsToContainer($list, filtered, false, $parentRoot);
         };
 
-        $('#ed-all-search').on('input', function () {
+        $container.find('#ed-all-search').on('input', function () {
             _searchQuery = $(this).val().trim().toLowerCase();
             applyFilterAndRender();
         });
@@ -827,21 +827,21 @@ function renderLaunchConsole($container) {
         $row.find('.ed-remove-speaker-btn').on('click', function () {
             $row.remove();
             // 重新刷新序号
-            $('#ed-extra-speakers-container .ed-extra-speaker-row').each(function (idx) {
+            $container.find('#ed-extra-speakers-container .ed-extra-speaker-row').each(function (idx) {
                 $(this).find('.ed-extra-index').text(`密谈角色 ${idx + 3}`);
             });
         });
 
-        $('#ed-extra-speakers-container').append($row);
+        $container.find('#ed-extra-speakers-container').append($row);
     });
 
     // 快捷主题点选
     $container.find('.ed-quick-tag').on('click', function () {
-        $('#ed-form-reason').val($(this).data('val'));
+        $container.find('#ed-form-reason').val($(this).data('val'));
     });
 
     // 提交发起密谈
-    $('#ed-form-submit-btn').on('click', async function () {
+    $container.find('#ed-form-submit-btn').on('click', async function () {
         let selectedSpeakers = [];
         $container.find('.ed-speaker-select').each(function () {
             const val = $(this).val();
@@ -858,10 +858,10 @@ function renderLaunchConsole($container) {
             return;
         }
 
-        const presetId = $('#ed-form-preset').val();
-        const reason = $('#ed-form-reason').val().trim() || '私下密谈';
-        const tone = $('#ed-form-tone').val().trim();
-        const selectedLang = $('#ed-form-language').val();
+        const presetId = $container.find('#ed-form-preset').val();
+        const reason = $container.find('#ed-form-reason').val().trim() || '私下密谈';
+        const tone = $container.find('#ed-form-tone').val().trim();
+        const selectedLang = $container.find('#ed-form-language').val();
 
         await generateAndLaunchEavesdrop({
             speakers: selectedSpeakers,

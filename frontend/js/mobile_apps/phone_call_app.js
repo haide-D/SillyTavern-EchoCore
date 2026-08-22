@@ -543,7 +543,7 @@ async function renderCurrentBranchCalls($container, $parentRoot) {
 /**
  * 子视图 2: 渲染全量总历史
  */
-async function renderAllHistoryCalls($container) {
+async function renderAllHistoryCalls($container, $parentRoot = null) {
     $container.html(`
         <div style="padding:10px 14px 0 14px;">
             <div class="pc-search-row">
@@ -556,7 +556,7 @@ async function renderAllHistoryCalls($container) {
         </div>
     `);
 
-    const $list = $('#pc-all-list');
+    const $list = $container.find('#pc-all-list');
     const apiHost = getApiHost();
 
     try {
@@ -570,10 +570,10 @@ async function renderAllHistoryCalls($container) {
                 const reasonMatch = (c.call_reason || '').toLowerCase().includes(_searchQuery);
                 return charMatch || reasonMatch;
             });
-            renderCallsToContainer($list, filtered, false);
+            renderCallsToContainer($list, filtered, false, $parentRoot);
         };
 
-        $('#pc-all-search').on('input', function () {
+        $container.find('#pc-all-search').on('input', function () {
             _searchQuery = $(this).val().trim().toLowerCase();
             applyFilterAndRender();
         });
@@ -725,33 +725,33 @@ function renderDialConsole($container) {
     $container.html(html);
 
     // 发起人改变联动语言提示
-    $('#pc-form-caller').on('change', function () {
+    $container.find('#pc-form-caller').on('change', function () {
         const langInfo = getSpeakerLanguageHint($(this).val());
-        $('#pc-form-lang-hint').text(langInfo.hint);
+        $container.find('#pc-form-lang-hint').text(langInfo.hint);
     });
 
     // 预设改变联动描述
-    $('#pc-form-preset').on('change', function () {
+    $container.find('#pc-form-preset').on('change', function () {
         const pid = $(this).val();
         const found = _presetsCache.find(p => p.id === pid);
         if (found) {
-            $('#pc-preset-desc').text(found.description || '');
+            $container.find('#pc-preset-desc').text(found.description || '');
         }
     });
 
     // 快捷动机点选
     $container.find('.pc-quick-tag').on('click', function () {
-        $('#pc-form-reason').val($(this).data('val'));
+        $container.find('#pc-form-reason').val($(this).data('val'));
     });
 
     // 点击提交发起呼出
-    $('#pc-form-submit-btn').on('click', async function () {
-        const caller = $('#pc-form-caller').val();
-        const target = $('#pc-form-target').val().trim() || enriched.userName;
-        const presetId = $('#pc-form-preset').val();
-        const reason = $('#pc-form-reason').val().trim();
-        const tone = $('#pc-form-tone').val().trim();
-        const selectedLang = $('#pc-form-language').val();
+    $container.find('#pc-form-submit-btn').on('click', async function () {
+        const caller = $container.find('#pc-form-caller').val();
+        const target = $container.find('#pc-form-target').val().trim() || enriched.userName;
+        const presetId = $container.find('#pc-form-preset').val();
+        const reason = $container.find('#pc-form-reason').val().trim();
+        const tone = $container.find('#pc-form-tone').val().trim();
+        const selectedLang = $container.find('#pc-form-language').val();
 
         let effectiveLang = selectedLang;
         if (selectedLang === 'auto') {
