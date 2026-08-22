@@ -1090,3 +1090,515 @@
     font-size: 11px;
     color: #166534;
 }
+
+/* ==========================================================================
+   📱 经典手机主题 (Default / 默认主题) 专属现代浅色 UI 保底规范
+   ========================================================================== */
+
+/* 1. 经典手机根容器与主屏幕 */
+#tts-mobile-root,
+#tts-mobile-root .mobile-screen,
+#tts-mobile-root .app-container {
+    background: #f4f4f8 !important;
+    color: #1e293b !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* 2. 顶部清爽毛玻璃导航栏 */
+#tts-mobile-root .mobile-app-navbar {
+    background: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+#tts-mobile-root .mobile-app-navbar .nav-title {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+}
+
+#tts-mobile-root .mobile-app-navbar .nav-left {
+    color: #0284c7 !important;
+    font-weight: 500 !important;
+}
+
+#tts-mobile-root .mobile-app-navbar .nav-left:hover {
+    opacity: 0.8 !important;
+}
+
+/* 3. 子选项卡 Tabs (剧本工坊 / 主动呼叫 / 对话追踪) */
+#tts-mobile-root .ws-tabs-bar,
+#tts-mobile-root .pc-nav-tabs,
+#tts-mobile-root .ed-nav-tabs {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+}
+
+#tts-mobile-root .ws-tab-btn,
+#tts-mobile-root .pc-nav-tab-btn,
+#tts-mobile-root .ed-nav-tab-btn {
+    background: #e2e8f0 !important;
+    border: 1px solid transparent !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+    padding: 7px 10px !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-mobile-root .ws-tab-btn:hover,
+#tts-mobile-root .pc-nav-tab-btn:hover,
+#tts-mobile-root .ed-nav-tab-btn:hover {
+    background: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+#tts-mobile-root .ws-tab-btn.active,
+#tts-mobile-root .pc-nav-tab-btn.active,
+#tts-mobile-root .ed-nav-tab-btn.active {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 选项卡激活专属强调色 */
+#tts-mobile-root .ws-tab-btn.active {
+    color: #d97706 !important;
+    border-bottom: 2px solid #d97706 !important;
+}
+
+#tts-mobile-root .pc-nav-tab-btn.active {
+    color: #059669 !important;
+    border-bottom: 2px solid #059669 !important;
+}
+
+#tts-mobile-root .ed-nav-tab-btn.active {
+    color: #d97706 !important;
+    border-bottom: 2px solid #d97706 !important;
+}
+
+/* 4. 搜索框与工具栏 */
+#tts-mobile-root .ws-toolbar,
+#tts-mobile-root .pc-search-row,
+#tts-mobile-root .ed-search-row {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 8px 12px !important;
+}
+
+#tts-mobile-root .ws-search-input,
+#tts-mobile-root .pc-search-input,
+#tts-mobile-root .ed-search-input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    color: #0f172a !important;
+    font-size: 12px !important;
+    padding: 7px 10px 7px 30px !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+#tts-mobile-root .ws-search-input:focus,
+#tts-mobile-root .pc-search-input:focus,
+#tts-mobile-root .ed-search-input:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15) !important;
+    background: #ffffff !important;
+}
+
+#tts-mobile-root .ws-search-icon,
+#tts-mobile-root .pc-search-icon,
+#tts-mobile-root .ed-search-icon {
+    color: #64748b !important;
+}
+
+#tts-mobile-root .ws-tool-btn-primary {
+    background: linear-gradient(135deg, #ea580c, #c2410c) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.3) !important;
+}
+
+#tts-mobile-root .ws-tool-btn-secondary {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+#tts-mobile-root .ws-tool-btn-secondary:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* 5. 状态统计栏与快捷栏 */
+#tts-mobile-root .ws-batch-bar {
+    font-size: 11.5px !important;
+    color: #64748b !important;
+    padding: 4px 2px !important;
+}
+
+#tts-mobile-root .ws-batch-highlight {
+    color: #ea580c !important;
+    font-weight: 600 !important;
+}
+
+#tts-mobile-root .ws-batch-btn {
+    color: #0284c7 !important;
+    font-weight: 500 !important;
+}
+
+#tts-mobile-root .ws-batch-btn:hover {
+    color: #0369a1 !important;
+}
+
+/* 6. 内容卡片 (剧本预设 / 通话记录 / 窃听记录) */
+#tts-mobile-root .ws-preset-card,
+#tts-mobile-root .pc-card,
+#tts-mobile-root .ed-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    color: #1e293b !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-mobile-root .ws-preset-card:hover,
+#tts-mobile-root .pc-card:hover,
+#tts-mobile-root .ed-card:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07) !important;
+    background: #ffffff !important;
+}
+
+#tts-mobile-root .ws-preset-card.is-active,
+#tts-mobile-root .pc-card.highlight,
+#tts-mobile-root .ed-card.highlight {
+    border: 1.5px solid #059669 !important;
+    background: #ffffff !important;
+    box-shadow: 0 3px 12px rgba(5, 150, 105, 0.12) !important;
+}
+
+#tts-mobile-root .pc-card.is-playing,
+#tts-mobile-root .ed-card.is-playing {
+    border: 1.5px solid #0284c7 !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18) !important;
+}
+
+#tts-mobile-root .ws-card-title,
+#tts-mobile-root .pc-caller-name,
+#tts-mobile-root .ed-speakers-tag {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+
+#tts-mobile-root .ws-card-author,
+#tts-mobile-root .pc-time,
+#tts-mobile-root .ed-time {
+    font-size: 11px !important;
+    color: #64748b !important;
+}
+
+#tts-mobile-root .ws-active-badge {
+    background: #ecfdf5 !important;
+    border: 1px solid #6ee7b7 !important;
+    color: #059669 !important;
+    font-weight: 600 !important;
+}
+
+#tts-mobile-root .ws-card-desc {
+    font-size: 12.5px !important;
+    color: #334155 !important;
+    line-height: 1.5 !important;
+}
+
+#tts-mobile-root .pc-reason,
+#tts-mobile-root .ed-theme {
+    font-size: 11.5px !important;
+    color: #1e293b !important;
+    background: #f1f5f9 !important;
+    padding: 5px 9px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 3px solid #0284c7 !important;
+}
+
+#tts-mobile-root .pc-dialog-preview,
+#tts-mobile-root .ed-dialog-preview {
+    font-size: 11.5px !important;
+    color: #334155 !important;
+    background: #f8fafc !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+    line-height: 1.55 !important;
+}
+
+#tts-mobile-root .pc-dialog-preview div.pc-segment-line.active-segment,
+#tts-mobile-root .ed-dialog-preview div.ed-segment-line.active-segment {
+    color: #0369a1 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    padding-left: 6px !important;
+    border-left: 3px solid #0284c7 !important;
+    background: #e0f2fe !important;
+    border-radius: 3px !important;
+}
+
+#tts-mobile-root .pc-time-playback,
+#tts-mobile-root .ed-time-playback {
+    color: #0284c7 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+#tts-mobile-root .pc-audio-progress-wrap,
+#tts-mobile-root .ed-audio-progress-wrap {
+    background: #e2e8f0 !important;
+}
+
+#tts-mobile-root .pc-audio-progress-bar,
+#tts-mobile-root .ed-audio-progress-bar {
+    background: linear-gradient(90deg, #0284c7, #38bdf8) !important;
+    box-shadow: none !important;
+}
+
+/* 7. 卡片操作按钮组 */
+#tts-mobile-root .ws-act-btn,
+#tts-mobile-root .pc-action-btn,
+#tts-mobile-root .ed-action-btn,
+#tts-mobile-root .ws-act-icon-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    border-radius: 6px !important;
+    padding: 5px 9px !important;
+    font-size: 11.5px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-mobile-root .ws-act-btn:hover,
+#tts-mobile-root .pc-action-btn:hover,
+#tts-mobile-root .ed-action-btn:hover,
+#tts-mobile-root .ws-act-icon-btn:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+#tts-mobile-root .ws-act-directed,
+#tts-mobile-root .pc-action-btn.play,
+#tts-mobile-root .ed-action-btn.play {
+    background: #059669 !important;
+    color: #ffffff !important;
+    border-color: #047857 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.2) !important;
+}
+
+#tts-mobile-root .ws-act-directed:hover,
+#tts-mobile-root .pc-action-btn.play:hover,
+#tts-mobile-root .ed-action-btn.play:hover {
+    background: #047857 !important;
+}
+
+#tts-mobile-root .ws-act-active-on {
+    background: #ecfdf5 !important;
+    border-color: #6ee7b7 !important;
+    color: #059669 !important;
+}
+
+#tts-mobile-root .pc-action-btn.inject,
+#tts-mobile-root .ed-action-btn.inject {
+    background: #fffbeb !important;
+    border-color: #fde68a !important;
+    color: #b45309 !important;
+}
+
+#tts-mobile-root .pc-action-btn.immersive,
+#tts-mobile-root .ed-action-btn.immersive {
+    background: #f5f3ff !important;
+    border-color: #ddd6fe !important;
+    color: #6d28d9 !important;
+}
+
+/* 8. 空状态 Empty State */
+#tts-mobile-root .pc-empty-state,
+#tts-mobile-root .ed-empty-state {
+    color: #64748b !important;
+    padding: 30px 15px !important;
+    text-align: center !important;
+}
+
+#tts-mobile-root .pc-empty-title,
+#tts-mobile-root .ed-empty-title {
+    color: #1e293b !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+}
+
+#tts-mobile-root .pc-empty-desc,
+#tts-mobile-root .ed-empty-desc {
+    color: #64748b !important;
+    font-size: 12px !important;
+}
+
+#tts-mobile-root .pc-empty-btn,
+#tts-mobile-root .ed-empty-btn {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    margin-top: 10px !important;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+
+/* 9. 模态框 Modal (剧本编辑 / 导入 / 定向呼叫控制台) */
+#tts-mobile-root .ws-modal {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 14px !important;
+    color: #0f172a !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+#tts-mobile-root .ws-modal-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+#tts-mobile-root .ws-modal-title {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+}
+
+#tts-mobile-root .ws-modal-close {
+    color: #64748b !important;
+}
+
+#tts-mobile-root .ws-modal-close:hover {
+    color: #0f172a !important;
+}
+
+#tts-mobile-root .ws-section-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+}
+
+#tts-mobile-root .ws-section-title {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+}
+
+#tts-mobile-root .ws-section-subtitle {
+    color: #64748b !important;
+}
+
+#tts-mobile-root .ws-form-label,
+#tts-mobile-root .pc-form-label,
+#tts-mobile-root .ed-form-label {
+    color: #334155 !important;
+    font-weight: 500 !important;
+}
+
+#tts-mobile-root .ws-form-input,
+#tts-mobile-root .ws-form-select,
+#tts-mobile-root .pc-form-input,
+#tts-mobile-root .pc-form-select,
+#tts-mobile-root .ed-form-input,
+#tts-mobile-root .ed-form-select {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 7px !important;
+    color: #0f172a !important;
+    font-size: 12.5px !important;
+}
+
+#tts-mobile-root .ws-form-input:focus,
+#tts-mobile-root .ws-form-select:focus,
+#tts-mobile-root .pc-form-input:focus,
+#tts-mobile-root .pc-form-select:focus,
+#tts-mobile-root .ed-form-input:focus,
+#tts-mobile-root .ed-form-select:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15) !important;
+}
+
+#tts-mobile-root .ws-form-select option,
+#tts-mobile-root .pc-form-select option,
+#tts-mobile-root .ed-form-select option {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+#tts-mobile-root .ws-textarea {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+#tts-mobile-root .ws-slot-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0284c7 !important;
+    font-weight: 500 !important;
+}
+
+#tts-mobile-root .ws-slot-btn:hover {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+}
+
+#tts-mobile-root .ws-quick-tag,
+#tts-mobile-root .pc-quick-tag,
+#tts-mobile-root .ed-quick-tag {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+#tts-mobile-root .ws-quick-tag:hover,
+#tts-mobile-root .pc-quick-tag:hover,
+#tts-mobile-root .ed-quick-tag:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+#tts-mobile-root .ws-modal-footer {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+#tts-mobile-root .ws-auto-context-tip,
+#tts-mobile-root .pc-system-hint,
+#tts-mobile-root .ed-system-hint {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
+}
+
+#tts-mobile-root .pc-main-btn,
+#tts-mobile-root .ed-main-btn {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 3px 8px rgba(2, 132, 199, 0.3) !important;
+}
