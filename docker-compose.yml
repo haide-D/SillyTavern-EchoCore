@@ -14,5 +14,6 @@ services:
       - ./Cache:/app/Cache
       # 配置文件持久化
       - ./system_settings.json:/app/system_settings.json
+      - ./character_mappings.json:/app/character_mappings.json
     environment:
       - PYTHONUNBUFFERED=1
