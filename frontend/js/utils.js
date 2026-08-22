@@ -749,9 +749,6 @@ export function resolveBackendUrls(remoteConfig = {}) {
     }
 
     if (host.includes(':') && !host.startsWith('[')) {
-        host = `[${host}]`;
-    }
-
     const httpUrl = `http://${host}:${port}`;
     return {
         httpUrl,
@@ -759,6 +756,89 @@ export function resolveBackendUrls(remoteConfig = {}) {
         adminUrl: `${httpUrl}/admin`,
         isHttps: false
     };
+}
+
+/**
+ * 获取所有的 MiniMax 音色 (包含官方预设 + 用户自定义保存的克隆音色)
+ */
+export function getAllMiniMaxVoices() {
+    const presetVoices = [
+        { id: "female-shaonv", name: "少女音", description: "清澈灵动、青春活力" },
+        { id: "female-yujie", name: "御姐音", description: "成熟知性、冷静优雅" },
+        { id: "female-tianmei", name: "甜美音", description: "软萌温柔、甜美治愈" },
+        { id: "female-chengshu", name: "成熟女性", description: "沉稳端庄、富有亲和力" },
+        { id: "presenter_female", name: "女主持人", description: "标准播音腔、字正腔圆" },
+        { id: "audiobook_female_1", name: "女播音员 1", description: "温和叙事、适合故事朗读" },
+        { id: "audiobook_female_2", name: "女播音员 2", description: "沉稳大气、情绪充沛" },
+        { id: "male-qn-qingse", name: "青涩青年", description: "阳光少年、自然清新" },
+        { id: "male-qn-jingying", name: "精英青年", description: "沉稳干练、自信温润" },
+        { id: "male-qn-badao", name: "霸道青年", description: "磁性低沉、富有掌控感" },
+        { id: "male-qn-daxuesheng", name: "男大学生", description: "清爽随和、日常口语化" },
+        { id: "presenter_male", name: "男主持人", description: "浑厚庄重、新闻级播音" },
+        { id: "audiobook_male_1", name: "男播音员 1", description: "故事感强、磁性浑厚" },
+        { id: "audiobook_male_2", name: "男播音员 2", description: "深度纪录片质感" }
+    ];
+
+    let customVoices = [];
+    try {
+        const saved = localStorage.getItem('tts_custom_minimax_voices');
+        if (saved) {
+            customVoices = JSON.parse(saved);
+        }
+    } catch (e) { }
+
+    const cacheVoices = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.minimax_voices) || [];
+    for (const cv of cacheVoices) {
+        if (cv.category === 'custom' || !presetVoices.some(p => p.id === cv.id)) {
+            if (!customVoices.some(c => c.id === cv.id)) {
+                customVoices.push({ id: cv.id, name: cv.name || cv.id, description: cv.description || '用户自定义克隆音色' });
+            }
+        }
+    }
+
+    return { presetVoices, customVoices };
+}
+
+/**
+ * 注册或更新一个用户自定义 MiniMax 音色 (存入本地与扩展状态)
+ */
+export function saveCustomMiniMaxVoice(id, name) {
+    if (!id) return;
+    const cleanId = id.startsWith('minimax:') ? id.slice(8) : (id.startsWith('minimax_') ? id.slice(8) : id);
+    const cleanName = (name || cleanId).trim();
+    
+    let customVoices = [];
+    try {
+        const saved = localStorage.getItem('tts_custom_minimax_voices');
+        if (saved) customVoices = JSON.parse(saved);
+    } catch (e) { }
+
+    const existing = customVoices.find(v => v.id === cleanId);
+    if (existing) {
+        existing.name = cleanName;
+    } else {
+        customVoices.push({ id: cleanId, name: cleanName, category: 'custom', description: '用户自定义克隆音色' });
+    }
+
+    localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(customVoices));
+    return customVoices;
+}
+
+/**
+ * 根据 Voice ID 获取友好显示名称 (带标签)
+ */
+export function getVoiceDisplayName(voiceId) {
+    if (!voiceId) return '';
+    if (!voiceId.startsWith('minimax:') && !voiceId.startsWith('minimax_')) {
+        return voiceId;
+    }
+    const cleanId = voiceId.startsWith('minimax:') ? voiceId.slice(8) : voiceId.slice(8);
+    const { presetVoices, customVoices } = getAllMiniMaxVoices();
+    const foundPreset = presetVoices.find(v => v.id === cleanId);
+    if (foundPreset) return `☁️ ${foundPreset.name} (${cleanId})`;
+    const foundCustom = customVoices.find(v => v.id === cleanId);
+    if (foundCustom) return `✨ ${foundCustom.name} (${cleanId})`;
+    return `☁️ MiniMax (${cleanId})`;
 }
 
 console.log("🟢 [2] TTS_Utils.js 执行完毕");

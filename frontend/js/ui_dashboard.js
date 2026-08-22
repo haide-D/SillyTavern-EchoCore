@@ -207,12 +207,46 @@ export const TTS_UI = window.TTS_UI;
             });
         });
 
+        // 监听模型选择切换，支持展开自定义 MiniMax Voice ID
+        $('#tts-new-model').off('change').on('change', function () {
+            if ($(this).val() === '__custom_minimax__') {
+                $('#tts-custom-voice-wrap').slideDown(150);
+                $('#tts-custom-voice-name').focus();
+            } else {
+                $('#tts-custom-voice-wrap').slideUp(150);
+            }
+        });
+
         // 绑定新角色
         $('#tts-btn-bind-new').off('click').on('click', async function () {
             const charName = $('#tts-new-char').val().trim();
             const customAvatar = $('#tts-new-char-avatar').val().trim();
-            const modelName = $('#tts-new-model').val();
-            if (!charName || !modelName) { alert('请填写角色名并选择模型'); return; }
+            let modelName = $('#tts-new-model').val();
+
+            if (!charName) {
+                alert('请填写角色名');
+                return;
+            }
+            if (!modelName) {
+                alert('请选择语音模型或音色');
+                return;
+            }
+
+            if (modelName === '__custom_minimax__') {
+                let customId = $('#tts-custom-voice-input').val().trim();
+                let customName = $('#tts-custom-voice-name').val().trim();
+                if (!customId) {
+                    alert('请输入 MiniMax Voice ID');
+                    $('#tts-custom-voice-input').focus();
+                    return;
+                }
+                const rawId = customId.startsWith('minimax:') ? customId.slice(8) : (customId.startsWith('minimax_') ? customId.slice(8) : customId);
+                modelName = `minimax:${rawId}`;
+
+                if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
+                    window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                }
+            }
 
             try {
                 await window.TTS_API.bindCharacter(charName, modelName);
@@ -221,8 +255,13 @@ export const TTS_UI = window.TTS_UI;
                 }
                 await CTX.Callbacks.refreshData();
                 scope.renderDashboardList();
+                scope.renderModelOptions();
                 $('#tts-new-char').val('');
                 $('#tts-new-char-avatar').val('');
+                $('#tts-custom-voice-name').val('');
+                $('#tts-custom-voice-input').val('');
+                $('#tts-custom-voice-wrap').hide();
+                $('#tts-new-model').val('');
                 updateNewAvatarPreview();
             } catch (e) {
                 console.error(e);
@@ -423,20 +462,9 @@ export const TTS_UI = window.TTS_UI;
 
         const models = (CTX && CTX.CACHE && CTX.CACHE.models) ? CTX.CACHE.models : {};
         const modelKeys = Object.keys(models);
-        const minimaxVoices = (CTX && CTX.CACHE && CTX.CACHE.minimax_voices) ? CTX.CACHE.minimax_voices : [
-            { id: "female-shaonv", name: "少女音" },
-            { id: "female-yujie", name: "御姐音" },
-            { id: "female-tianmei", name: "甜美音" },
-            { id: "female-chengshu", name: "成熟女性" },
-            { id: "male-qn-qingse", name: "青涩青年" },
-            { id: "male-qn-jingying", name: "精英青年" },
-            { id: "male-qn-badao", name: "霸道青年" },
-            { id: "male-qn-daxuesheng", name: "男大学生" },
-            { id: "presenter_female", name: "女主持人" },
-            { id: "presenter_male", name: "男主持人" },
-            { id: "audiobook_female_1", name: "女播音1" },
-            { id: "audiobook_male_1", name: "男播音1" }
-        ];
+        const { presetVoices, customVoices } = (window.TTS_Utils && typeof window.TTS_Utils.getAllMiniMaxVoices === 'function')
+            ? window.TTS_Utils.getAllMiniMaxVoices()
+            : { presetVoices: [], customVoices: [] };
 
         $select.append(`<option disabled ${!currentVal ? 'selected' : ''} value="">🎙️ 请选择语音模型 / 音色...</option>`);
 
@@ -448,10 +476,19 @@ export const TTS_UI = window.TTS_UI;
             $select.append($localGroup);
         }
 
-        const $mmGroup = $('<optgroup label="☁️ MiniMax 云端预设声线"></optgroup>');
-        minimaxVoices.forEach(v => {
-            $mmGroup.append(`<option value="minimax:${v.id}">☁️ MiniMax: ${v.name} (${v.id})</option>`);
+        if (customVoices.length > 0) {
+            const $customGroup = $('<optgroup label="✨ 我的自定义克隆音色"></optgroup>');
+            customVoices.forEach(v => {
+                $customGroup.append(`<option value="minimax:${v.id}">✨ ${v.name} (${v.id})</option>`);
+            });
+            $select.append($customGroup);
+        }
+
+        const $mmGroup = $('<optgroup label="☁️ MiniMax 官方预设声线"></optgroup>');
+        presetVoices.forEach(v => {
+            $mmGroup.append(`<option value="minimax:${v.id}">☁️ ${v.name} (${v.id})</option>`);
         });
+        $mmGroup.append('<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>');
         $select.append($mmGroup);
 
         if (currentVal) {
@@ -482,6 +519,9 @@ export const TTS_UI = window.TTS_UI;
             const modelName = mappings[k];
             const hasCustom = !!customAvatars[k];
             const avHtml = renderAvatarHtml(k, 'tts-item-avatar', 'width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer; border:1px solid ' + (hasCustom ? '#f59e0b' : 'rgba(196,155,79,0.3)'));
+            const displayName = (window.TTS_Utils && typeof window.TTS_Utils.getVoiceDisplayName === 'function')
+                ? window.TTS_Utils.getVoiceDisplayName(modelName)
+                : modelName;
 
             const $item = $(`
                 <div class="tts-compact-item" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; margin-bottom:4px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(196,155,79,0.25);">
@@ -492,7 +532,7 @@ export const TTS_UI = window.TTS_UI;
                         </div>
                         <span style="font-weight:500; color:rgba(220,200,150,0.95); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;" title="${k}">${k}</span>
                         <span style="color:rgba(196,155,79,0.6); font-size:11px;">➔</span>
-                        <span style="color:rgba(196,155,79,0.85); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${modelName}">${modelName}</span>
+                        <span style="color:rgba(196,155,79,0.85); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${modelName}">${displayName}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:4px;">
                         <button class="btn-secondary tts-btn-edit-avatar" style="padding:1px 5px; font-size:10.5px; border-radius:3px; background:rgba(255,255,255,0.06); color:#cbd5e1;" title="修改该 Speaker 头像" data-char="${k}">🖼️</button>

@@ -101,10 +101,21 @@ export function getDashboardHTML(data) {
                         </div>
 
                         <!-- 第3行: 音色模型选择 (独占整行，文字不被截断) -->
-                        <div style="margin-bottom:10px;">
+                        <div style="margin-bottom:8px;">
                             <select id="tts-new-model" class="tts-modern-input" style="width:100%;">
-                                <option disabled selected value="">🎙️ 请选择 GPT-SoVITS 语音模型...</option>
+                                <option disabled selected value="">🎙️ 请选择语音模型 / 音色...</option>
                             </select>
+                        </div>
+                        <div id="tts-custom-voice-wrap" style="display:none; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px; border:1px solid rgba(196,155,79,0.3);">
+                            <div style="margin-bottom:6px;">
+                                <small style="color:#fde047; font-size:11px; display:block; margin-bottom:2px;">音色自定义备注名称:</small>
+                                <input type="text" id="tts-custom-voice-name" class="tts-modern-input" style="width:100%; font-size:12px;" placeholder="例如: 傲娇大小姐 / 赛博警探">
+                            </div>
+                            <div>
+                                <small style="color:#fde047; font-size:11px; display:block; margin-bottom:2px;">MiniMax Voice ID (官方/克隆音色 ID):</small>
+                                <input type="text" id="tts-custom-voice-input" class="tts-modern-input" style="width:100%; font-size:12px;" placeholder="例如: female-shaonv 或 custom_123">
+                            </div>
+                            <small style="color:rgba(196,155,79,0.8); font-size:10.5px; display:block; margin-top:4px;">💡 绑定后将自动保存至自定义音色库，后续直接下拉选取。</small>
                         </div>
 
                         <button id="tts-btn-bind-new" class="btn-primary" style="width:100%; margin-bottom:12px;">+ 绑定角色音色与头像</button>

@@ -88,24 +88,12 @@ export const TTS_Parser = {
         const CACHE = window.TTS_State ? window.TTS_State.CACHE : {};
         const models = CACHE.models || {};
         const modelKeys = Object.keys(models);
-        const minimaxVoices = (CACHE.minimax_voices && CACHE.minimax_voices.length > 0)
-            ? CACHE.minimax_voices
-            : [
-                { id: "female-shaonv", name: "少女音" },
-                { id: "female-yujie", name: "御姐音" },
-                { id: "female-tianmei", name: "甜美音" },
-                { id: "female-chengshu", name: "成熟女性" },
-                { id: "male-qn-qingse", name: "青涩青年" },
-                { id: "male-qn-jingying", name: "精英青年" },
-                { id: "male-qn-badao", name: "霸道青年" },
-                { id: "male-qn-daxuesheng", name: "男大学生" },
-                { id: "presenter_female", name: "女主持人" },
-                { id: "presenter_male", name: "男主持人" },
-                { id: "audiobook_female_1", name: "女播音1" },
-                { id: "audiobook_male_1", name: "男播音1" }
-            ];
 
-        if (modelKeys.length === 0 && minimaxVoices.length === 0) {
+        const { presetVoices, customVoices } = (window.TTS_Utils && typeof window.TTS_Utils.getAllMiniMaxVoices === 'function')
+            ? window.TTS_Utils.getAllMiniMaxVoices()
+            : { presetVoices: [], customVoices: [] };
+
+        if (modelKeys.length === 0 && presetVoices.length === 0 && customVoices.length === 0) {
             if (window.TTS_Utils && window.TTS_Utils.showNotification) {
                 window.TTS_Utils.showNotification("未发现可用的语音模型或音色", "error");
             }
@@ -125,10 +113,19 @@ export const TTS_Parser = {
             optionsHtml += '</optgroup>';
         }
 
-        optionsHtml += '<optgroup label="☁️ MiniMax 云端预设声线">';
-        optionsHtml += minimaxVoices.map(v => {
-            return `<option value="minimax:${escapeHtmlAttr(v.id)}">☁️ MiniMax: ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+        if (customVoices.length > 0) {
+            optionsHtml += '<optgroup label="✨ 我的自定义克隆音色">';
+            optionsHtml += customVoices.map(v => {
+                return `<option value="minimax:${escapeHtmlAttr(v.id)}">✨ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+            }).join('');
+            optionsHtml += '</optgroup>';
+        }
+
+        optionsHtml += '<optgroup label="☁️ MiniMax 官方预设声线">';
+        optionsHtml += presetVoices.map(v => {
+            return `<option value="minimax:${escapeHtmlAttr(v.id)}">☁️ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
         }).join('');
+        optionsHtml += '<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>';
         optionsHtml += '</optgroup>';
 
         const modalHtml = `
@@ -143,7 +140,15 @@ export const TTS_Parser = {
                         <select id="tts-quick-model-select" class="tts-quick-select">
                             ${optionsHtml}
                         </select>
-                        <p class="tts-hint-text">绑定后，该角色后续发言将自动注入情绪标签并驱动语音合成。</p>
+                        <div id="tts-quick-custom-voice-wrap" style="display:none; margin-top:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);">
+                            <label style="font-size:12px; color:#fde047; display:block; margin-bottom:4px;">音色自定义备注名称:</label>
+                            <input type="text" id="tts-quick-custom-voice-name" class="tts-quick-select" placeholder="例如: 傲娇大小姐 / 赛博警探" style="margin-bottom:8px;">
+                            
+                            <label style="font-size:12px; color:#fde047; display:block; margin-bottom:4px;">MiniMax Voice ID (官方/克隆音色 ID):</label>
+                            <input type="text" id="tts-quick-custom-voice-input" class="tts-quick-select" placeholder="例如: female-shaonv 或 custom_voice_12345">
+                            <small style="color:#aaa; font-size:11px; display:block; margin-top:4px;">💡 绑定后将自动保存至自定义音色库，后续角色可直接下拉选择。</small>
+                        </div>
+                        <p class="tts-hint-text" style="margin-top:8px;">绑定后，该角色后续发言将自动注入情绪标签并驱动语音合成。</p>
                     </div>
                     <div class="tts-quick-modal-footer">
                         <button class="tts-btn-secondary" onclick="$('#tts-quick-bind-modal').remove()">取消</button>
@@ -155,9 +160,35 @@ export const TTS_Parser = {
 
         $('body').append(modalHtml);
 
+        $('#tts-quick-model-select').on('change', function () {
+            if ($(this).val() === '__custom_minimax__') {
+                $('#tts-quick-custom-voice-wrap').slideDown(150);
+                $('#tts-quick-custom-voice-name').focus();
+            } else {
+                $('#tts-quick-custom-voice-wrap').slideUp(150);
+            }
+        });
+
         $('#tts-btn-confirm-quick-bind').on('click', async function () {
-            const selectedModel = $('#tts-quick-model-select').val();
+            let selectedModel = $('#tts-quick-model-select').val();
             if (!selectedModel) return;
+
+            if (selectedModel === '__custom_minimax__') {
+                let customId = $('#tts-quick-custom-voice-input').val().trim();
+                let customName = $('#tts-quick-custom-voice-name').val().trim();
+                if (!customId) {
+                    if (window.TTS_Utils && window.TTS_Utils.showNotification) {
+                        window.TTS_Utils.showNotification('请输入 MiniMax Voice ID', 'warning');
+                    }
+                    return;
+                }
+                const rawId = customId.startsWith('minimax:') ? customId.slice(8) : (customId.startsWith('minimax_') ? customId.slice(8) : customId);
+                selectedModel = `minimax:${rawId}`;
+
+                if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
+                    window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                }
+            }
 
             try {
                 if (window.TTS_API && typeof window.TTS_API.bindCharacter === 'function') {
