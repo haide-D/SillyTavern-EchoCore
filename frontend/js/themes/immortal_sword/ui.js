@@ -55,10 +55,39 @@ export function renderTriggerDOM() {
         });
     }
 
-    // 初始位置设置
-    const savedTop = localStorage.getItem('tts_immortal_trigger_top') || (window.innerHeight - 140) + 'px';
-    const savedLeft = localStorage.getItem('tts_immortal_trigger_left') || (window.innerWidth - 65) + 'px';
-    $('#tts-immortal-trigger').css({ top: savedTop, left: savedLeft });
+    // 初始位置设置与视口安全校准
+    fixTriggerPosition();
+}
+
+export function fixTriggerPosition() {
+    const $trigger = $('#tts-immortal-trigger');
+    if (!$trigger.length) return;
+
+    const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+    // 优先读取当前主题或通用坐标，再回退到默认右下角
+    const rawLeft = localStorage.getItem('tts_immortal_trigger_left') || localStorage.getItem('tts_common_trigger_left') || localStorage.getItem('tts_sakura_trigger_left') || localStorage.getItem('tts_cyber_trigger_left');
+    const rawTop = localStorage.getItem('tts_immortal_trigger_top') || localStorage.getItem('tts_common_trigger_top') || localStorage.getItem('tts_sakura_trigger_top') || localStorage.getItem('tts_cyber_trigger_top');
+
+    let left = parseFloat(rawLeft);
+    let top = parseFloat(rawTop);
+
+    // 严谨校验与视口越界修复 (防止缩放后溢出屏幕)
+    if (isNaN(left) || left < 5 || left > vw - 70) {
+        left = Math.max(5, vw - 75);
+    }
+    if (isNaN(top) || top < 5 || top > vh - 70) {
+        top = Math.max(5, vh - 140);
+    }
+
+    $trigger.css({
+        position: 'fixed',
+        left: `${left}px`,
+        top: `${top}px`,
+        zIndex: 9999,
+        display: 'flex'
+    });
 }
 
 export function fixModalPosition() {
@@ -85,6 +114,9 @@ export function fixModalPosition() {
 export function bindDragAndClick() {
     const $trigger = $('#tts-immortal-trigger');
     if (!$trigger.length) return;
+
+    // 确保定位正确
+    fixTriggerPosition();
 
     $trigger.off('pointerdown pointermove pointerup pointercancel');
 
@@ -115,8 +147,11 @@ export function bindDragAndClick() {
         let newLeft = ThemeState.drag.initialLeft + dx;
         let newTop = ThemeState.drag.initialTop + dy;
 
-        newLeft = Math.max(5, Math.min(window.innerWidth - 45, newLeft));
-        newTop = Math.max(5, Math.min(window.innerHeight - 105, newTop));
+        const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+        newLeft = Math.max(5, Math.min(vw - 75, newLeft));
+        newTop = Math.max(5, Math.min(vh - 75, newTop));
 
         $trigger.css({ left: `${newLeft}px`, top: `${newTop}px` });
     });
@@ -129,8 +164,14 @@ export function bindDragAndClick() {
             try { $trigger[0].releasePointerCapture(e.pointerId); } catch (_) {}
         }
 
-        localStorage.setItem('tts_immortal_trigger_left', $trigger.css('left'));
-        localStorage.setItem('tts_immortal_trigger_top', $trigger.css('top'));
+        const currentLeft = parseFloat($trigger.css('left'));
+        const currentTop = parseFloat($trigger.css('top'));
+        if (!isNaN(currentLeft) && !isNaN(currentTop)) {
+            localStorage.setItem('tts_immortal_trigger_left', `${currentLeft}px`);
+            localStorage.setItem('tts_immortal_trigger_top', `${currentTop}px`);
+            localStorage.setItem('tts_common_trigger_left', `${currentLeft}px`);
+            localStorage.setItem('tts_common_trigger_top', `${currentTop}px`);
+        }
 
         if (!ThemeState.drag.hasMoved) {
             if (ThemeState.particleEngine) {

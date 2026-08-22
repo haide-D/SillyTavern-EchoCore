@@ -2,7 +2,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Version](https://img.shields.io/badge/version-v3.0.0-green)
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Version](https://img.shields.io/badge/version-v3.0.1-green)
 
 这是一个为 **SillyTavern (酒馆)** 量身打造的 **GPT-SoVITS / 多 TTS 供应商** 深度全栈集成插件。
 

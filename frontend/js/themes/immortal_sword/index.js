@@ -4,7 +4,7 @@
  */
 
 import { ThemeState } from './state.js';
-import { ensureCSS, renderTriggerDOM, fixModalPosition, bindDragAndClick, destroyDOM } from './ui.js';
+import { ensureCSS, renderTriggerDOM, fixModalPosition, fixTriggerPosition, bindDragAndClick, destroyDOM } from './ui.js';
 import { homeScene } from './scenes/home.js';
 import { incomingCallScene } from './scenes/incoming_call.js';
 import { eavesdropScene } from './scenes/eavesdrop.js';
@@ -13,6 +13,11 @@ import { ImmortalParticleEngine } from './immortal_particles.js';
 import * as PhoneCallApp from '../../mobile_apps/phone_call_app.js';
 
 const THEME_ID = 'immortal_sword';
+
+const handleViewportChange = () => {
+    fixModalPosition();
+    fixTriggerPosition();
+};
 
 const ImmortalSwordTheme = {
     id: THEME_ID,
@@ -29,8 +34,10 @@ const ImmortalSwordTheme = {
         renderTriggerDOM();
 
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', fixModalPosition);
-            window.visualViewport.addEventListener('scroll', fixModalPosition);
+            window.visualViewport.addEventListener('resize', handleViewportChange);
+            window.visualViewport.addEventListener('scroll', handleViewportChange);
+        } else {
+            window.addEventListener('resize', handleViewportChange);
         }
 
         console.log('[ImmortalSwordTheme] ✅ 仙门天机卷轴与飞剑灵器初始化完成');
@@ -45,8 +52,10 @@ const ImmortalSwordTheme = {
         destroyDOM();
 
         if (window.visualViewport) {
-            window.visualViewport.removeEventListener('resize', fixModalPosition);
-            window.visualViewport.removeEventListener('scroll', fixModalPosition);
+            window.visualViewport.removeEventListener('resize', handleViewportChange);
+            window.visualViewport.removeEventListener('scroll', handleViewportChange);
+        } else {
+            window.removeEventListener('resize', handleViewportChange);
         }
 
         ThemeState.engine = null;

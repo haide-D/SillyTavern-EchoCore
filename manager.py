@@ -21,19 +21,42 @@ init_settings()
 
 app = FastAPI()
 
-# 0. 添加自定义日志中间件(必须在 CORS 之前)
+# 0. 添加自定义日志中间件
 app.add_middleware(LoggingMiddleware)
 
-# 1. CORS 配置
+# 1. 强力 CORS 支持 (带自定义 CORS 静态文件与全局兜底)
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=True,  # 允许携带凭证
-    # 明确列出需要暴露的响应头 (带 credentials 时 * 通配符无效)
     expose_headers=["X-Audio-Filename", "Content-Type", "Content-Length"]
 )
+
+# 全局 CORS 响应头兜底中间件
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = JSONResponse(content={"status": "ok"}, status_code=200)
+    else:
+        response = await call_next(request)
+    
+    origin = request.headers.get("origin")
+    response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Expose-Headers"] = "X-Audio-Filename, Content-Type, Content-Length"
+    return response
 
 # 添加验证错误处理器
 @app.exception_handler(RequestValidationError)
@@ -56,13 +79,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # 2. 挂载静态文件 (前端界面)
 if os.path.exists(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+    app.mount("/static", CORSStaticFiles(directory=FRONTEND_DIR), name="static")
 else:
     print(f"Warning: 'frontend' folder not found at {FRONTEND_DIR}")
 
 # 挂载管理面板静态文件
 admin_dir = os.path.join(os.path.dirname(__file__), "admin")
 if os.path.exists(admin_dir):
+    app.mount("/admin/static", CORSStaticFiles(directory=admin_dir), name="admin_static")
     app.mount("/admin", StaticFiles(directory=admin_dir, html=True), name="admin")
 else:
     print(f"Warning: 'admin' folder not found at {admin_dir}")

@@ -1,6 +1,6 @@
 // ==========================================================================
 // ST-Direct-TTS Modern Admin Console - Main Modular Entry
-// Version: 3.0.0 (Modularized)
+// Version: 3.0.1 (Modularized)
 // ==========================================================================
 
 import { API_BASE } from './core/api.js';

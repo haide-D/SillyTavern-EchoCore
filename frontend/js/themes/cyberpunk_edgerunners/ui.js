@@ -42,10 +42,18 @@ export function renderTriggerDOM() {
         $('body').append(modalHtml);
     }
 
-    // 初始位置设置 (支持持久化记忆)
-    const savedTop = localStorage.getItem('tts_cyber_trigger_top') || (window.innerHeight - 140) + 'px';
-    const savedLeft = localStorage.getItem('tts_cyber_trigger_left') || (window.innerWidth - 68) + 'px';
-    $('#tts-cyber-trigger').css({ top: savedTop, left: savedLeft });
+    // 初始位置设置与视口安全校准
+    const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const rawLeft = localStorage.getItem('tts_cyber_trigger_left') || localStorage.getItem('tts_common_trigger_left') || localStorage.getItem('tts_immortal_trigger_left') || localStorage.getItem('tts_sakura_trigger_left');
+    const rawTop = localStorage.getItem('tts_cyber_trigger_top') || localStorage.getItem('tts_common_trigger_top') || localStorage.getItem('tts_immortal_trigger_top') || localStorage.getItem('tts_sakura_trigger_top');
+
+    let left = parseFloat(rawLeft);
+    let top = parseFloat(rawTop);
+    if (isNaN(left) || left < 5 || left > vw - 70) left = Math.max(5, vw - 75);
+    if (isNaN(top) || top < 5 || top > vh - 70) top = Math.max(5, vh - 140);
+
+    $('#tts-cyber-trigger').css({ top: `${top}px`, left: `${left}px` });
 }
 
 export function fixModalPosition() {
@@ -110,8 +118,12 @@ export function bindDragAndClick() {
 
         if (ThemeState.drag.hasMoved) {
             // 自由停放：持久化保存当前拖拽停止的坐标
-            localStorage.setItem('tts_cyber_trigger_top', $trigger.css('top'));
-            localStorage.setItem('tts_cyber_trigger_left', $trigger.css('left'));
+            const currentLeft = $trigger.css('left');
+            const currentTop = $trigger.css('top');
+            localStorage.setItem('tts_cyber_trigger_top', currentTop);
+            localStorage.setItem('tts_cyber_trigger_left', currentLeft);
+            localStorage.setItem('tts_common_trigger_top', currentTop);
+            localStorage.setItem('tts_common_trigger_left', currentLeft);
         } else {
             // 点击交互：触发超频粒子爆发并打开/关闭
             if (ThemeState.particleEngine) {
