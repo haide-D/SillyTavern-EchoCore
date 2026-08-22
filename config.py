@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+from urllib.parse import unquote
 
 # ================= 路径配置 =================
 # 获取当前文件所在目录作为插件根目录
