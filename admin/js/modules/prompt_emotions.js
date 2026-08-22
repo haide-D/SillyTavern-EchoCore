@@ -372,11 +372,12 @@ ${samplesText}
         body: JSON.stringify({
             model: llmConfig.model || 'gpt-3.5-turbo',
             messages: [
-                { role: 'system', content: 'You are an expert voice director that always outputs valid JSON only.' },
+                { role: 'system', content: 'You are an expert voice director. Answer concisely and output ONLY valid JSON without extra markdown.' },
                 { role: 'user', content: prompt }
             ],
-            temperature: 0.5,
-            max_tokens: 800
+            temperature: 0.3,
+            max_tokens: 4096,
+            max_completion_tokens: 4096
         })
     });
 
@@ -386,17 +387,36 @@ ${samplesText}
     }
 
     const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || '';
+    const message = data.choices?.[0]?.message || {};
+    let content = (message.content || '').trim();
 
-    // 解析 JSON
+    // 针对部分深度思考/推理模型 (如 DeepSeek R1) 在 reasoning_content 中输出或正文为空的容错处理
+    if (!content && message.reasoning_content) {
+        content = message.reasoning_content.trim();
+    }
+
+    if (!content) {
+        if (data.choices?.[0]?.finish_reason === 'length') {
+            throw new Error('LLM 思考长度超限截断，请重试或更换响应更快的模型。');
+        }
+        throw new Error('LLM 返回内容为空，请检查模型服务状态。');
+    }
+
+    // 解析并提取 JSON 对象
     content = content.replace(/```json/gi, '').replace(/```/g, '').trim();
     const firstBrace = content.indexOf('{');
     const lastBrace = content.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         content = content.substring(firstBrace, lastBrace + 1);
     }
 
-    return JSON.parse(content);
+    try {
+        return JSON.parse(content);
+    } catch (parseErr) {
+        // 尝试清理常见尾随逗号等语法瑕疵
+        const cleaned = content.replace(/,\s*([\}\]])/g, '$1');
+        return JSON.parse(cleaned);
+    }
 }
 
 /**
