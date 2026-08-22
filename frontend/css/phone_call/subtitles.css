@@ -1,0 +1,96 @@
+/* ==========================================================================
+   通话字幕区域 (Apple Music 风格全屏沉浸字幕与逐字高亮)
+   ========================================================================== */
+
+/* 字幕容器 - 固定高度可滚动 */
+.call-subtitle-area,
+.listening-subtitle-area {
+    width: 100%;
+    max-height: 100px;
+    min-height: 60px;
+    padding: 8px 16px;
+    text-align: center;
+    z-index: 10;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    /* 隐藏滚动条但保留滚动功能 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.call-subtitle-area::-webkit-scrollbar,
+.listening-subtitle-area::-webkit-scrollbar {
+    display: none;
+}
+
+/* 字幕文本容器 */
+.subtitle-line {
+    display: inline-block;
+    max-width: 100%;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subtitle-line.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 字幕文本 */
+.subtitle-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* 单个字符包装 */
+.subtitle-char {
+    display: inline;
+    transition: all 0.2s ease;
+}
+
+/* 已读过的字 - 明亮白色 */
+.subtitle-char.passed {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* 当前高亮的字 - 蓝色辉光 */
+.subtitle-char.active {
+    color: #60a5fa;
+    text-shadow:
+        0 0 8px rgba(96, 165, 250, 0.9),
+        0 0 16px rgba(96, 165, 250, 0.5),
+        0 0 24px rgba(96, 165, 250, 0.3);
+}
+
+/* 呼吸动画 - 当前字 */
+@keyframes charGlow {
+
+    0%,
+    100% {
+        text-shadow:
+            0 0 8px rgba(96, 165, 250, 0.9),
+            0 0 16px rgba(96, 165, 250, 0.5);
+    }
+
+    50% {
+        text-shadow:
+            0 0 12px rgba(96, 165, 250, 1),
+            0 0 24px rgba(96, 165, 250, 0.7),
+            0 0 32px rgba(96, 165, 250, 0.4);
+    }
+}
+
+.subtitle-char.active {
+    animation: charGlow 1s ease-in-out infinite;
+}

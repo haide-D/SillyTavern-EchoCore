@@ -1,0 +1,567 @@
+/* ==========================================================================
+   📜 剧本工坊 App 基础样式 (Workshop App Component Styles)
+   ========================================================================== */
+
+/* 1. 主容器与布局 */
+.ws-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+/* 2. 顶部选项卡 */
+.ws-tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.ws-tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.ws-tab-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* 3. 工具栏：搜索与操作 */
+.ws-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.ws-tool-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ws-search-box {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.ws-search-icon {
+    position: absolute;
+    left: 9px;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.ws-search-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.ws-search-input {
+    width: 100%;
+    padding: 7px 10px 7px 28px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.ws-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.ws-tool-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* 4. 批量状态与快捷栏 */
+.ws-batch-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    padding: 2px 2px;
+}
+
+.ws-batch-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ws-batch-status svg {
+    width: 12px;
+    height: 12px;
+}
+
+.ws-batch-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 11.5px;
+    padding: 2px 4px;
+    text-decoration: underline;
+    opacity: 0.85;
+}
+
+.ws-batch-btn:hover {
+    opacity: 1;
+}
+
+/* 5. 卡片列表容器 */
+.ws-cards-list {
+    flex: 1;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* 6. 剧本卡片 */
+.ws-preset-card {
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.ws-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ws-card-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ws-card-title {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: 600;
+}
+
+.ws-card-author {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.ws-active-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.ws-active-badge svg {
+    width: 11px;
+    height: 11px;
+}
+
+.ws-card-desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* 7. 卡片操作区 */
+.ws-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.ws-act-btn,
+.ws-act-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.ws-act-btn svg,
+.ws-act-icon-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* 8. 模态框遮罩与弹窗体系 (Modals & Overlays) */
+.ws-modal-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ws-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ws-modal {
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    overflow: hidden;
+    box-sizing: border-box;
+    transform: scale(0.94) translateY(10px);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ws-modal-overlay.show .ws-modal {
+    transform: scale(1) translateY(0);
+}
+
+.ws-modal-lg {
+    max-width: 660px;
+}
+
+.ws-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 18px;
+    flex-shrink: 0;
+}
+
+.ws-modal-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ws-modal-title svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ws-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+}
+
+.ws-modal-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.ws-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 18px;
+    flex-shrink: 0;
+}
+
+/* 9. 表单控件与区段 */
+.ws-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ws-form-label {
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+.ws-form-input,
+.ws-form-select {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.ws-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.45;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.ws-section-box {
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+}
+
+.ws-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ws-section-title {
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.ws-section-subtitle {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.ws-btn-mini {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 2px 6px;
+    cursor: pointer;
+}
+
+/* 10. 插槽与快捷标签 */
+.ws-slot-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.ws-slot-category {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.ws-slot-cat-title {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.ws-slot-btn {
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ws-quick-tag-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ws-quick-tag {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+/* 11. 测试 Toast 浮层 */
+.ws-test-toast {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    z-index: 50;
+}
+
+.ws-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: wsSpin 0.7s linear infinite;
+}
+
+@keyframes wsSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* 12. 自定义主题通用保底体系 (Custom Themes Fallback & CSS Variables) */
+.ws-theme-custom .ws-modal {
+    background: var(--theme-modal-bg, var(--theme-bg, #1e1e28));
+    border: 1px solid var(--theme-modal-border, var(--theme-border, rgba(255, 255, 255, 0.15)));
+    color: var(--theme-modal-text, var(--theme-text, #f3f4f6));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.ws-theme-custom .ws-modal-header {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--theme-border, rgba(255, 255, 255, 0.1));
+}
+
+.ws-theme-custom .ws-modal-title {
+    color: var(--theme-primary, #60a5fa);
+}
+
+.ws-theme-custom .ws-modal-close {
+    color: var(--theme-text-muted, #94a3b8);
+}
+
+.ws-theme-custom .ws-modal-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ws-theme-custom .ws-section-box {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.1));
+}
+
+.ws-theme-custom .ws-section-title {
+    color: var(--theme-primary, #60a5fa);
+}
+
+.ws-theme-custom .ws-form-label {
+    color: var(--theme-text-muted, #cbd5e1);
+}
+
+.ws-theme-custom .ws-form-input,
+.ws-theme-custom .ws-form-select,
+.ws-theme-custom .ws-textarea {
+    background: var(--theme-input-bg, rgba(0, 0, 0, 0.4));
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #f3f4f6);
+}
+
+.ws-theme-custom .ws-form-input:focus,
+.ws-theme-custom .ws-form-select:focus,
+.ws-theme-custom .ws-textarea:focus {
+    border-color: var(--theme-primary, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.ws-theme-custom .ws-slot-btn,
+.ws-theme-custom .ws-quick-tag {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
+    color: var(--theme-primary, #93c5fd);
+}
+
+.ws-theme-custom .ws-slot-btn:hover,
+.ws-theme-custom .ws-quick-tag:hover {
+    background: var(--theme-primary, #3b82f6);
+    color: #ffffff;
+}
+
+.ws-theme-custom .ws-tool-btn-primary {
+    background: var(--theme-primary, #3b82f6);
+    color: #ffffff;
+}
+
+.ws-theme-custom .ws-tool-btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #f3f4f6);
+}
+

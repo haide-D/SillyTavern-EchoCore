@@ -2,7 +2,7 @@
  * 剧本新建与编辑 Modal 模块 (上下分栏解耦体系)
  */
 import { SVG } from './svgs.js';
-import { DEFAULT_WORKSHOP_TEMPLATES, WORKSHOP_SLOTS } from './templates.js';
+import { DEFAULT_WORKSHOP_TEMPLATES, WORKSHOP_SLOTS, getWorkshopModalThemeClass } from './templates.js';
 import { savePreset } from './api.js';
 import { showToast } from './executor.js';
 
@@ -33,8 +33,10 @@ export function openEditModal(category, preset, onSaved) {
     const plotSlotHtml = slots.plot.map(s => `<button type="button" class="ws-slot-btn" data-target="#ws-input-plot" data-slot="${s}">${s}</button>`).join('');
     const systemSlotHtml = slots.system.map(s => `<button type="button" class="ws-slot-btn" data-target="#ws-input-system" data-slot="${s}">${s}</button>`).join('');
 
+    const themeClass = getWorkshopModalThemeClass();
+
     const modalHtml = `
-        <div class="ws-modal-overlay show" id="ws-edit-modal-overlay">
+        <div class="ws-modal-overlay show ${themeClass}" id="ws-edit-modal-overlay">
             <div class="ws-modal ws-modal-lg">
                 <div class="ws-modal-header">
                     <h3 class="ws-modal-title">
@@ -131,6 +133,9 @@ export function openEditModal(category, preset, onSaved) {
 
     const closeModal = () => $('#ws-edit-modal-overlay').remove();
     $('#ws-modal-close-btn, #ws-modal-cancel-btn').on('click', closeModal);
+    $('#ws-edit-modal-overlay').on('click', function (e) {
+        if (e.target === this) closeModal();
+    });
 
     // 保存
     $('#ws-modal-save-btn').on('click', async () => {

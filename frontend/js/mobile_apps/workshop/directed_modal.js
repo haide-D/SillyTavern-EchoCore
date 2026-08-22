@@ -2,7 +2,7 @@
  * 定向呼叫 / 侦听控制台 Modal 模块
  */
 import { SVG } from './svgs.js';
-import { QUICK_MOTIVATIONS } from './templates.js';
+import { QUICK_MOTIVATIONS, getWorkshopModalThemeClass } from './templates.js';
 import { getContextInfo, getSpeakerLanguageHint } from './api.js';
 import { executeDirectedAction } from './executor.js';
 
@@ -31,8 +31,10 @@ export async function openDirectedCallModal(category, preset) {
 
     const defaultLangInfo = getSpeakerLanguageHint(defaultSpeaker);
 
+    const themeClass = getWorkshopModalThemeClass();
+
     const modalHtml = `
-        <div class="ws-modal-overlay show" id="ws-directed-modal-overlay">
+        <div class="ws-modal-overlay show ${themeClass}" id="ws-directed-modal-overlay">
             <div class="ws-modal">
                 <div class="ws-modal-header">
                     <h3 class="ws-modal-title">
@@ -121,6 +123,9 @@ export async function openDirectedCallModal(category, preset) {
 
     const closeModal = () => $('#ws-directed-modal-overlay').remove();
     $('#ws-directed-close-btn').on('click', closeModal);
+    $('#ws-directed-modal-overlay').on('click', function (e) {
+        if (e.target === this) closeModal();
+    });
 
     // 发起人切换联动更新语言感知提示
     $('#ws-direct-caller').on('change', function () {

@@ -1,0 +1,26 @@
+/* ==========================================================================
+   顶部通知提示条 (Notification Toast Bar)
+   ========================================================================== */
+
+#tts-notification-bar {
+    position: fixed;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20005;
+    background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(198, 40, 40, 0.4);
+    font-size: 14px;
+    transition: top 0.5s;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#tts-notification-bar.show {
+    top: 20px;
+}

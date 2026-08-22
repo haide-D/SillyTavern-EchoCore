@@ -131,20 +131,42 @@ function renderThemeItem(theme, engine, $container) {
 
 export const render = function ($container, createNavbarOrCtx, possibleCtx) {
     let navbarFn = createNavbar;
-    let ctx = possibleCtx || {};
-    if (typeof createNavbarOrCtx === 'function') {
-        navbarFn = createNavbarOrCtx;
-    } else if (createNavbarOrCtx && createNavbarOrCtx.createNavbar) {
-        navbarFn = createNavbarOrCtx.createNavbar;
-        ctx = createNavbarOrCtx;
-    } else if (createNavbarOrCtx && createNavbarOrCtx.engine) {
-        ctx = createNavbarOrCtx;
+    let engine = (window.TTS_Libs && window.TTS_Libs.ThemeEngine) || window.TTS_ThemeEngine;
+    let ctx = {};
+
+    if (createNavbarOrCtx) {
+        if (typeof createNavbarOrCtx === 'function') {
+            navbarFn = createNavbarOrCtx;
+            if (createNavbarOrCtx.engine) {
+                engine = createNavbarOrCtx.engine;
+                ctx = createNavbarOrCtx;
+            }
+        } else if (createNavbarOrCtx.engine) {
+            engine = createNavbarOrCtx.engine;
+            ctx = createNavbarOrCtx;
+        }
+        if (createNavbarOrCtx.createNavbar) {
+            navbarFn = createNavbarOrCtx.createNavbar;
+        }
     }
-    if (ctx.createNavbar) navbarFn = ctx.createNavbar;
+    if (possibleCtx) {
+        if (possibleCtx.engine) engine = possibleCtx.engine;
+        ctx = { ...ctx, ...possibleCtx };
+    }
+    ctx.engine = engine;
+    if (!ctx.createNavbar) ctx.createNavbar = navbarFn;
 
     injectCSS();
-    const title = ctx.engine && typeof ctx.engine.getLabel === 'function' ? ctx.engine.getLabel('theme_store', '变幻工坊') : '变幻工坊';
-    const navbar = navbarFn(title, () => ctx.engine ? ctx.engine.showScene('home') : null);
+    const title = engine && typeof engine.getLabel === 'function' ? engine.getLabel('theme_store', '变幻工坊') : '变幻工坊';
+    const navbar = navbarFn(title, () => {
+        if (engine) {
+            if (typeof engine.goHome === 'function') {
+                engine.goHome();
+            } else if (typeof engine.showScene === 'function') {
+                engine.showScene('home');
+            }
+        }
+    });
     
     // AI Import Modal DOM
     const $importModal = $(`
@@ -189,18 +211,21 @@ export const render = function ($container, createNavbarOrCtx, possibleCtx) {
     // 获取并渲染主题列表
     const loadThemes = () => {
         const $list = $content.find('#theme-list-container').empty();
-        const registeredThemes = ctx.engine.getRegisteredThemes ? ctx.engine.getRegisteredThemes() : [];
+        const registeredThemes = engine && typeof engine.getRegisteredThemes === 'function' ? engine.getRegisteredThemes() : [];
         
         if (registeredThemes.length === 0) {
-            $list.append('<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: #aaa;">暂无主题</div>');
+            $list.append('<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: #aaa;">暂无可用主题</div>');
             return;
         }
 
         registeredThemes.forEach(theme => {
             if (!theme.type) theme.type = 'builtin';
-            renderThemeItem(theme, ctx.engine, $list);
+            renderThemeItem(theme, engine, $list);
         });
     };
+
+    // 立即初始化渲染主题列表
+    loadThemes();
 
     // 绑定上传
     $content.find('#theme-upload-input').on('change', async function(e) {

@@ -1,0 +1,236 @@
+/* ==========================================================================
+   全屏通话中界面与控制 (Fullscreen In-Call Screen & Audio Controls)
+   ========================================================================== */
+
+.in-call-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 通话背景动画 */
+.in-call-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+    animation: rotate-bg 20s linear infinite;
+}
+
+@keyframes rotate-bg {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 通话顶部信息 */
+.call-header {
+    text-align: center;
+    z-index: 1;
+}
+
+.call-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    animation: avatar-pulse 2s ease-in-out infinite;
+    overflow: hidden;
+}
+
+.call-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+@keyframes avatar-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 12px 48px rgba(102, 126, 234, 0.6);
+    }
+}
+
+.call-name {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.call-duration {
+    font-size: 16px;
+    color: #94a3b8;
+}
+
+/* 音频波形动画 */
+.audio-visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 60px;
+    z-index: 1;
+}
+
+.audio-bar {
+    width: 4px;
+    background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%);
+    border-radius: 2px;
+    animation: audio-wave 1s ease-in-out infinite;
+}
+
+.audio-bar:nth-child(1) {
+    height: 20px;
+    animation-delay: 0s;
+}
+
+.audio-bar:nth-child(2) {
+    height: 35px;
+    animation-delay: 0.1s;
+}
+
+.audio-bar:nth-child(3) {
+    height: 50px;
+    animation-delay: 0.2s;
+}
+
+.audio-bar:nth-child(4) {
+    height: 35px;
+    animation-delay: 0.3s;
+}
+
+.audio-bar:nth-child(5) {
+    height: 20px;
+    animation-delay: 0.4s;
+}
+
+@keyframes audio-wave {
+
+    0%,
+    100% {
+        transform: scaleY(0.5);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+/* 通话控制按钮 */
+.call-controls {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    z-index: 1;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.control-btn.mute {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.control-btn.mute:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+/* 挂断按钮 */
+.hangup-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+    transition: all 0.3s;
+    z-index: 1;
+}
+
+.hangup-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(239, 68, 68, 0.7);
+}
+
+/* 播放进度条 */
+.audio-progress {
+    width: 80%;
+    max-width: 300px;
+    z-index: 1;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+    border-radius: 3px;
+    transition: width 0.3s;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.progress-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #94a3b8;
+}

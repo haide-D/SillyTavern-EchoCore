@@ -2,14 +2,17 @@
  * 剧本 JSON 导入 Modal 模块
  */
 import { SVG } from './svgs.js';
+import { getWorkshopModalThemeClass } from './templates.js';
 import { importPreset } from './api.js';
 import { showToast } from './executor.js';
 
 export function openImportModal(category, onImported) {
     $('#ws-import-modal-overlay').remove();
 
+    const themeClass = getWorkshopModalThemeClass();
+
     const modalHtml = `
-        <div class="ws-modal-overlay show" id="ws-import-modal-overlay">
+        <div class="ws-modal-overlay show ${themeClass}" id="ws-import-modal-overlay">
             <div class="ws-modal">
                 <div class="ws-modal-header">
                     <h3 class="ws-modal-title">${SVG.import} 导入剧本 (.json)</h3>
@@ -43,6 +46,9 @@ export function openImportModal(category, onImported) {
 
     const closeModal = () => $('#ws-import-modal-overlay').remove();
     $('#ws-import-close-btn, #ws-import-cancel-btn').on('click', closeModal);
+    $('#ws-import-modal-overlay').on('click', function (e) {
+        if (e.target === this) closeModal();
+    });
 
     // 文件选择
     $('#ws-btn-choose-file').on('click', function () {

@@ -27,3 +27,25 @@ export const WORKSHOP_SLOTS = {
         system: ["{{context}}", "{{character_persona}}", "{{world_info}}", "{{speakers_emotions}}", "{{lang_display}}", "{{last_call_summary}}", "{{story_summary}}"]
     }
 };
+
+/**
+ * 获取当前活跃主题在弹窗中的主题隔离类名列表
+ * 完整支持内置主题 (default, deathly_hallows) 以及未来任何导入/新建的第三方自定义主题
+ */
+export function getWorkshopModalThemeClass() {
+    const engine = (window.TTS_Libs && window.TTS_Libs.ThemeEngine) || window.TTS_ThemeEngine;
+    const currentTheme = (engine && typeof engine.getCurrentTheme === 'function') 
+        ? engine.getCurrentTheme() 
+        : { id: ($('#tts-dh-modal').length && $('#tts-dh-modal').is(':visible')) ? 'deathly_hallows' : 'default' };
+    
+    const id = currentTheme?.id || 'default';
+    const isBuiltin = !currentTheme?.type || currentTheme?.type === 'builtin';
+
+    const classes = [`ws-theme-${id}`];
+    if (id === 'deathly_hallows') classes.push('ws-theme-dh');
+    if (id === 'default') classes.push('ws-theme-default');
+    if (!isBuiltin) classes.push('ws-theme-custom');
+
+    return classes.join(' ');
+}
+

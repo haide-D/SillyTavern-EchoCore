@@ -102,6 +102,11 @@ settings: {
 1. **样式隔离**：所有的 CSS 注入务必加上您的 `#主题特定的ModalID` 前缀，防止污染 SillyTavern 全局样式。
 2. **事件清理**：如果在场景或 trigger 中绑定了全局 `document` 或 `window` 事件，请务必在 `cleanup()` 或 `destroy()` 钩子中解绑（`off()`）。
 3. **音频播放上下文**：自定义通话/窃听界面时，请使用 `import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from '../../mobile_apps/shared/audio_player.js'` 管理全局音频资源，确保切出应用时能正常销毁。
+4. **剧本工坊弹窗定制 (Workshop Modals)**：
+   - 剧本新建/编辑/导入/定向呼叫等全屏弹窗挂载在全局遮罩 `.ws-modal-overlay` 上，并自动附加 `.ws-theme-{your_theme_id}` 与 `.ws-theme-custom` 类名；
+   - 自定义主题可直接在主题的 `style.css` 中声明 `.ws-theme-{your_theme_id} .ws-modal { ... }` 实现 100% 独立的弹窗视觉定制；
+   - 若未编写专属弹窗样式，系统会自动通过 `.ws-theme-custom` 继承您定义的 CSS 变量（如 `--theme-bg`、`--theme-text`、`--theme-primary`）进行优雅保底。
+
 
 
 ## 6. 移动端 UI 适配避坑指南 (Mobile UI Best Practices)

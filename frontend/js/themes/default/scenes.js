@@ -5,6 +5,7 @@ import * as LlmTestApp from '../../mobile_apps/llm_test_app.js';
 import * as PhoneCallApp from '../../mobile_apps/phone_call_app.js';
 import * as EavesdropApp from '../../mobile_apps/eavesdrop_app.js';
 import * as WorkshopApp from '../../mobile_apps/workshop_app.js';
+import * as ThemeStoreApp from '../../mobile_apps/theme_store_app.js';
 import { createNavbar } from '../theme_utils.js';
 import { state } from './state.js';
 
@@ -138,12 +139,23 @@ export const scenes = {
 
     workshop: {
         render($container, ctx) {
-            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#181524; color:#fff;"></div>`);
+            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
             WorkshopApp.render($appContainer, createNavbarForApps);
             $container.append($appContainer);
         },
         cleanup() {
             if (WorkshopApp.cleanup) WorkshopApp.cleanup();
+        }
+    },
+
+    theme_store: {
+        render($container, ctx) {
+            const $appContainer = $(`<div class="app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:#f2f2f7; color:#000;"></div>`);
+            ThemeStoreApp.render($appContainer, createNavbarForApps, ctx);
+            $container.append($appContainer);
+        },
+        cleanup() {
+            if (ThemeStoreApp.cleanup) ThemeStoreApp.cleanup();
         }
     },
 };

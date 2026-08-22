@@ -17,22 +17,37 @@ export function getStyleContent() {
     return globalStyleContent;
 }
 
+// 动态注入/更新 <link rel="stylesheet"> 标签
+export function injectStyleLink(id, url) {
+    let $link = $(`#${id}`);
+    if ($link.length === 0) {
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = url;
+        document.head.appendChild(link);
+    } else {
+        $link.attr('href', url);
+    }
+}
+
 // 注入主页面样式
 export function injectStyles() {
     if (!globalStyleContent || $('#tts-style-injection').length > 0) return;
     $('head').append(`<style id="tts-style-injection">${globalStyleContent}</style>`);
 }
 
-// 加载 CSS (包含回调机制)
+// 加载 CSS (包含回调机制与标准 link 注入)
 export async function loadGlobalCSS(url, afterLoadCallback) {
     try {
+        // 优先使用标准 link 标签注入，保障相对路径 @import 正确寻址
+        injectStyleLink('tts-global-style-link', url);
+
         const res = await fetch(url);
         if (res.ok) {
             globalStyleContent = await res.text();
             console.log("[TTS] Style loaded successfully.");
-
-            // 立即注入主界面
-            injectStyles();
 
             // 执行回调 (通常用于处理 Iframe 穿透)
             if (afterLoadCallback) afterLoadCallback(globalStyleContent);

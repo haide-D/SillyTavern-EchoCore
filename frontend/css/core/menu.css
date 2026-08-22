@@ -1,0 +1,101 @@
+/* ==========================================================================
+   PART 4: 智能变色菜单 (Chameleon Menu)
+   说明：完全使用当前皮肤的变量，实现 100% 风格统一
+   ========================================================================== */
+
+#tts-bubble-menu {
+    position: fixed;
+    z-index: 20002;
+    /* 保证在所有层级之上 */
+
+    /* 🎨 背景：跟随 Loading 状态 (通常是该主题最中性的颜色) */
+    background: var(--s-load-bg);
+    border: var(--s-load-border);
+    color: var(--s-load-color);
+
+    /* 💍 质感：跟随主题定义的圆角和磨砂感 */
+    backdrop-filter: var(--bubble-backdrop, blur(10px));
+    border-radius: var(--bubble-radius);
+    font-family: var(--bubble-font-family);
+    /* 连字体都统一！ */
+
+    /* 阴影：加重一点，保证菜单浮起来的感觉 */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+
+    padding: 8px;
+    min-width: 150px;
+    font-size: 13px;
+
+    /* 进场动画 */
+    animation: tts-menu-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: top left;
+}
+
+/* 列表项 - 默认状态 */
+#tts-bubble-menu .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: calc(var(--bubble-radius) - 4px);
+    /* 让内部圆角稍微小一点点，协调 */
+
+    /* 🎨 默认样子：跟随 Ready (就绪) 状态 */
+    /* 这样菜单里的选项看起来就像是一个个准备好的气泡 */
+    background: var(--s-ready-bg);
+    color: var(--s-ready-color);
+    border: var(--s-ready-border);
+    /* Ready 状态可能有阴影，这里为了菜单整洁，建议去掉内部阴影，或者你可以保留 */
+    box-shadow: none;
+}
+
+/* 列表项 - 鼠标悬停 */
+#tts-bubble-menu .menu-item:hover {
+    /* 🎨 悬停样子：跟随 Playing (播放/高亮) 状态 */
+    background: var(--s-play-bg);
+    color: var(--s-play-color);
+    border: var(--s-play-border);
+
+    /* 这里我们要那个酷炫的阴影！ */
+    box-shadow: var(--s-play-shadow);
+
+    /* 稍微放大一点点，像气泡被按下去 */
+    transform: scale(1.02);
+    font-weight: var(--s-play-font-weight, 600);
+}
+
+/* 列表项中的图标 */
+#tts-bubble-menu .menu-item .icon {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+#tts-bubble-menu .menu-item:hover .icon {
+    opacity: 1;
+    /* 悬停时图标更亮 */
+}
+
+/* 分割线：用边框颜色做分割，保持低调 */
+#tts-bubble-menu .divider {
+    height: 1px;
+    background: currentColor;
+    /* 使用当前文字颜色 */
+    opacity: 0.2;
+    margin: 6px 4px;
+}
+
+/* 进场动画关键帧 */
+@keyframes tts-menu-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

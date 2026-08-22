@@ -1,0 +1,161 @@
+/* ==========================================================================
+   PART 2: 核心组件逻辑 (Core Logic)
+   ========================================================================== */
+
+/* --- 主气泡容器 --- */
+.voice-bubble {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    vertical-align: middle;
+    box-sizing: border-box;
+
+    /* 应用变量 */
+    height: var(--bubble-height);
+    padding: var(--bubble-padding);
+    margin: var(--bubble-margin);
+    border-radius: var(--bubble-radius);
+    gap: var(--bubble-gap);
+
+    font-size: var(--bubble-font-size);
+    font-weight: var(--bubble-font-weight);
+    font-family: var(--bubble-font-family);
+
+    backdrop-filter: var(--bubble-backdrop);
+    box-shadow: var(--bubble-shadow);
+
+    /* 默认颜色 (Waiting) */
+    background: var(--s-wait-bg);
+    color: var(--s-wait-color);
+    border: var(--s-wait-border);
+
+    min-width: 40px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 交互：鼠标悬停 */
+.voice-bubble:hover {
+    filter: brightness(0.97);
+    transform: translateY(-1px);
+}
+
+/* 状态：Loading (通用加载) */
+.voice-bubble.loading {
+    background: var(--s-load-bg) !important;
+    color: var(--s-load-color) !important;
+    border: var(--s-load-border) !important;
+    /* 统一使用 Pulse 动画，这比原版 Classic 的 grayscale 更符合逻辑，且颜色已通过变量控制 */
+    animation: tts-pulse 1.5s infinite;
+}
+
+/* Kawaii 专属加载动画 (保留) */
+body[data-bubble-style="kawaii"] .voice-bubble.loading {
+    animation: tts-shimmer 1.5s infinite alternate;
+}
+
+/* 状态：Ready (就绪) */
+.voice-bubble[data-status="ready"] {
+    background: var(--s-ready-bg) !important;
+    color: var(--s-ready-color) !important;
+    border: var(--s-ready-border) !important;
+    box-shadow: var(--s-ready-shadow, var(--bubble-shadow)) !important;
+}
+
+/* 状态：Playing (播放中) */
+.voice-bubble.playing {
+    background: var(--s-play-bg) !important;
+    color: var(--s-play-color) !important;
+    border: var(--s-play-border) !important;
+    box-shadow: var(--s-play-shadow) !important;
+    font-weight: var(--s-play-font-weight, 600);
+    transform: var(--s-play-scale, scale(1));
+    /* 变量控制是否放大 */
+}
+
+/* 状态：Error (通用错误红 - 未改动) */
+.voice-bubble.error {
+    background: #ffebee !important;
+    border: 1px solid #ef9a9a !important;
+    color: #c62828 !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+}
+
+/* --- 律动条动画 (Wave Animation) --- */
+.sovits-voice-waves {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    width: 14px;
+    height: 70%;
+    flex-shrink: 0;
+}
+
+.sovits-voice-bar {
+    width: 3px;
+    border-radius: 2px;
+    height: 7px;
+    background: var(--wave-bar-color);
+    transition: background 0.3s, height 0.2s;
+    opacity: 0.7;
+}
+
+/* 播放时的律动 */
+.voice-bubble.playing .sovits-voice-bar {
+    background: var(--wave-bar-playing);
+    animation: sovits-wave-anim 1s infinite ease-in-out;
+}
+
+.voice-bubble.playing .sovits-voice-bar:nth-child(1) {
+    animation-delay: 0.0s;
+}
+
+.voice-bubble.playing .sovits-voice-bar:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.voice-bubble.playing .sovits-voice-bar:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* 关键帧 */
+@keyframes sovits-wave-anim {
+
+    0%,
+    100% {
+        height: 7px;
+        opacity: 0.6;
+    }
+
+    50% {
+        height: 12px;
+        opacity: 1;
+    }
+}
+
+@keyframes tts-pulse {
+    0% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes tts-shimmer {
+    0% {
+        box-shadow: 0 0 0 rgba(255, 213, 79, 0);
+        border-color: #ffe082;
+    }
+
+    100% {
+        box-shadow: 0 0 6px rgba(255, 213, 79, 0.4);
+        border-color: #ffca28;
+    }
+}

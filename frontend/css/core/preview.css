@@ -1,0 +1,164 @@
+/* ==========================================================================
+   PART 5: 下拉菜单风格预览 (Style Preview in Menu)
+   说明：让选项列表里的每一项都显示出该风格独特的配色和字体！
+   ========================================================================== */
+
+/* 1. 基础修正：让选项稍微高一点，方便预览字体 */
+.option-item {
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    /*以此来做选中指示*/
+}
+
+/* --- 🌿 Default 森野 --- */
+.option-item[data-value="default"] {
+    background: #f1f8e9 !important;
+    color: #33691e !important;
+    font-family: sans-serif;
+}
+
+.option-item[data-value="default"]:hover {
+    background: #dcedc8 !important;
+}
+
+/* --- 📼 Classic 怀旧 --- */
+.option-item[data-value="classic"] {
+    background: #c6e2b8 !important;
+    color: #333 !important;
+    font-family: "Courier New", monospace;
+    /* 复古字体 */
+}
+
+.option-item[data-value="classic"]:hover {
+    background: #aed581 !important;
+}
+
+/* --- 💎 Kawaii 幻彩 --- */
+.option-item[data-value="kawaii"] {
+    background: linear-gradient(90deg, #f3e5f5 0%, #e1f5fe 100%) !important;
+    color: #880e4f !important;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.option-item[data-value="kawaii"]:hover {
+    background: linear-gradient(90deg, #e1bee7 0%, #b3e5fc 100%) !important;
+    font-weight: bold;
+}
+
+/* --- 🌸 Bloom 花信 --- */
+.option-item[data-value="bloom"] {
+    background: #fff0f5 !important;
+    color: #d81b60 !important;
+    font-family: "Nunito", sans-serif;
+}
+
+.option-item[data-value="bloom"]:hover {
+    background: #fce4ec !important;
+    border-left-color: #ec407a;
+}
+
+/* --- 🖤 Obsidian 黑曜石 --- */
+.option-item[data-value="obsidian"] {
+    background: #1e1e1e !important;
+    color: #4ade80 !important;
+    /* 黑底绿字 */
+    font-family: sans-serif;
+    border-bottom: 1px solid #333;
+}
+
+.option-item[data-value="obsidian"]:hover {
+    background: #000 !important;
+    box-shadow: inset 0 0 10px rgba(74, 222, 128, 0.2);
+}
+
+/* --- ⚡ Cyberpunk 赛博 --- */
+.option-item[data-value="cyberpunk"] {
+    background: #050505 !important;
+    color: #00ffff !important;
+    font-family: "Consolas", monospace;
+    /* 代码字体 */
+    text-shadow: 0 0 2px rgba(0, 255, 255, 0.5);
+}
+
+.option-item[data-value="cyberpunk"]:hover {
+    background: #001a1a !important;
+    border-left-color: #00ffff;
+}
+
+/* --- ✒️ Ink 水墨 --- */
+.option-item[data-value="ink"] {
+    background: #fdfbf7 !important;
+    color: #2c3e50 !important;
+    font-family: "Kaiti", "STKaiti", serif;
+    /* 楷体 */
+}
+
+.option-item[data-value="ink"]:hover {
+    background: #eceff1 !important;
+    border-left-color: #c0392b;
+    /* 朱砂红 */
+}
+
+/* --- 📜 Scroll 羊皮卷 --- */
+.option-item[data-value="scroll"] {
+    background: #fdf5e6 !important;
+    color: #5d4037 !important;
+    font-family: "Georgia", serif;
+    /* 衬线体 */
+}
+
+.option-item[data-value="scroll"]:hover {
+    background: #ffe0b2 !important;
+    border-left-color: #8d6e63;
+}
+
+/* --- ⚙️ Steampunk 蒸汽 --- */
+.option-item[data-value="steampunk"] {
+    background: #d7ccc8 !important;
+    color: #3e2723 !important;
+    font-family: "Courier New", monospace;
+    border: 1px dashed #8d6e63;
+    /* 铆接感 */
+}
+
+.option-item[data-value="steampunk"]:hover {
+    background: #ffca28 !important;
+    color: #000 !important;
+}
+
+/* --- 💋 Rouge 魅影 --- */
+.option-item[data-value="rouge"] {
+    background: #2a1a1a !important;
+    color: #ffcdd2 !important;
+    font-family: serif;
+}
+
+.option-item[data-value="rouge"]:hover {
+    background: linear-gradient(90deg, #4a0000 0%, #880e4f 100%) !important;
+    color: #fff !important;
+}
+
+/* --- 🔫 Tactical 战术 --- */
+.option-item[data-value="tactical"] {
+    background: #000 !important;
+    color: #00e676 !important;
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.option-item[data-value="tactical"]:hover {
+    background: #1b5e20 !important;
+    border-left-color: #00e676;
+}
+
+/* --- 🛸 Holo 星舰 --- */
+.option-item[data-value="holo"] {
+    background: #e1f5fe !important;
+    color: #0277bd !important;
+    font-family: sans-serif;
+}
+
+.option-item[data-value="holo"]:hover {
+    background: #fff !important;
+    box-shadow: 0 0 10px rgba(3, 169, 244, 0.4);
+}

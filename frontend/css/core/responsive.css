@@ -1,0 +1,60 @@
+/* ==========================================================================
+   PART 6: 真实移动端适配 (Real Mobile Device)
+   说明：针对手机浏览器访问控制台界面的场景进行优化
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+
+    /* 遮罩层：全屏覆盖 */
+    #tts-dashboard-overlay.tts-overlay,
+    .tts-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 2147483646 !important;
+        display: block !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Dashboard 面板：不使用 flex，直接设置固定尺寸 */
+    #tts-dashboard-overlay #tts-dashboard,
+    .tts-overlay #tts-dashboard,
+    #tts-dashboard {
+        position: relative !important;
+        width: calc(100vw - 20px) !important;
+        max-width: calc(100vw - 20px) !important;
+        min-height: 80vh !important;
+        height: auto !important;
+        max-height: none !important;
+        margin: 0 auto !important;
+        display: block !important;
+    }
+
+    /* 标题栏 */
+    #tts-dashboard-overlay #tts-dashboard .tts-header,
+    .tts-overlay #tts-dashboard .tts-header,
+    #tts-dashboard .tts-header {
+        display: flex !important;
+        height: auto !important;
+        min-height: 50px !important;
+    }
+
+    /* 内容区域：确保显示 */
+    #tts-dashboard-overlay #tts-dashboard .tts-content,
+    .tts-overlay #tts-dashboard .tts-content,
+    #tts-dashboard .tts-content {
+        display: block !important;
+        height: auto !important;
+        min-height: 50vh !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+}

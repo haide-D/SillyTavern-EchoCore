@@ -1,0 +1,211 @@
+/* ==========================================================================
+   📱 移动端悬浮球与动效 (Mobile Trigger Floating Ball & Animations)
+   ========================================================================== */
+
+#tts-mobile-trigger {
+    position: fixed;
+    top: 50%;
+    bottom: auto;
+    right: 0;
+    left: auto;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+
+    background: var(--s-play-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%)) !important;
+    border: 1.5px solid var(--s-play-color, #fff) !important;
+    box-shadow: var(--s-play-shadow, 0 2px 8px rgba(0, 0, 0, 0.25)) !important;
+
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2147483647 !important;
+    overflow: hidden;
+
+    background-size: 200% 200%;
+    animation: trigger-breathe 2s ease-in-out infinite, trigger-gradient-flow 4s ease infinite;
+
+    backdrop-filter: var(--bubble-backdrop, blur(4px));
+}
+
+/* 呼吸动画 */
+@keyframes trigger-breathe {
+
+    0%,
+    100% {
+        transform: translateY(-50%) scale(0.95);
+        opacity: 0.9;
+    }
+
+    50% {
+        transform: translateY(-50%) scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* 渐变流动动画 */
+@keyframes trigger-gradient-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 悬停效果 */
+#tts-mobile-trigger:hover {
+    transform: translateY(-50%) scale(1.1) !important;
+    filter: brightness(1.1);
+    animation: trigger-breathe 1s ease-in-out infinite, trigger-gradient-flow 2s ease infinite;
+}
+
+/* 内部容器 */
+.trigger-bubble-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* 律动条容器 */
+.trigger-waves {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 50%;
+}
+
+/* 单个律动条 */
+.trigger-bar {
+    width: 4px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--s-play-color, #fff);
+    opacity: 0.9;
+    animation: trigger-wave-anim 1.2s ease-in-out infinite;
+}
+
+/* 律动条延迟动画 */
+.trigger-bar:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.trigger-bar:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.trigger-bar:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* 律动条波动动画 */
+@keyframes trigger-wave-anim {
+
+    0%,
+    100% {
+        height: 8px;
+        opacity: 0.6;
+    }
+
+    50% {
+        height: 18px;
+        opacity: 1;
+    }
+}
+
+/* =========================================
+   📱 来电震动动画
+   ========================================= */
+
+#tts-mobile-trigger.incoming-call {
+    animation: phone-vibrate-mobile 0.5s ease-in-out infinite, phone-glow-mobile 1.5s ease-in-out infinite !important;
+}
+
+@keyframes phone-vibrate-mobile {
+
+    0%,
+    100% {
+        transform: translateY(-50%) translateX(0) rotate(0deg);
+    }
+
+    10% {
+        transform: translateY(-50%) translateX(-2px) rotate(-2deg);
+    }
+
+    20% {
+        transform: translateY(-50%) translateX(2px) rotate(2deg);
+    }
+
+    30% {
+        transform: translateY(-50%) translateX(-2px) rotate(-1deg);
+    }
+
+    40% {
+        transform: translateY(-50%) translateX(2px) rotate(1deg);
+    }
+
+    50% {
+        transform: translateY(-50%) translateX(-1px) rotate(-2deg);
+    }
+
+    60% {
+        transform: translateY(-50%) translateX(1px) rotate(2deg);
+    }
+
+    70% {
+        transform: translateY(-50%) translateX(-2px) rotate(-1deg);
+    }
+
+    80% {
+        transform: translateY(-50%) translateX(2px) rotate(1deg);
+    }
+
+    90% {
+        transform: translateY(-50%) translateX(-1px) rotate(0deg);
+    }
+}
+
+@keyframes phone-glow-mobile {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5), 0 0 20px rgba(102, 126, 234, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 30px rgba(102, 126, 234, 0.5), 0 0 40px rgba(102, 126, 234, 0.3);
+    }
+}
+
+/* =========================================
+   📱 对话追踪通知动画 (绿色闪烁)
+   ========================================= */
+
+#tts-mobile-trigger.eavesdrop-available {
+    animation: phone-vibrate-mobile 0.5s ease-in-out infinite, eavesdrop-pulse-mobile 1.5s ease-in-out infinite !important;
+}
+
+@keyframes eavesdrop-pulse-mobile {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), 0 0 30px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3);
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    }
+}

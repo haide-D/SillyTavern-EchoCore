@@ -1,0 +1,67 @@
+/* ==========================================================================
+   ❤️ 语音收藏夹 App 专用样式 (Favorites App Styles)
+   ========================================================================== */
+
+.fav-tab {
+    background: var(--s-load-bg, #fff) !important;
+    color: var(--s-load-color, #333) !important;
+    opacity: 0.7;
+    border: 1px solid var(--s-wait-border, #ddd);
+    transition: all 0.2s;
+}
+
+.fav-tab.active {
+    background: var(--s-ready-bg, #e11d48) !important;
+    color: var(--s-ready-color, #fff) !important;
+    opacity: 1;
+    border-color: var(--s-ready-border, transparent) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.fav-item {
+    background: var(--s-load-bg, #fff) !important;
+    border: 1px solid var(--s-ready-border, #e11d48) !important;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.fav-item-name {
+    color: var(--s-load-color, #333) !important;
+    font-weight: 900;
+    font-size: 15px;
+    opacity: 1;
+}
+
+.fav-item-date {
+    color: var(--s-load-color, #666) !important;
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.fav-context-box {
+    background: transparent !important;
+    border: 1px dashed var(--s-wait-color, #aaa) !important;
+    color: var(--s-load-color, #555) !important;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.fav-item.current-item {
+    border-left: 5px solid var(--s-ready-bg, #e11d48) !important;
+    background: var(--s-load-bg, #fff) !important;
+}
+
+.fav-text-content {
+    color: var(--s-load-color, #000) !important;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    font-weight: 500;
+}

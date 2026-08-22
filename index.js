@@ -101,7 +101,8 @@ function initPlugin() {
     const Scheduler = TTS_Scheduler;
 
     // 3. 加载全局 CSS
-    TTS_Utils.loadGlobalCSS(`${MANAGER_API}/static/css/style.css?t=${new Date().getTime()}`, (cssContent) => {
+    const styleCssUrl = `${MANAGER_API}/static/css/style.css?t=${new Date().getTime()}`;
+    TTS_Utils.loadGlobalCSS(styleCssUrl, (cssContent) => {
         // CSS加载完毕后，手动扫描一次
         if (TTS_Parser.scan) TTS_Parser.scan();
 
@@ -110,64 +111,26 @@ function initPlugin() {
             try {
                 const head = $(this).contents().find('head');
                 if (head.length > 0 && head.find('#sovits-iframe-style').length === 0) {
-                    head.append(`<style id='sovits-iframe-style'>${cssContent}</style>`);
+                    const iframeLink = document.createElement('link');
+                    iframeLink.id = 'sovits-iframe-style';
+                    iframeLink.rel = 'stylesheet';
+                    iframeLink.type = 'text/css';
+                    iframeLink.href = styleCssUrl;
+                    head.append(iframeLink);
                 }
             } catch (e) { }
         });
     });
 
-    // 强制加载 CSS (修复版)
+    // 动态注入手机壳、通话全屏与 App 模块化样式表
     const mobileCssUrl = `${MANAGER_API}/static/css/mobile.css?t=${new Date().getTime()}`;
     const phoneCallCssUrl = `${MANAGER_API}/static/css/phone_call.css?t=${new Date().getTime()}`;
     const mobileAppsCssUrl = `${MANAGER_API}/static/css/mobile_apps.css?t=${new Date().getTime()}`;
 
-    // 加载 mobile.css
-    fetch(mobileCssUrl)
-        .then(response => response.text())
-        .then(cssText => {
-            const style = document.createElement('style');
-            style.id = 'tts-mobile-force-style';
-
-            const extraCss = `
-                #tts-mobile-trigger { z-index: 2147483647 !important; }
-                #tts-mobile-root { z-index: 2147483647 !important; }
-            `;
-
-            style.textContent = cssText + extraCss;
-            document.head.appendChild(style);
-            console.log("✅ [TTS] 手机端 CSS 已强制注入成功！");
-        })
-        .catch(err => {
-            console.error("❌ [TTS] 手机端 CSS 加载失败:", err);
-        });
-
-    // 加载 phone_call.css
-    fetch(phoneCallCssUrl)
-        .then(response => response.text())
-        .then(cssText => {
-            const style = document.createElement('style');
-            style.id = 'tts-phone-call-style';
-            style.textContent = cssText;
-            document.head.appendChild(style);
-            console.log("✅ [TTS] 通话界面 CSS 已加载成功！");
-        })
-        .catch(err => {
-            console.error("❌ [TTS] 通话界面 CSS 加载失败:", err);
-        });
-
-    // 加载 mobile_apps.css (App 页面样式)
-    fetch(mobileAppsCssUrl)
-        .then(response => response.text())
-        .then(cssText => {
-            const style = document.createElement('style');
-            style.id = 'tts-mobile-apps-style';
-            style.textContent = cssText;
-            document.head.appendChild(style);
-            console.log("✅ [TTS] 手机 App 样式 CSS 已加载成功！");
-        })
-        .catch(err => {
-            console.error("❌ [TTS] 手机 App 样式 CSS 加载失败:", err);
-        });
+    TTS_Utils.injectStyleLink('tts-mobile-force-style-link', mobileCssUrl);
+    TTS_Utils.injectStyleLink('tts-phone-call-style-link', phoneCallCssUrl);
+    TTS_Utils.injectStyleLink('tts-mobile-apps-style-link', mobileAppsCssUrl);
+    console.log("✅ [TTS] 全部模块化 CSS (Style, Mobile, Call, Apps) 已完成标准链路注入！");
 
     // 4. 定义核心回调函数 (传给 UI 模块使用)
     async function refreshData() {

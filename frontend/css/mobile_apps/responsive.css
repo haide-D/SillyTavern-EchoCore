@@ -1,0 +1,47 @@
+/* ==========================================================================
+   📱 移动端响应式适配 (Mobile Apps Responsive Overrides)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+
+    #mobile-screen-content .tts-card,
+    #mobile-screen-content .tts-panel {
+        background: linear-gradient(var(--s-wait-bg), var(--s-wait-bg)), #202020 !important;
+        border: 1px solid var(--s-wait-border, #333) !important;
+        box-shadow: none !important;
+        margin-bottom: 10px !important;
+        border-radius: 12px !important;
+    }
+
+    #mobile-screen-content,
+    #mobile-screen-content .tts-input-label,
+    #mobile-screen-content .sheet-item {
+        color: var(--s-load-color, #ccc) !important;
+    }
+
+    #mobile-screen-content strong,
+    #mobile-screen-content b,
+    #mobile-screen-content .tts-header,
+    #mobile-screen-content .sheet-header,
+    #mobile-screen-content .nav-title,
+    .app-name {
+        color: var(--s-play-color, #ff0000) !important;
+        opacity: 1 !important;
+        font-weight: bold !important;
+    }
+
+    #mobile-screen-content input,
+    #mobile-screen-content select,
+    #mobile-screen-content .tts-modern-input {
+        background: rgba(30, 30, 30, 0.8) !important;
+        border: 1px solid var(--s-wait-border, #444) !important;
+        color: var(--s-load-color, #fff) !important;
+    }
+
+    #mobile-screen-content .btn-primary {
+        background: var(--s-play-bg, #2563eb) !important;
+        color: var(--s-play-color, #fff) !important;
+        border: none !important;
+        font-weight: bold !important;
+    }
+}
