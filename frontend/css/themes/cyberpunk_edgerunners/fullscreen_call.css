@@ -72,6 +72,7 @@
     background: #080C14;
     position: relative;
     z-index: 2;
+    transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .cyber-call-avatar-ring {

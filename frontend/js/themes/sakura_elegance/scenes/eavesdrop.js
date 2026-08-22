@@ -224,6 +224,20 @@ function showCustomEavesdropUI(container, data, ctx) {
         }
     });
 
+    // 监听说话人切换，平滑刷新当前头像与式神名字
+    player.on('speaker_change', ({ speaker }) => {
+        if (!speaker) return;
+        $content.find('.sakura-call-title').text(speaker);
+        const $avatarBox = $content.find('.sakura-call-avatar-img');
+        if ($avatarBox.length) {
+            $avatarBox.css({ transition: 'opacity 0.15s ease, transform 0.15s ease', opacity: '0.3', transform: 'scale(0.92)' });
+            setTimeout(() => {
+                $avatarBox.html(renderAvatarHtml(speaker, '', 'width:100%; height:100%; object-fit:cover; border-radius:50%;'));
+                $avatarBox.css({ opacity: '1', transform: 'scale(1)' });
+            }, 150);
+        }
+    });
+
     setGlobalPlayer(player);
 
     if (data.audio_url) {

@@ -1,5 +1,6 @@
 // 文件: ui_dashboard.js
 import { getCharacterAvatar, setCustomSpeakerAvatar, getCustomSpeakerAvatars, renderAvatarHtml, getDefaultAvatarDataUrl } from './mobile_apps/shared/utils.js';
+import { openAvatarCropper } from './mobile_apps/shared/avatar_cropper.js';
 
 if (!window.TTS_UI) {
     window.TTS_UI = {};
@@ -133,30 +134,24 @@ export const TTS_UI = window.TTS_UI;
             $('#tts-avatar-file-input').val('').click();
         });
 
-        $('#tts-avatar-file-input').off('change').on('change', async function (e) {
+        $('#tts-avatar-file-input').off('change').on('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            const charName = $('#tts-new-char').val().trim();
-            const $btn = $('#tts-btn-upload-avatar');
-            const origText = $btn.text();
-            $btn.text('上传中..').prop('disabled', true);
-
-            try {
-                const data = await doUploadAvatarFile(file, charName);
-                if (data && data.avatar_url) {
-                    $('#tts-new-char-avatar').val(data.avatar_url);
-                    updateNewAvatarPreview();
+            const charName = $('#tts-new-char').val().trim() || '新角色';
+            openAvatarCropper({
+                image: file,
+                charName: charName,
+                onSuccess: (res) => {
+                    if (res && res.avatar_url) {
+                        $('#tts-new-char-avatar').val(res.avatar_url);
+                        updateNewAvatarPreview();
+                    }
                 }
-            } catch (err) {
-                console.error('[AvatarUpload] 上传失败:', err);
-                alert(`头像上传失败: ${err.message}`);
-            } finally {
-                $btn.text(origText).prop('disabled', false);
-            }
+            });
         });
 
-        // 选卡弹窗/快捷填充
+        // 选卡弹窗/快捷填充 (支持一键微调对焦头部)
         $('#tts-btn-pick-char-avatar').off('click').on('click', function () {
             const context = window.SillyTavern?.getContext?.();
             const characters = context?.characters || [];
@@ -192,10 +187,23 @@ export const TTS_UI = window.TTS_UI;
             $('.tts-picker-item').on('click', function () {
                 const name = $(this).data('name');
                 const avatar = $(this).data('avatar');
-                if (name && !$('#tts-new-char').val().trim()) $('#tts-new-char').val(name);
-                if (avatar) $('#tts-new-char-avatar').val(avatar);
-                updateNewAvatarPreview();
                 $('#tts-char-picker-modal').remove();
+
+                if (name && !$('#tts-new-char').val().trim()) $('#tts-new-char').val(name);
+
+                if (avatar) {
+                    // 呼出裁剪器对焦头部特写
+                    openAvatarCropper({
+                        image: avatar,
+                        charName: name || $('#tts-new-char').val().trim() || '角色',
+                        onSuccess: (res) => {
+                            if (res && res.avatar_url) {
+                                $('#tts-new-char-avatar').val(res.avatar_url);
+                                updateNewAvatarPreview();
+                            }
+                        }
+                    });
+                }
             });
         });
 
@@ -514,18 +522,18 @@ export const TTS_UI = window.TTS_UI;
 
                     <!-- 操作区域 -->
                     <div style="display:flex; flex-direction:column; gap:10px;">
-                        <!-- 方式1: 本地电脑选图上传 -->
+                        <!-- 方式1: 本地电脑选图上传并聚焦头部 -->
                         <div>
                             <button id="tts-av-btn-upload-local" class="btn-primary" style="width:100%; padding:8px 12px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
-                                📁 从电脑本地选择图片上传落盘
+                                📁 从电脑本地选图并对焦面部
                             </button>
                             <input type="file" id="tts-av-file-input" accept="image/*" style="display:none !important;">
                         </div>
 
-                        <!-- 方式2: 从酒馆已有角色卡挑选 -->
+                        <!-- 方式2: 从酒馆已有角色卡挑选并聚焦头部 -->
                         <div>
                             <button id="tts-av-btn-pick-card" class="btn-secondary" style="width:100%; padding:8px 12px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
-                                🖼️ 从当前酒馆角色卡中选取
+                                🖼️ 从酒馆角色卡挑选并对焦特写
                             </button>
                         </div>
 
@@ -551,54 +559,77 @@ export const TTS_UI = window.TTS_UI;
         const closeModal = () => $('#tts-speaker-avatar-modal').remove();
         $('#tts-av-modal-close').on('click', closeModal);
 
-        // 1. 本地上传
+        // 1. 本地上传 -> 唤起裁剪对焦
         $('#tts-av-btn-upload-local').on('click', () => {
             $('#tts-av-file-input').val('').click();
         });
 
-        $('#tts-av-file-input').on('change', async function (e) {
+        $('#tts-av-file-input').on('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            const $btn = $('#tts-av-btn-upload-local');
-            $btn.text('正在上传落盘..').prop('disabled', true);
-            try {
-                const apiHost = (window.TTS_API && window.TTS_API.baseUrl) ? window.TTS_API.baseUrl : 'http://127.0.0.1:3000';
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('speaker_name', charName);
-
-                const res = await fetch(`${apiHost}/api/speakers/avatar/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-                if (!res.ok) throw new Error('上传接口返回失败');
-                const data = await res.json();
-                if (data && data.avatar_url) {
-                    setCustomSpeakerAvatar(charName, data.avatar_url);
-                    scope.renderDashboardList();
-                    closeModal();
+            closeModal();
+            openAvatarCropper({
+                image: file,
+                charName: charName,
+                onSuccess: (res) => {
+                    if (res && res.avatar_url) {
+                        setCustomSpeakerAvatar(charName, res.avatar_url);
+                        scope.renderDashboardList();
+                    }
                 }
-            } catch (err) {
-                alert(`上传失败: ${err.message}`);
-                $btn.text('📁 从电脑本地选择图片上传落盘').prop('disabled', false);
-            }
+            });
         });
 
-        // 2. 从酒馆卡片选取
+        // 2. 从酒馆卡片选取 -> 唤起裁剪对焦
         $('#tts-av-btn-pick-card').on('click', () => {
             closeModal();
-            $('#tts-btn-pick-char-avatar').click();
-            // 在选卡后将选取的头像更新给当前角色
-            const origHandler = window._tempPickAvatarCallback;
             const context = window.SillyTavern?.getContext?.();
-            $('.tts-picker-item').off('click').on('click', function () {
+            const characters = context?.characters || [];
+            if (!characters.length) {
+                alert('未检测到酒馆角色卡，请先加载或创建角色卡');
+                return;
+            }
+
+            const pickerHtml = `
+                <div id="tts-char-picker-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+                    <div style="width:340px; max-height:80vh; background:#1e1b2e; border:1px solid rgba(196,155,79,0.5); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 32px rgba(0,0,0,0.6); color:#fff;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(196,155,79,0.2); padding-bottom:8px;">
+                            <span style="font-weight:600; color:#fde047; font-size:14px;">🖼️ 选取角色卡以对焦特写</span>
+                            <button id="tts-picker-close-inner" style="background:transparent; border:none; color:#999; font-size:20px; cursor:pointer;">×</button>
+                        </div>
+                        <div style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+                            ${characters.map(c => {
+                                const avUrl = c.avatar && context.getThumbnailUrl ? context.getThumbnailUrl('avatar', c.avatar) : `/characters/${c.avatar || ''}`;
+                                return `
+                                    <div class="tts-picker-item-for-char" data-name="${c.name || ''}" data-avatar="${avUrl}" style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; background:rgba(255,255,255,0.05); cursor:pointer; transition:background 0.2s; border:1px solid transparent;">
+                                        <img src="${avUrl}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(196,155,79,0.3);" onerror="this.src='${getDefaultAvatarDataUrl(c.name)}';" />
+                                        <span style="font-size:13px; font-weight:500; color:#e5e7eb;">${c.name || '未命名'}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(pickerHtml);
+
+            $('#tts-picker-close-inner').on('click', () => $('#tts-char-picker-modal').remove());
+            $('.tts-picker-item-for-char').on('click', function () {
                 const avatar = $(this).data('avatar');
-                if (avatar) {
-                    setCustomSpeakerAvatar(charName, avatar);
-                    scope.renderDashboardList();
-                }
                 $('#tts-char-picker-modal').remove();
+                if (avatar) {
+                    openAvatarCropper({
+                        image: avatar,
+                        charName: charName,
+                        onSuccess: (res) => {
+                            if (res && res.avatar_url) {
+                                setCustomSpeakerAvatar(charName, res.avatar_url);
+                                scope.renderDashboardList();
+                            }
+                        }
+                    });
+                }
             });
         });
 
