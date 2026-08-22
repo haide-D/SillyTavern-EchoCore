@@ -1,6 +1,6 @@
 /* =========================================================
    夜之城·边缘行者 (cyberpunk_edgerunners) - 修长飘逸光刃字母 V (trigger.css)
-   修长锋利 · 飘逸流线 · 激光细缝穿透 · 残影流光 · 锋芒屏闪
+   修长锋利 · 飘逸流线 · 来电呼叫暴走警报 · 深网破冰雷达律动 · 锋芒屏闪
    ========================================================= */
 
 :root {
@@ -80,7 +80,7 @@
     100% { opacity: 0.95; transform: translateX(1px); }
 }
 
-/* ④ RGB 故障色散层 */
+/* ③ RGB 故障色散层 */
 .cyber-v-rgb-layer {
     opacity: 0;
     pointer-events: none;
@@ -114,9 +114,8 @@
     animation: cyberBladeGlitchCyanHover 0.5s infinite;
 }
 
-/* ==================== 5. 锋芒 Glitch 动画帧定义 ==================== */
+/* ==================== 5. 基础 Glitch 动画帧 ==================== */
 
-/* --- 1. 屏闪与锋芒微震 (Flicker) --- */
 @keyframes cyberBladeFlicker {
     0%, 88%, 93%, 96%, 100% {
         opacity: 1;
@@ -140,7 +139,6 @@
     85% { opacity: 1; transform: skew(-3deg); }
 }
 
-/* --- 2. 主刃撕裂与扭曲 (Blade Cut Glitch) --- */
 @keyframes cyberBladeGlitch {
     0%, 86%, 92%, 96%, 100% {
         transform: translate(0, 0) skew(0deg);
@@ -168,7 +166,6 @@
     85% { transform: translate(-2px, 2px) skew(-4deg); }
 }
 
-/* --- 3. 绯红故障分离 --- */
 @keyframes cyberBladeGlitchRed {
     0%, 86%, 92%, 96%, 100% {
         opacity: 0;
@@ -196,7 +193,6 @@
     80% { opacity: 0.9; transform: translate(3px, 1px); }
 }
 
-/* --- 4. 电青故障分离 --- */
 @keyframes cyberBladeGlitchCyan {
     0%, 86%, 92%, 96%, 100% {
         opacity: 0;
@@ -224,47 +220,124 @@
     80% { opacity: 0.9; transform: translate(-3px, -1px); }
 }
 
-/* ==================== 6. 状态指示光环 (纯粹底层微光) ==================== */
-.cyber-status-ring {
-    position: absolute;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    opacity: 0;
-    z-index: -1;
+/* ==================== 6. 专属通知动画：来电 / 窃听 / 播放 ==================== */
+
+/* ─── A. 触发来电 (is-calling): 荒坂绯红过载警报暴走 ─── */
+#tts-cyber-trigger.is-calling {
+    transform: scale(1.16);
+    filter: drop-shadow(0 0 24px rgba(255, 0, 60, 1)) drop-shadow(0 0 16px rgba(255, 230, 0, 0.9));
 }
 
-.cyber-status-ring.ready {
-    opacity: 0.85;
-    box-shadow: 0 0 24px rgba(var(--cyber-cyan-rgb), 0.95);
-    animation: cyber-ready-pulse 2s ease-in-out infinite;
+#tts-cyber-trigger.is-calling .cyber-v-root {
+    animation: cyberVCallAlarmShake 0.45s infinite;
 }
 
-.cyber-status-ring.calling {
+#tts-cyber-trigger.is-calling .cyber-v-blade-main {
+    fill: #FF003C;
+    filter: drop-shadow(0 0 10px #FF003C);
+    animation: cyberVCallBladeFlash 0.45s infinite alternate;
+}
+
+#tts-cyber-trigger.is-calling .cyber-v-rgb-red {
     opacity: 1;
-    box-shadow: 0 0 32px rgba(var(--cyber-red-rgb), 1);
-    animation: cyber-calling-pulse 0.8s ease-in-out infinite;
+    animation: cyberVCallGlitchRed 0.3s infinite;
 }
 
-.cyber-status-ring.playing {
+#tts-cyber-trigger.is-calling .cyber-v-rgb-cyan {
     opacity: 0.9;
-    box-shadow: 0 0 26px rgba(var(--cyber-yellow-rgb), 0.95);
-    animation: cyber-playing-pulse 1.4s ease-in-out infinite;
+    animation: cyberVCallGlitchCyan 0.3s infinite;
 }
 
-@keyframes cyber-ready-pulse {
-    0%, 100% { transform: scale(0.9); opacity: 0.6; }
-    50% { transform: scale(1.15); opacity: 0.95; }
+#tts-cyber-trigger.is-calling .cyber-v-speed-trail {
+    stroke: #FF003C;
+    animation: cyberVCallTrailSpark 0.25s infinite alternate;
 }
 
-@keyframes cyber-calling-pulse {
-    0%, 100% { transform: scale(0.85); opacity: 0.7; }
-    50% { transform: scale(1.25); opacity: 1; }
+@keyframes cyberVCallAlarmShake {
+    0%, 100% { transform: translate(0, 0) skew(0deg); }
+    20% { transform: translate(-3px, 2px) skew(-8deg) scale(1.05); }
+    40% { transform: translate(3px, -2px) skew(6deg) scale(0.98); }
+    60% { transform: translate(-2px, -1px) skew(-5deg) scale(1.04); }
+    80% { transform: translate(2px, 1px) skew(4deg) scale(1); }
 }
 
-@keyframes cyber-playing-pulse {
-    0%, 100% { transform: scale(0.9); opacity: 0.65; }
-    50% { transform: scale(1.15); opacity: 0.9; }
+@keyframes cyberVCallBladeFlash {
+    0% { fill: #FFE600; filter: drop-shadow(0 0 12px #FFE600); }
+    100% { fill: #FF003C; filter: drop-shadow(0 0 18px #FF003C); }
+}
+
+@keyframes cyberVCallGlitchRed {
+    0%, 100% { transform: translate(-5px, 3px) skew(-12deg); }
+    50% { transform: translate(4px, -3px) skew(10deg); }
+}
+
+@keyframes cyberVCallGlitchCyan {
+    0%, 100% { transform: translate(5px, -3px) skew(10deg); }
+    50% { transform: translate(-4px, 3px) skew(-12deg); }
+}
+
+@keyframes cyberVCallTrailSpark {
+    0% { opacity: 0.4; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1.2) translateX(2px); }
+}
+
+/* ─── B. 触发窃听 (is-ready): 深网赛博青雷达声呐探寻 ─── */
+#tts-cyber-trigger.is-ready {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 24px rgba(0, 240, 255, 0.95)) drop-shadow(0 0 14px rgba(56, 189, 248, 0.8));
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-root {
+    animation: cyberVSniffBreathe 1.8s ease-in-out infinite;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-blade-main {
+    fill: #00F0FF;
+    filter: drop-shadow(0 0 10px #00F0FF);
+    animation: cyberVSniffBladeGlow 1.8s ease-in-out infinite alternate;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-rgb-cyan {
+    opacity: 0.85;
+    animation: cyberVSniffRadarWave 1.8s ease-out infinite;
+}
+
+#tts-cyber-trigger.is-ready .cyber-v-speed-trail {
+    stroke: #00F0FF;
+    animation: cyberVSniffTrailFlow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes cyberVSniffBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes cyberVSniffBladeGlow {
+    0% { filter: drop-shadow(0 0 6px #00F0FF); }
+    100% { filter: drop-shadow(0 0 18px #00F0FF) drop-shadow(0 0 28px #38BDF8); }
+}
+
+@keyframes cyberVSniffRadarWave {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes cyberVSniffTrailFlow {
+    0% { opacity: 0.4; stroke-width: 0.6; }
+    100% { opacity: 1; stroke-width: 1.4; }
+}
+
+/* ─── C. 正在播放 (is-playing): 明黄音波节奏律动 ─── */
+#tts-cyber-trigger.is-playing {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(255, 230, 0, 0.95));
+}
+
+#tts-cyber-trigger.is-playing .cyber-v-root {
+    animation: cyberVPlayWave 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes cyberVPlayWave {
+    0% { transform: scale(0.96) translateY(1px); }
+    100% { transform: scale(1.06) translateY(-2px); }
 }

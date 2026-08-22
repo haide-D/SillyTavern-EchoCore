@@ -102,9 +102,11 @@ const CyberpunkEdgerunnersTheme = {
 
     // ==================== 7. 事件与通知 ====================
     onNotification(type, data, engine) {
+        const $trigger = $('#tts-cyber-trigger');
         const $statusRing = $('#cyberStatusRing');
         switch (type) {
             case 'incoming_call':
+                $trigger.removeClass('is-ready is-playing').addClass('is-calling');
                 $statusRing.removeClass('ready playing').addClass('calling');
                 if (ThemeState.particleEngine) {
                     ThemeState.particleEngine.burst();
@@ -116,6 +118,7 @@ const CyberpunkEdgerunnersTheme = {
                 return true;
 
             case 'eavesdrop_ready':
+                $trigger.removeClass('is-calling is-playing').addClass('is-ready');
                 $statusRing.removeClass('calling playing').addClass('ready');
                 if (ThemeState.particleEngine) {
                     ThemeState.particleEngine.burst();
@@ -127,6 +130,7 @@ const CyberpunkEdgerunnersTheme = {
                 return true;
 
             case 'call_ended':
+                $trigger.removeClass('is-calling is-ready is-playing');
                 $statusRing.removeClass('calling ready playing');
                 delete window.TTS_IncomingCall;
                 delete window.TTS_EavesdropReady;

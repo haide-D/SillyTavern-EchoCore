@@ -202,37 +202,34 @@ function showCustomEavesdropUI(container, data, ctx) {
 
     // 播放音频并驱动分段字幕
     if (data.audio_url) {
-        const player = new AudioPlayer();
+        const player = new AudioPlayer({
+            $container: $content,
+            segments: data.segments || [],
+            showSpeaker: true,
+            onEnd: () => {
+                console.log('[CyberpunkEdgerunners] 深网监听音频播毕');
+            },
+            onError: (err) => {
+                console.error('[CyberpunkEdgerunners] 播放错误:', err);
+            }
+        });
         setGlobalPlayer(player);
-        const $subArea = $content.find('.call-subtitle-area');
-
-        player.on('ended', () => {
-            console.log('[CyberpunkEdgerunners] 深网监听音频播毕');
-        });
-
-        player.on('error', (err) => {
-            console.error('[CyberpunkEdgerunners] 播放错误:', err);
-        });
-
-        player.loadAndPlay(data.audio_url, {
-            segments: data.segments,
-            $subtitleArea: $subArea,
-            themeType: 'modern'
-        });
+        player.play(data.audio_url);
     }
 }
 
 export const eavesdropScene = {
     render($container, ctx) {
-        const data = window.TTS_EavesdropReady || window.TTS_EavesdropData;
-        if (!data) {
+        const data = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.speakers || ctx.data.char_name)) 
+            ? ctx.data 
+            : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
+        if (data && (data.audio_url || data.speakers || data.char_name)) {
+            renderCustomCyberEavesdrop($container, data, ctx);
+        } else {
             $container.empty();
             const createNav = (typeof ctx === 'function') ? ctx : (ctx.createNavbar || createNavbarForApps);
             EavesdropApp.render($container, createNav);
-            return;
         }
-
-        renderCustomCyberEavesdrop($container, data, ctx);
     },
 
     cleanup() {

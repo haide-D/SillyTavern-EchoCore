@@ -3,7 +3,8 @@
    终端极客风格：全屏黑客控制台 · 0 模糊 · 极高清晰度 · 等宽实时字幕 · 战术切角控制
    ========================================================= */
 
-#cyber-fullscreen-call {
+#cyber-fullscreen-call,
+#cyber-fullscreen-eavesdrop {
     position: fixed;
     top: 0;
     left: 0;

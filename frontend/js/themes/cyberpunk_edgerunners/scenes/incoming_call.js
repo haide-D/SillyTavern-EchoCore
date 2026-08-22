@@ -179,37 +179,34 @@ function showCustomInCallUI(container, callData, ctx) {
 
     // 播放音频并驱动分段字幕
     if (callData.audio_url) {
-        const player = new AudioPlayer();
+        const player = new AudioPlayer({
+            $container: $content,
+            segments: callData.segments || [],
+            showSpeaker: false,
+            onEnd: () => {
+                console.log('[CyberpunkEdgerunners] 脑机通讯播毕');
+            },
+            onError: (err) => {
+                console.error('[CyberpunkEdgerunners] 音频播放错误:', err);
+            }
+        });
         setGlobalPlayer(player);
-        const $subArea = $content.find('.call-subtitle-area');
-
-        player.on('ended', () => {
-            console.log('[CyberpunkEdgerunners] 脑机通讯播毕');
-        });
-
-        player.on('error', (err) => {
-            console.error('[CyberpunkEdgerunners] 音频播放错误:', err);
-        });
-
-        player.loadAndPlay(callData.audio_url, {
-            segments: callData.segments,
-            $subtitleArea: $subArea,
-            themeType: 'modern'
-        });
+        player.play(callData.audio_url);
     }
 }
 
 export const incomingCallScene = {
     render($container, ctx) {
-        const callData = window.TTS_IncomingCall;
-        if (!callData) {
+        const callData = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.char_name || ctx.data.caller)) 
+            ? ctx.data 
+            : window.TTS_IncomingCall;
+        if (callData && (callData.audio_url || callData.char_name || callData.caller)) {
+            renderCustomCyberCall($container, callData, ctx);
+        } else {
             $container.empty();
             const createNav = (typeof ctx === 'function') ? ctx : (ctx.createNavbar || createNavbarForApps);
             PhoneCallApp.render($container, createNav);
-            return;
         }
-
-        renderCustomCyberCall($container, callData, ctx);
     },
 
     cleanup() {
