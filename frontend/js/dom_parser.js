@@ -88,10 +88,26 @@ export const TTS_Parser = {
         const CACHE = window.TTS_State ? window.TTS_State.CACHE : {};
         const models = CACHE.models || {};
         const modelKeys = Object.keys(models);
+        const minimaxVoices = (CACHE.minimax_voices && CACHE.minimax_voices.length > 0)
+            ? CACHE.minimax_voices
+            : [
+                { id: "female-shaonv", name: "少女音" },
+                { id: "female-yujie", name: "御姐音" },
+                { id: "female-tianmei", name: "甜美音" },
+                { id: "female-chengshu", name: "成熟女性" },
+                { id: "male-qn-qingse", name: "青涩青年" },
+                { id: "male-qn-jingying", name: "精英青年" },
+                { id: "male-qn-badao", name: "霸道青年" },
+                { id: "male-qn-daxuesheng", name: "男大学生" },
+                { id: "presenter_female", name: "女主持人" },
+                { id: "presenter_male", name: "男主持人" },
+                { id: "audiobook_female_1", name: "女播音1" },
+                { id: "audiobook_male_1", name: "男播音1" }
+            ];
 
-        if (modelKeys.length === 0) {
+        if (modelKeys.length === 0 && minimaxVoices.length === 0) {
             if (window.TTS_Utils && window.TTS_Utils.showNotification) {
-                window.TTS_Utils.showNotification("未发现可用的 GPT-SoVITS 语音模型", "error");
+                window.TTS_Utils.showNotification("未发现可用的语音模型或音色", "error");
             }
             return;
         }
@@ -99,10 +115,21 @@ export const TTS_Parser = {
         // 移除旧弹窗
         $('#tts-quick-bind-modal').remove();
 
-        const optionsHtml = modelKeys.map(k => {
-            const isMatch = k.toLowerCase().includes(speakerName.toLowerCase()) || speakerName.toLowerCase().includes(k.toLowerCase());
-            return `<option value="${escapeHtmlAttr(k)}" ${isMatch ? 'selected' : ''}>${escapeHtmlAttr(k)}</option>`;
+        let optionsHtml = '';
+        if (modelKeys.length > 0) {
+            optionsHtml += '<optgroup label="📁 本地 GPT-SoVITS 模型">';
+            optionsHtml += modelKeys.map(k => {
+                const isMatch = k.toLowerCase().includes(speakerName.toLowerCase()) || speakerName.toLowerCase().includes(k.toLowerCase());
+                return `<option value="${escapeHtmlAttr(k)}" ${isMatch ? 'selected' : ''}>🎙️ ${escapeHtmlAttr(k)}</option>`;
+            }).join('');
+            optionsHtml += '</optgroup>';
+        }
+
+        optionsHtml += '<optgroup label="☁️ MiniMax 云端预设声线">';
+        optionsHtml += minimaxVoices.map(v => {
+            return `<option value="minimax:${escapeHtmlAttr(v.id)}">☁️ MiniMax: ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
         }).join('');
+        optionsHtml += '</optgroup>';
 
         const modalHtml = `
             <div id="tts-quick-bind-modal" class="tts-quick-modal-overlay">
@@ -112,7 +139,7 @@ export const TTS_Parser = {
                         <button class="tts-modal-close" onclick="$('#tts-quick-bind-modal').remove()">✕</button>
                     </div>
                     <div class="tts-quick-modal-body">
-                        <label>选择已有 GPT-SoVITS 模型:</label>
+                        <label>选择语音模型 / 音色:</label>
                         <select id="tts-quick-model-select" class="tts-quick-select">
                             ${optionsHtml}
                         </select>

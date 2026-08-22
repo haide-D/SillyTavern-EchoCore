@@ -187,9 +187,12 @@ if (!window.TTS_ThemeEngine) {
         // 3. 持久化到后端
         if (persist && _state.apiHost) {
             try {
+                const headers = (window.TTS_API && typeof window.TTS_API._headers === 'function')
+                    ? window.TTS_API._headers({ 'Content-Type': 'application/json' })
+                    : { 'Content-Type': 'application/json' };
                 await fetch(`${_state.apiHost}/theme`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ theme_id: themeId })
                 });
                 console.log(`[ThemeEngine] 主题设置已保存到后端`);
@@ -510,8 +513,11 @@ if (!window.TTS_ThemeEngine) {
 
         // 从后端加载主题设置
         let savedThemeId = 'default';
+        const defaultHeaders = (window.TTS_API && typeof window.TTS_API._headers === 'function')
+            ? window.TTS_API._headers()
+            : {};
         try {
-            const response = await fetch(`${apiHost}/theme`);
+            const response = await fetch(`${apiHost}/theme`, { headers: defaultHeaders });
             const data = await response.json();
             savedThemeId = data.current || 'default';
             console.log(`[ThemeEngine] 后端主题设置: ${savedThemeId}`);
@@ -522,7 +528,7 @@ if (!window.TTS_ThemeEngine) {
         // 加载外部扩展主题
         try {
             console.log('[ThemeEngine] 正在加载外部主题列表...');
-            const listRes = await fetch(`${apiHost}/api/themes/list`);
+            const listRes = await fetch(`${apiHost}/api/themes/list`, { headers: defaultHeaders });
             const externalThemes = await listRes.json();
             
             for (const themeMeta of externalThemes) {
