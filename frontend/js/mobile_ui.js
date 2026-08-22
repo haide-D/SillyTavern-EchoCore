@@ -85,11 +85,18 @@ export const TTS_Mobile = window.TTS_Mobile;
      * 由 index.js 调用，启动主题引擎
      */
     scope.init = async function () {
-        // API 地址从 TTS_State 获取
-        const apiHost = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.API_URL)
-            || 'http://127.0.0.1:3000';
+        let apiHost = '';
+        if (window.TTS_API && typeof window.TTS_API.getBaseUrl === 'function') {
+            apiHost = window.TTS_API.getBaseUrl();
+        } else if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
+            apiHost = window.TTS_Utils.resolveBackendUrls(window.TTS_Utils.getLatestRemoteConfig()).httpUrl;
+        } else if (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.API_URL) {
+            apiHost = window.TTS_State.CACHE.API_URL;
+        } else {
+            apiHost = 'http://127.0.0.1:3000';
+        }
 
-        console.log('[Mobile] 🚀 启动主题引擎...');
+        console.log('[Mobile] 🚀 启动主题引擎...', apiHost);
         await ThemeEngine.init(apiHost);
     };
 

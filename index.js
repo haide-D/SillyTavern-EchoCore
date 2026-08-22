@@ -29,10 +29,7 @@ import { PromptInjector } from './frontend/js/prompt_injector.js';
 import { CallQueueManager } from './frontend/js/call_queue_manager.js';
 
 // ================= 1. 配置区域 =================
-const lsConfig = localStorage.getItem('tts_plugin_remote_config');
-let remoteConfig = lsConfig ? JSON.parse(lsConfig) : { useRemote: false, ip: "", port: 3000, token: "" };
-
-// 统一解析后端 API 地址 (彻底支持反代 HTTPS 与动态端口，解决 Issue #2)
+const remoteConfig = TTS_Utils.getLatestRemoteConfig();
 const backendUrls = TTS_Utils.resolveBackendUrls(remoteConfig);
 const MANAGER_API = backendUrls.httpUrl;
 
