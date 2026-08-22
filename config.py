@@ -49,11 +49,15 @@ def save_json(filename, data):
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            # Windows 上 rename 目标存在会报错，需要先删除
-            if os.path.exists(filename):
+            if os.path.isdir(filename):
+                import shutil
+                shutil.rmtree(filename, ignore_errors=True)
+            elif os.path.exists(filename):
                 os.replace(tmp_path, filename)
             else:
                 os.rename(tmp_path, filename)
+            if os.path.exists(tmp_path):
+                os.replace(tmp_path, filename)
         except:
             # 写入失败，清理临时文件
             if os.path.exists(tmp_path):
