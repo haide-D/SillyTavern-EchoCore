@@ -7,7 +7,7 @@
  * 3. 🚀 开启密谈控制台: 内嵌式多 Speaker 勾选、联动剧本工坊 Presets、主题快捷池并一键开启密谈
  */
 
-import { STATUS_SVGS } from '../themes/theme_status_helper.js';
+import { STATUS_SVGS, getEavesdropStatusTexts } from '../themes/theme_status_helper.js';
 import { injectCSS } from './eavesdrop/styles.js';
 import { initPresetsAndSpeakers } from './eavesdrop/api.js';
 import { stopCurrentPlayingCard } from './eavesdrop/card.js';
@@ -56,18 +56,20 @@ export async function render(container, createNavbar) {
     // ========== 状态2: 主界面 (三子列表导航) ==========
     container.append(createNavbar("对话追踪"));
 
+    const statusTexts = getEavesdropStatusTexts();
+
     const $root = $(`
         <div class="ed-app-container">
             <!-- 顶部三子列表导航切换栏 -->
             <div class="ed-nav-tabs">
                 <button class="ed-nav-tab-btn ${_activeTab === 'current' ? 'active' : ''}" data-tab="current">
-                    ${STATUS_SVGS.chat || ''} 当前对话
+                    ${statusTexts.tabCurrent}
                 </button>
                 <button class="ed-nav-tab-btn ${_activeTab === 'all' ? 'active' : ''}" data-tab="all">
-                    ${STATUS_SVGS.history || ''} 总历史
+                    ${statusTexts.tabAll}
                 </button>
                 <button class="ed-nav-tab-btn ${_activeTab === 'launch' ? 'active' : ''}" data-tab="launch">
-                    ${STATUS_SVGS.theater || ''} 开启密谈
+                    ${statusTexts.tabLaunch}
                 </button>
             </div>
 

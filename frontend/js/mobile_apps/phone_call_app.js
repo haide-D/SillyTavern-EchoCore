@@ -463,18 +463,20 @@ export async function render(container, createNavbar) {
     container.empty();
     container.append(createNavbar("主动电话"));
 
+    const statusTexts = getCallStatusTexts();
+
     const $root = $(`
         <div class="pc-app-container">
             <!-- 顶部三子列表导航切换栏 -->
             <div class="pc-nav-tabs">
                 <button class="pc-nav-tab-btn ${_activeTab === 'current' ? 'active' : ''}" data-tab="current">
-                    ${SVG.chat || ''} 当前对话
+                    ${statusTexts.tabCurrent}
                 </button>
                 <button class="pc-nav-tab-btn ${_activeTab === 'all' ? 'active' : ''}" data-tab="all">
-                    ${SVG.history || ''} 总历史
+                    ${statusTexts.tabAll}
                 </button>
                 <button class="pc-nav-tab-btn ${_activeTab === 'dial' ? 'active' : ''}" data-tab="dial">
-                    ${SVG.dial || ''} 主动呼叫
+                    ${statusTexts.tabDial}
                 </button>
             </div>
 
@@ -677,7 +679,7 @@ function renderCallsToContainer($list, calls, isCurrentTab = false, $parentRoot 
     if (calls.length === 0 && (!_lastGeneratedCall || !isCurrentTab)) {
         $list.html(`
             <div class="pc-empty-state">
-                <div style="font-size:28px; margin-bottom:10px; opacity:0.8;">${SVG.phone}</div>
+                <div class="pc-empty-icon" style="font-size:28px; margin-bottom:10px; opacity:0.9;">${statusTexts.emptyIcon || SVG.phone}</div>
                 <div class="pc-empty-title">${isCurrentTab ? statusTexts.emptyCurrentTitle : statusTexts.emptyAllTitle}</div>
                 <div class="pc-empty-desc">
                     ${statusTexts.emptySub}
@@ -685,7 +687,7 @@ function renderCallsToContainer($list, calls, isCurrentTab = false, $parentRoot 
                 ${isCurrentTab ? `
                 <div>
                     <button class="pc-empty-btn pc-go-all-btn">
-                        📜 查看总历史记录
+                        ${statusTexts.emptyBtnText || '📜 查看总历史记录'}
                     </button>
                 </div>
                 ` : ''}

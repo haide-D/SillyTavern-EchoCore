@@ -1,0 +1,126 @@
+/* =========================================================
+   仙途凌霄 (immortal_sword) - 专属太极阴阳鱼八卦灵珠样式 (trigger.css)
+   正圆小球 · 先天太极 · 阴阳鱼流转 · 八卦金芒
+   ========================================================= */
+
+#tts-immortal-trigger.immortal-sword-trigger,
+#tts-immortal-trigger {
+    position: fixed;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 9999;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 10px rgba(52, 211, 153, 0.45));
+    animation: immortalBallFloat 4.5s ease-in-out infinite;
+}
+
+/* 常态浮空微起伏 */
+@keyframes immortalBallFloat {
+    0%, 100% {
+        transform: translateY(0px);
+        filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 10px rgba(52, 211, 153, 0.45));
+    }
+    50% {
+        transform: translateY(-8px);
+        filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 18px rgba(52, 211, 153, 0.7)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+    }
+}
+
+/* 鼠标悬停：太极运转加速 · 金光涌动 */
+#tts-immortal-trigger:hover {
+    transform: scale(1.16) translateY(-4px);
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 24px rgba(52, 211, 153, 0.95)) drop-shadow(0 0 16px rgba(251, 191, 36, 0.85));
+}
+
+#tts-immortal-trigger:hover .taiji-fish-wheel {
+    animation-duration: 3s !important;
+}
+
+#tts-immortal-trigger:active {
+    transform: scale(0.92);
+}
+
+.immortal-sword-wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border-radius: 50%;
+}
+
+.immortal-bagua-trigger-svg,
+.immortal-sword-trigger-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* 太极内圈阴阳双鱼徐徐顺时针慢转 (仙道韵味) */
+.taiji-fish-wheel {
+    animation: taijiSlowRotate 16s linear infinite;
+}
+
+@keyframes taijiSlowRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== 1. 飞剑传书 (来电振铃) 特效动画 ==================== */
+/* 八卦金符暴涨 · 太极双鱼极速旋转 · 破空冲霄 */
+#tts-immortal-trigger.calling-resonant,
+#tts-immortal-trigger.incoming-call {
+    animation: immortalBallResonance 0.2s ease-in-out infinite alternate, immortalCallPulse 1.6s ease-in-out infinite !important;
+    filter: drop-shadow(0 0 26px rgba(251, 191, 36, 0.95)) drop-shadow(0 0 14px rgba(52, 211, 153, 0.8)) !important;
+}
+
+#tts-immortal-trigger.calling-resonant .taiji-fish-wheel,
+#tts-immortal-trigger.incoming-call .taiji-fish-wheel {
+    animation: taijiSlowRotate 0.6s linear infinite !important;
+}
+
+@keyframes immortalBallResonance {
+    0% { transform: scale(1.15) rotate(-3deg); }
+    100% { transform: scale(1.22) rotate(3deg); }
+}
+
+@keyframes immortalCallPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.75), 0 0 0 0 rgba(52, 211, 153, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 0 18px rgba(251, 191, 36, 0), 0 0 0 32px rgba(52, 211, 153, 0);
+    }
+}
+
+/* ==================== 2. 神识探查 (窃听触发) 特效动画 ==================== */
+/* 太极阴阳化境 · 幽蓝玄光层层扩散 */
+#tts-immortal-trigger.whisper-sensing,
+#tts-immortal-trigger.eavesdrop-ready {
+    animation: immortalWhisperHover 2.2s ease-in-out infinite !important;
+    filter: drop-shadow(0 0 24px rgba(103, 232, 249, 0.95)) drop-shadow(0 0 14px rgba(168, 85, 247, 0.7)) !important;
+}
+
+#tts-immortal-trigger.whisper-sensing .taiji-fish-wheel,
+#tts-immortal-trigger.eavesdrop-ready .taiji-fish-wheel {
+    animation: taijiSlowRotate 1.2s linear infinite !important;
+}
+
+@keyframes immortalWhisperHover {
+    0%, 100% {
+        transform: translateY(-3px) scale(1.12);
+        box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.8), 0 0 0 0 rgba(168, 85, 247, 0.5);
+    }
+    50% {
+        transform: translateY(-8px) scale(1.18);
+        box-shadow: 0 0 0 20px rgba(103, 232, 249, 0), 0 0 0 36px rgba(168, 85, 247, 0);
+    }
+}

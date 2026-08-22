@@ -16,7 +16,7 @@ export async function render(container, createNavbar) {
     const activeStyle = (CTX && CTX.CACHE.settings && CTX.CACHE.settings.bubble_style) || 'default';
 
     const $tabs = $(`
-        <div style="display:flex; padding:10px 15px; gap:10px;">
+        <div class="fav-tabs" style="display:flex; padding:10px 15px; gap:10px;">
             <div class="fav-tab active" data-tab="current" style="flex:1; text-align:center; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer;">当前对话</div>
             <div class="fav-tab" data-tab="others" style="flex:1; text-align:center; padding:8px; border-radius:8px; cursor:pointer;">其他收藏</div>
         </div>
@@ -55,7 +55,7 @@ export async function render(container, createNavbar) {
 
         const renderList = (list, emptyMsg) => {
             if (!list || list.length === 0) {
-                return `<div style="padding:40px 20px; text-align:center; opacity:0.6; font-size:14px;">${emptyMsg}</div>`;
+                return `<div class="fav-empty-state" style="padding:40px 20px; text-align:center; opacity:0.6; font-size:14px;">${emptyMsg}</div>`;
             }
             const BARS_HTML = `<span class='sovits-voice-waves'><span class='sovits-voice-bar'></span><span class='sovits-voice-bar'></span><span class='sovits-voice-bar'></span></span>`;
 

@@ -40,6 +40,7 @@ export function getDashboardHTML(data) {
                                 <div class="select-options" id="theme-select-options">
                                     <div class="option-item theme-option" data-value="default">默认主题 (Default)</div>
                                     <div class="option-item theme-option" data-value="deathly_hallows">死亡圣器 (Deathly Hallows)</div>
+                                    <div class="option-item theme-option" data-value="immortal_sword">⚔️ 仙途凌霄 (Immortal Sword)</div>
                                 </div>
                             </div>
                             <input type="hidden" id="theme-selector" value="default">

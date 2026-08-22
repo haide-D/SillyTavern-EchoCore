@@ -15,6 +15,7 @@
 import { ThemeEngine } from './theme_engine.js';
 import DefaultTheme from './themes/default/index.js';
 import DeathlyHallowsTheme from './themes/deathly_hallows/index.js';
+import ImmortalSwordTheme from './themes/immortal_sword/index.js';
 
 // ==================== 全局 SDK 挂载 ====================
 // 引入共享库
@@ -60,6 +61,7 @@ ThemeEngine.registerApp({ id: 'llm_test', defaultName: 'LLM测试', defaultIcon:
 // ==================== 注册默认主题 ====================
 ThemeEngine.registerTheme(DefaultTheme);
 ThemeEngine.registerTheme(DeathlyHallowsTheme);
+ThemeEngine.registerTheme(ImmortalSwordTheme);
 
 // ==================== 向后兼容 ====================
 // 保持 window.TTS_Mobile 接口不变，代理到 ThemeEngine

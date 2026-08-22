@@ -261,13 +261,17 @@ if (!window.TTS_ThemeEngine) {
         }
         $container.empty();
 
-        // 构建场景上下文（兼容层：使 ctx 既是对象也是函数，兼容期望 createNavbar 的旧 App）
+        // 构建场景上下文（优先使用主题自带的导航栏构造器，实现子 App 风格无缝统一）
+        const activeCreateNavbar = (theme && typeof theme.createNavbar === 'function') 
+            ? theme.createNavbar 
+            : createNavbar;
+
         const ctx = function(...args) {
-            return createNavbar(...args);
+            return activeCreateNavbar(...args);
         };
         ctx.engine = engine;
         ctx.data = data;
-        ctx.createNavbar = createNavbar;
+        ctx.createNavbar = activeCreateNavbar;
 
         // 查找场景渲染器
         const sceneHandler = theme.scenes[sceneId];

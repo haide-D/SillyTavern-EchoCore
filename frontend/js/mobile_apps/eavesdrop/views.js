@@ -124,7 +124,7 @@ export function renderEavesdropsToContainer($list, records, isCurrentTab = false
     if (records.length === 0 && (!lastGeneratedEavesdrop || !isCurrentTab)) {
         $list.html(`
             <div class="ed-empty-state">
-                <div style="font-size:28px; margin-bottom:10px; opacity:0.8;">${SVG.ear}</div>
+                <div class="ed-empty-icon" style="font-size:28px; margin-bottom:10px; opacity:0.9;">${statusTexts.emptyIcon || SVG.ear}</div>
                 <div class="ed-empty-title">${isCurrentTab ? statusTexts.emptyCurrentTitle : statusTexts.emptyAllTitle}</div>
                 <div class="ed-empty-desc">
                     ${statusTexts.emptySub}
@@ -132,7 +132,7 @@ export function renderEavesdropsToContainer($list, records, isCurrentTab = false
                 ${isCurrentTab ? `
                 <div>
                     <button class="ed-empty-btn ed-go-all-btn">
-                        📜 查看总历史记录
+                        ${statusTexts.emptyBtnText || '📜 查看总历史记录'}
                     </button>
                 </div>
                 ` : ''}
