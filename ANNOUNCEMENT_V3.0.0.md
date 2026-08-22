@@ -39,13 +39,12 @@
 3. 浏览器强制刷新酒馆页面 (Ctrl + F5)
 
 📖 详细更新白皮书：查看仓库 RELEASE_NOTES_V3.0.0.md
-💬 官方交流 QQ 群：571745067（免费模型、创作者预设分享）
-⚡ 爱发电赞助支持：https://afdian.com/a/2742159495abc
+💬 Discord 官方社区：https://discord.gg/usSz6XPdK（免费模型、创作者预设分享）
 ```
 
 ---
 
-## 选项 B: 纯文字精简版 (适合弹窗/通知栏/手机群聊)
+## 选项 B: 纯文字精简版 (适合弹窗/通知栏/社交聊天)
 
 ```markdown
 📢 ST-Direct-TTS V3.0.0 正式发布！
@@ -54,12 +53,12 @@
 3. 全链路异步：待听任务队列后台静默排队，分段字幕高亮，支持一键铭刻聊天记录；
 4. 管理面板升级：支持音频批量上传/修改情绪，彻底修复 HTTPS 反代与 wss 协议支持。
 👉 更新方式：git checkout V3.0.0 && git pull，重启 start.bat 即可！
-Q群：571745067
+Discord 社区：https://discord.gg/usSz6XPdK
 ```
 
 ---
 
-## 选项 C: 社交媒体 / B站动态版 (图文发帖建议)
+## 选项 C: 社交媒体 / 动态发帖版 (图文发帖建议)
 
 ```markdown
 【SillyTavern TTS 插件】V3.0.0 创作者工坊与高定主题版重磅发布！🎉
@@ -73,5 +72,5 @@ Q群：571745067
 4. 🎨 创作者工坊预设编辑与导入导出截图
 
 开源地址：https://github.com/haide-D/SillyTavern-GPT-SoVITS
-交流Q群：571745067
+Discord 社区：https://discord.gg/usSz6XPdK
 ```

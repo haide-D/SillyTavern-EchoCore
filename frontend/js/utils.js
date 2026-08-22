@@ -585,6 +585,9 @@ export function extractAndFilter(text, extractTag, filterTags) {
         processed = applyFilterTags(processed, filterTags);
     }
 
+    return processed;
+}
+
 /**
  * 标准解析后端 Manager API 与 WebSocket 连接地址 (彻底修复 Issue #2 反向代理 HTTPS 支持)
  * @param {Object} remoteConfig - { useRemote: boolean, ip: string, port: number }

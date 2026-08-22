@@ -4,8 +4,6 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Version](https://img.shields.io/badge/version-v3.0.0-green)
 
-赞助我，支持插件继续开发更多功能：https://afdian.com/a/2742159495abc
-
 这是一个为 **SillyTavern (酒馆)** 量身打造的 **GPT-SoVITS / 多 TTS 供应商** 深度全栈集成插件。
 
 它不仅仅是一个简单的 TTS 连接器，它包含一个高性能 Python 后端管理器和一个现代化模块化前端扩展，提供了**创作者工坊 (Creative Workshop)**、**旗舰级高定主题系统**、**全链路非阻塞异步队列**、模型自动切换、智能音频缓存、以及多达 12 种气泡皮肤与全屏沉浸视听体验。
@@ -106,8 +104,8 @@ git clone -b V3.0.0 https://github.com/haide-D/SillyTavern-GPT-SoVITS.git st-dir
 
 ---
 
-## 🤝 社区交流与赞助
+## 🤝 社区交流
 
-* **🎉 作者大本营 QQ 群**：`571745067`（免费模型分享 · 版本通知 · 创作者预设分享）
-* **⚡ 爱发电赞助**：https://afdian.com/a/2742159495abc
+* **💬 Discord 官方社区**：[https://discord.gg/usSz6XPdK](https://discord.gg/usSz6XPdK)（免费模型分享 · 版本通知 · 创作者预设分享）
 * **📄 更新日志与白皮书**：查阅 [RELEASE_NOTES_V3.0.0.md](./RELEASE_NOTES_V3.0.0.md)
+
