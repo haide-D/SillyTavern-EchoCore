@@ -1,5 +1,5 @@
 // 文件: ui_dashboard.js
-import { getCharacterAvatar, setCustomSpeakerAvatar, getCustomSpeakerAvatars, renderAvatarHtml, getDefaultAvatarDataUrl } from './mobile_apps/shared/utils.js';
+import { getCharacterAvatar, setCustomSpeakerAvatar, getCustomSpeakerAvatars, renderAvatarHtml, getDefaultAvatarDataUrl, getAuthHeaders } from './mobile_apps/shared/utils.js';
 import { openAvatarCropper } from './mobile_apps/shared/avatar_cropper.js';
 
 if (!window.TTS_UI) {
@@ -120,6 +120,7 @@ export const TTS_UI = window.TTS_UI;
 
             const res = await fetch(`${apiHost}/api/speakers/avatar/upload`, {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData
             });
             if (!res.ok) {
@@ -359,6 +360,28 @@ export const TTS_UI = window.TTS_UI;
             }
         });
 
+        // ==================== 角色新增抽屉折叠展开 ====================
+        $('#tts-btn-toggle-new-binding').off('click').on('click', function () {
+            const $drawer = $('#tts-new-binding-drawer');
+            const isHidden = $drawer.is(':hidden');
+            $drawer.slideToggle(200, function () {
+                if (isHidden) {
+                    $('#tts-new-char').focus();
+                }
+            });
+            const $icon = $(this).find('.toggle-icon');
+            const $text = $(this).find('.toggle-text');
+            if (isHidden) {
+                $icon.text('➖');
+                $text.text('收起表单');
+                $(this).addClass('active');
+            } else {
+                $icon.text('➕');
+                $text.text('新增绑定');
+                $(this).removeClass('active');
+            }
+        });
+
         // 一键填入当前对话角色
         $('#tts-btn-fill-current-char').off('click').on('click', function () {
             let currentChar = '';
@@ -390,7 +413,7 @@ export const TTS_UI = window.TTS_UI;
         // 搜索过滤角色映射
         $('#tts-mapping-search').off('input').on('input', function () {
             const keyword = $(this).val().toLowerCase().trim();
-            $('#tts-mapping-list .tts-compact-item').each(function () {
+            $('#tts-mapping-list .tts-mapping-card').each(function () {
                 const text = $(this).text().toLowerCase();
                 $(this).toggle(text.includes(keyword));
             });
@@ -408,7 +431,7 @@ export const TTS_UI = window.TTS_UI;
 
         // 全选 / 取消全选
         $('#tts-btn-select-all').off('click').on('click', function () {
-            const $visibleChecks = $('#tts-mapping-list .tts-compact-item:visible .tts-mapping-check');
+            const $visibleChecks = $('#tts-mapping-list .tts-mapping-card:visible .tts-mapping-check');
             const allChecked = $visibleChecks.length > 0 && $visibleChecks.length === $visibleChecks.filter(':checked').length;
             $visibleChecks.prop('checked', !allChecked).trigger('change');
             $(this).text(allChecked ? '全选' : '取消');
@@ -452,6 +475,7 @@ export const TTS_UI = window.TTS_UI;
             $('.tts-custom-select').removeClass('open');
         });
     };
+
     // ===========================================
     // ⬇️ 渲染模型下拉菜单 (适配本地模型与 MiniMax 云端预设声线)
     // ===========================================
@@ -499,7 +523,7 @@ export const TTS_UI = window.TTS_UI;
     };
 
     // ===========================================
-    // ⬇️ 渲染绑定列表 (紧凑卡片 + 头像显示与快捷编辑)
+    // ⬇️ 渲染绑定列表 (双行呼吸感精致卡片，彻底解决字迹截断问题)
     // ===========================================
     scope.renderDashboardList = function () {
         const CTX = scope.CTX;
@@ -513,32 +537,51 @@ export const TTS_UI = window.TTS_UI;
         $('#tts-btn-select-all').text('全选');
 
         if (keys.length === 0) {
-            c.append('<div style="text-align:center; padding:12px; color:rgba(220,200,150,0.5); font-size:12px;">暂无绑定角色</div>');
+            c.append(`
+                <div class="tts-empty-mapping-state">
+                    <div class="empty-icon">🎭</div>
+                    <div class="empty-text">暂无绑定角色</div>
+                    <div class="empty-subtext">点击上方「➕ 新增绑定」为角色指派专属音色</div>
+                </div>
+            `);
+            // 若没有绑定角色，自动展开新增抽屉方便用户直接录入
+            $('#tts-new-binding-drawer').slideDown(150);
+            $('#tts-btn-toggle-new-binding').addClass('active').find('.toggle-icon').text('➖');
+            $('#tts-btn-toggle-new-binding').find('.toggle-text').text('收起表单');
             return;
         }
 
         keys.forEach(k => {
             const modelName = mappings[k];
             const hasCustom = !!customAvatars[k];
-            const avHtml = renderAvatarHtml(k, 'tts-item-avatar', 'width:24px; height:24px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer; border:1px solid ' + (hasCustom ? '#f59e0b' : 'rgba(196,155,79,0.3)'));
+            const avHtml = renderAvatarHtml(k, 'tts-item-avatar', 'width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0; cursor:pointer;');
             const displayName = (window.TTS_Utils && typeof window.TTS_Utils.getVoiceDisplayName === 'function')
                 ? window.TTS_Utils.getVoiceDisplayName(modelName)
                 : modelName;
 
             const $item = $(`
-                <div class="tts-compact-item" style="display:flex; align-items:center; justify-content:space-between; padding:5px 8px; margin-bottom:4px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(196,155,79,0.25);">
-                    <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
-                        <input type="checkbox" class="tts-mapping-check" data-char="${k}" style="cursor:pointer;" />
-                        <div class="tts-avatar-trigger" title="${hasCustom ? '已自定义专属头像 (点击修改)' : '点击为该角色绑定/修改头像'}" data-char="${k}">
+                <div class="tts-mapping-card" data-char="${k}">
+                    <div class="tts-card-left">
+                        <input type="checkbox" class="tts-mapping-check" data-char="${k}" title="选择该角色" />
+                        <div class="tts-avatar-trigger ${hasCustom ? 'has-custom-avatar' : ''}" title="${hasCustom ? '已设置专属自定义头像 (点击修改)' : '点击为该角色上传/微调头像'}" data-char="${k}">
                             ${avHtml}
                         </div>
-                        <span style="font-weight:500; color:rgba(220,200,150,0.95); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;" title="${k}">${k}</span>
-                        <span style="color:rgba(196,155,79,0.6); font-size:11px;">➔</span>
-                        <span style="color:rgba(196,155,79,0.85); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${modelName}">${displayName}</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <button class="btn-secondary tts-btn-edit-avatar" style="padding:1px 5px; font-size:10.5px; border-radius:3px; background:rgba(255,255,255,0.06); color:#cbd5e1;" title="修改该 Speaker 头像" data-char="${k}">🖼️</button>
-                        <button class="btn-red" style="padding:1px 6px; font-size:11px; margin-left:2px; border-radius:3px; background:rgba(220,53,53,0.2); border:1px solid rgba(220,53,53,0.4); color:#fca5a5; cursor:pointer;" onclick="window.TTS_UI.handleUnbind('${k}')" title="解绑此角色">×</button>
+                    <div class="tts-card-center">
+                        <div class="tts-card-row-top">
+                            <span class="tts-char-name" title="${k}">${k}</span>
+                            ${hasCustom ? '<span class="tts-custom-tag" title="已设置专属自定义头像">✨专属</span>' : ''}
+                        </div>
+                        <div class="tts-card-row-bottom">
+                            <div class="tts-voice-badge" title="${modelName}">
+                                <span class="voice-badge-icon">🎙️</span>
+                                <span class="voice-badge-name">${displayName}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tts-card-right">
+                        <button type="button" class="tts-btn-action tts-btn-edit-avatar" title="修改该 Speaker 头像" data-char="${k}">🖼️</button>
+                        <button type="button" class="tts-btn-action tts-btn-delete" onclick="window.TTS_UI.handleUnbind('${k}')" title="解绑此角色">×</button>
                     </div>
                 </div>
             `);

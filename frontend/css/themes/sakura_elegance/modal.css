@@ -621,3 +621,86 @@
     border-color: #EF4444 !important;
     color: #FFF !important;
 }
+
+/* 落樱雅境双行卡片与抽屉适配 */
+#tts-sakura-modal .mobile-settings-content .tts-btn-subtle {
+    background: rgba(13, 21, 36, 0.85) !important;
+    border: 0.8px solid rgba(244, 166, 184, 0.3) !important;
+    color: #F4A6B8 !important;
+    border-radius: 4px !important;
+    font-size: 11.5px !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-btn-subtle:hover,
+#tts-sakura-modal .mobile-settings-content .tts-btn-subtle.active {
+    background: rgba(244, 166, 184, 0.25) !important;
+    border-color: #F4A6B8 !important;
+    color: #FFF0F5 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-drawer-inner {
+    background: rgba(10, 17, 30, 0.85) !important;
+    border: 0.8px dashed rgba(244, 166, 184, 0.35) !important;
+    border-radius: 6px !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-mapping-card {
+    background: rgba(10, 17, 30, 0.75) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+    color: #F8FAFC !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-mapping-card:hover {
+    border-color: rgba(244, 166, 184, 0.45) !important;
+    background: rgba(13, 21, 36, 0.9) !important;
+    box-shadow: 0 0 10px rgba(244, 166, 184, 0.2) !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-char-name {
+    color: #FFF0F5 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-voice-badge {
+    background: rgba(6, 10, 18, 0.8) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.18) !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-voice-badge .voice-badge-name {
+    color: #CBD5E1 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-btn-action {
+    background: rgba(13, 21, 36, 0.85) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.25) !important;
+    color: #CBD5E1 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-btn-action:hover {
+    border-color: #F4A6B8 !important;
+    color: #FFF0F5 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-dashboard-footer {
+    background: rgba(10, 17, 30, 0.8) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.2) !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-dashboard-footer .footer-hint {
+    color: #94A3B8 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-dashboard-footer .footer-hint b {
+    color: #F4A6B8 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-dashboard-footer .footer-link {
+    color: #F4A6B8 !important;
+}
+

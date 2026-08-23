@@ -186,6 +186,7 @@
 .tts-switch-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 8px 0;
 }
 
@@ -197,6 +198,9 @@
     border-radius: 20px;
     position: relative;
     transition: 0.3s;
+    cursor: pointer;
+    border: none;
+    outline: none;
 }
 
 .tts-toggle::after {
@@ -218,3 +222,451 @@
 .tts-toggle:checked::after {
     transform: translateX(18px);
 }
+
+/* ==========================================================================
+   ✨ 模块化卡片、折叠抽屉与双行呼吸感绑定列表 (Modern Modular UI)
+   ========================================================================== */
+
+/* 2列网格响应式布局 (视觉体验) */
+.tts-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+@media (max-width: 380px) {
+    .tts-grid-2col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tts-input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 卡片头部与展开切换 */
+.tts-card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.tts-count-badge {
+    font-size: 11px;
+    font-weight: normal;
+    color: var(--s-load-color, #aaa);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.tts-btn-subtle {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.15));
+    color: var(--s-load-color, #e0e0e0);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.tts-btn-subtle:hover,
+.tts-btn-subtle.active {
+    background: var(--s-play-bg, rgba(59, 130, 246, 0.25));
+    border-color: var(--s-play-color, #60a5fa);
+    color: var(--s-play-color, #fff);
+}
+
+/* 折叠抽屉容器 */
+.tts-drawer {
+    margin-bottom: 12px;
+}
+
+.tts-drawer-inner {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px dashed var(--s-wait-border, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tts-form-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.tts-avatar-row {
+    align-items: center;
+}
+
+.tts-avatar-preview-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid var(--s-play-color, rgba(196, 155, 79, 0.4));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.tts-avatar-preview-box:hover {
+    transform: scale(1.08);
+    border-color: var(--s-play-color, #f59e0b);
+}
+
+.tts-btn-group-tight {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.2));
+    color: var(--s-load-color, #e0e0e0);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+.tts-btn-bind-submit {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 2px;
+    font-size: 13px;
+}
+
+/* MiniMax 自定义音色区 */
+.tts-custom-voice-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.1));
+}
+
+.tts-highlight-label {
+    color: var(--s-play-color, #fde047);
+    font-size: 11px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.tts-hint-text {
+    color: var(--s-load-color, #aaa);
+    font-size: 10.5px;
+    display: block;
+    margin-top: 4px;
+    opacity: 0.85;
+}
+
+/* 列表工具栏 */
+.tts-mapping-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--s-wait-border, rgba(255, 255, 255, 0.12));
+    gap: 8px;
+}
+
+.tts-mapping-toolbar .toolbar-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.tts-mapping-toolbar .toolbar-left input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 11.5px;
+    padding: 4px 8px;
+    height: 28px;
+}
+
+.tts-mapping-toolbar .toolbar-right {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-red {
+    background: rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.45);
+    color: #fca5a5;
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-red:hover {
+    background: rgba(220, 38, 38, 0.4);
+    color: #fff;
+}
+
+/* 绑定列表滚动池 */
+.tts-list-zone {
+    max-height: 230px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+/* 空状态 */
+.tts-empty-mapping-state {
+    text-align: center;
+    padding: 20px 10px;
+    color: var(--s-load-color, #888);
+}
+
+.tts-empty-mapping-state .empty-icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+    opacity: 0.7;
+}
+
+.tts-empty-mapping-state .empty-text {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--s-load-color, #cbd5e1);
+}
+
+.tts-empty-mapping-state .empty-subtext {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+/* ==========================================================================
+   💎 双行呼吸感精致角色卡片 (.tts-mapping-card)
+   ========================================================================== */
+.tts-mapping-card {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.12));
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.tts-mapping-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--s-play-color, rgba(196, 155, 79, 0.4));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 左侧：多选框与头像 */
+.tts-card-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.tts-mapping-check {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--s-play-bg, #3b82f6);
+}
+
+.tts-avatar-trigger {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.tts-avatar-trigger:hover {
+    transform: scale(1.08);
+}
+
+.tts-avatar-trigger img {
+    border: 1.5px solid var(--s-wait-border, rgba(255, 255, 255, 0.2));
+}
+
+.tts-avatar-trigger.has-custom-avatar img {
+    border: 1.5px solid #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+/* 中间信息区：双行布局 */
+.tts-card-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tts-card-row-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.tts-char-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--s-load-color, #f1f5f9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+}
+
+.tts-custom-tag {
+    font-size: 9.5px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 0.8px solid rgba(245, 158, 11, 0.35);
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.tts-card-row-bottom {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.tts-voice-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 0.8px solid var(--s-wait-border, rgba(255, 255, 255, 0.1));
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.tts-voice-badge .voice-badge-icon {
+    font-size: 10.5px;
+    flex-shrink: 0;
+}
+
+.tts-voice-badge .voice-badge-name {
+    font-size: 11px;
+    color: var(--s-load-color, #cbd5e1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.9;
+}
+
+/* 右侧操作按钮 */
+.tts-card-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.tts-btn-action {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.15));
+    color: var(--s-load-color, #cbd5e1);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tts-btn-action:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.tts-btn-delete {
+    background: rgba(220, 38, 38, 0.15);
+    border-color: rgba(220, 38, 38, 0.35);
+    color: #fca5a5;
+    font-weight: bold;
+}
+
+.tts-btn-delete:hover {
+    background: rgba(220, 38, 38, 0.4);
+    color: #fff;
+    border-color: #ef4444;
+}
+
+/* ==========================================================================
+   📌 底部快捷提示栏 (.tts-dashboard-footer)
+   ========================================================================== */
+.tts-dashboard-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 11.5px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--s-wait-border, rgba(255, 255, 255, 0.08));
+    margin-top: 10px;
+    gap: 8px;
+}
+
+.tts-dashboard-footer .footer-hint {
+    color: var(--s-load-color, #94a3b8);
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+}
+
+.tts-dashboard-footer .footer-hint b {
+    color: var(--s-play-color, #e2e8f0);
+}
+
+.tts-dashboard-footer .footer-link {
+    color: var(--s-play-color, #60a5fa);
+    text-decoration: underline;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+}
+
+.tts-dashboard-footer .footer-link:hover {
+    opacity: 0.8;
+}
+

@@ -314,10 +314,10 @@ export const TTS_Events = {
         const filename = `${speaker}:${cleanText}.wav`;
 
         try {
-            // 🎯 统一下载逻辑:先 fetch 再下载,避免浏览器直接打开文件
-            console.log('[Download] 开始下载:', audioUrl);
-
-            const response = await fetch(audioUrl);
+            const authHeaders = (window.TTS_Utils && typeof window.TTS_Utils.getAuthHeaders === 'function')
+                ? window.TTS_Utils.getAuthHeaders()
+                : {};
+            const response = await fetch(audioUrl, { headers: authHeaders });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

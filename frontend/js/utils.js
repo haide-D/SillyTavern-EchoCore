@@ -837,10 +837,34 @@ export function getVoiceDisplayName(voiceId) {
     const cleanId = voiceId.startsWith('minimax:') ? voiceId.slice(8) : voiceId.slice(8);
     const { presetVoices, customVoices } = getAllMiniMaxVoices();
     const foundPreset = presetVoices.find(v => v.id === cleanId);
-    if (foundPreset) return `☁️ ${foundPreset.name} (${cleanId})`;
     const foundCustom = customVoices.find(v => v.id === cleanId);
     if (foundCustom) return `✨ ${foundCustom.name} (${cleanId})`;
     return `☁️ MiniMax (${cleanId})`;
+}
+
+/**
+ * 获取携带鉴权 Token 的标准请求头
+ * @param {Object} extra - 附加 Headers
+ * @returns {Object} 带有 Authorization 与 X-Api-Token 的 Headers
+ */
+export function getAuthHeaders(extra = {}) {
+    const headers = { ...extra };
+    let token = '';
+    if (window.TTS_API && window.TTS_API.apiToken) {
+        token = window.TTS_API.apiToken;
+    } else {
+        const cfg = getLatestRemoteConfig();
+        token = cfg.token || '';
+    }
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-Api-Token'] = token;
+    }
+    return headers;
+}
+
+if (window.TTS_Utils) {
+    window.TTS_Utils.getAuthHeaders = getAuthHeaders;
 }
 
 console.log("🟢 [2] TTS_Utils.js 执行完毕");

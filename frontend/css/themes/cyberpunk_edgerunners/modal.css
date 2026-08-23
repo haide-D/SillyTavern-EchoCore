@@ -306,3 +306,90 @@
     background: #00F0FF !important;
     color: #04070D !important;
 }
+
+/* 赛博夜之城双行卡片与抽屉适配 */
+#tts-cyber-modal .tts-btn-subtle {
+    background: #080D16 !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
+    color: #00F0FF !important;
+    border-radius: 2px !important;
+    font-family: monospace !important;
+}
+
+#tts-cyber-modal .tts-btn-subtle:hover,
+#tts-cyber-modal .tts-btn-subtle.active {
+    background: #FFE600 !important;
+    border-color: #FFE600 !important;
+    color: #04070D !important;
+}
+
+#tts-cyber-modal .tts-drawer-inner {
+    background: #05080E !important;
+    border: 1px dashed rgba(0, 240, 255, 0.35) !important;
+    border-radius: 2px !important;
+}
+
+#tts-cyber-modal .tts-mapping-card {
+    background: #060B14 !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-left: 3px solid #00F0FF !important;
+    border-radius: 2px !important;
+    transition: all 0.15s ease !important;
+}
+
+#tts-cyber-modal .tts-mapping-card:hover {
+    border-color: #FFE600 !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+}
+
+#tts-cyber-modal .tts-char-name {
+    color: #FFE600 !important;
+    font-family: monospace !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+}
+
+#tts-cyber-modal .tts-voice-badge {
+    background: #03060B !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    border-radius: 2px !important;
+}
+
+#tts-cyber-modal .tts-voice-badge .voice-badge-name {
+    color: #00F0FF !important;
+    font-family: monospace !important;
+}
+
+#tts-cyber-modal .tts-btn-action {
+    background: #080D16 !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    color: #00F0FF !important;
+    border-radius: 2px !important;
+    font-family: monospace !important;
+}
+
+#tts-cyber-modal .tts-btn-action:hover {
+    background: #00F0FF !important;
+    color: #04070D !important;
+}
+
+#tts-cyber-modal .tts-dashboard-footer {
+    background: #05080E !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-radius: 2px !important;
+}
+
+#tts-cyber-modal .tts-dashboard-footer .footer-hint {
+    color: #94A3B8 !important;
+    font-family: monospace !important;
+}
+
+#tts-cyber-modal .tts-dashboard-footer .footer-hint b {
+    color: #FFE600 !important;
+}
+
+#tts-cyber-modal .tts-dashboard-footer .footer-link {
+    color: #00F0FF !important;
+    font-family: monospace !important;
+}
+

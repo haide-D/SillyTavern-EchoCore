@@ -9,6 +9,7 @@
 
 import { LLMRequestCoordinator } from './llm_request_coordinator.js';
 import { LLM_Client } from './llm_client.js';
+import { getAuthHeaders } from './mobile_apps/shared/utils.js';
 
 export class ContinuousAnalysisHandler {
     constructor() {
@@ -125,9 +126,9 @@ export class ContinuousAnalysisHandler {
 
             const response = await fetch(backendUrl, {
                 method: 'POST',
-                headers: {
+                headers: getAuthHeaders({
                     'Content-Type': 'application/json'
-                },
+                }),
                 body: JSON.stringify(data)
             });
 

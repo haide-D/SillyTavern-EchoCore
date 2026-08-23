@@ -8,7 +8,7 @@
  * 4. 导出 512x512 高清头像并自动上传落盘。
  */
 
-import { getApiHost } from './utils.js';
+import { getApiHost, getAuthHeaders } from './utils.js';
 
 let _activeCropperCleanup = null;
 
@@ -322,6 +322,7 @@ export function openAvatarCropper({ image, charName = '角色', onSuccess, onCan
 
             const res = await fetch(`${apiHost}/api/speakers/avatar/upload`, {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData
             });
 

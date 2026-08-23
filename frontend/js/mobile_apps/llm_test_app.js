@@ -3,6 +3,8 @@
  * 测试 LLM API 连接和模型调用
  */
 
+import { getApiHost, getAuthHeaders } from './shared/utils.js';
+
 /**
  * 渲染 LLM 测试 App
  * @param {jQuery} container - App 容器
@@ -23,7 +25,8 @@ export async function render(container, createNavbar) {
 
     try {
         // 从后端API加载配置
-        const settingsRes = await fetch('/api/settings');
+        const apiHost = getApiHost();
+        const settingsRes = await fetch(`${apiHost}/api/settings`, { headers: getAuthHeaders() });
         if (settingsRes.ok) {
             const settings = await settingsRes.json();
             console.log('[LLM测试] 加载的配置', settings);

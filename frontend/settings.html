@@ -46,11 +46,19 @@
                 </small>
             </div>
 
-            <div style="margin-top: 10px;">
-                <a id="tts-ext-open-admin-btn" class="menu_button" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;" target="_blank">
-                    <span>⚙️ 打开独立 Web 管理面板 (Admin Dashboard)</span>
+            <!-- 独立 Web 管理面板横幅卡片 -->
+            <div class="st-tts-admin-banner">
+                <div class="st-tts-admin-banner-info">
+                    <div class="st-tts-admin-banner-title">
+                        <span>⚙️ 独立 Web 管理面板</span>
+                    </div>
+                    <div class="st-tts-admin-banner-desc">
+                        扫描本地权重路径、批量维护全局角色映射、预设工坊与清理缓存。
+                    </div>
+                </div>
+                <a id="tts-ext-open-admin-btn" class="st-tts-btn st-tts-btn-primary st-tts-btn-sm" target="_blank" title="在新标签页中打开独立的完整管理后台">
+                    <span>🚀 打开面板</span>
                 </a>
-                <small style="display:block; color: #888; margin-top: 4px;">用于扫描本地权重路径、批量维护全局角色模型映射、场景预设工坊与清理缓存。</small>
             </div>
         </div>
 
@@ -104,7 +112,7 @@
                     <input type="text" id="tts-minimax-voice-id" class="text_pole" placeholder="例如: female-shaonv 或自定义克隆ID" />
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <button id="tts-minimax-test-btn" class="menu_button" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">
+                    <button type="button" id="tts-minimax-test-btn" class="st-tts-btn st-tts-btn-sm" style="cursor: pointer;">
                         <span>⚡ 测试 MiniMax 连接</span>
                     </button>
                     <span id="tts-minimax-test-result" style="font-size: 12px;"></span>
@@ -113,18 +121,26 @@
                 <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.15); margin: 10px 0;" />
 
                 <!-- MiniMax 声线与音色库管理卡片 -->
-                <div id="tts-minimax-voice-mgr-card" style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div id="tts-minimax-voice-mgr-card" class="st-tts-voice-card">
+                    <div class="st-tts-voice-card-header">
                         <span style="font-weight: bold; font-size: 12.5px; color: #fde047; display: flex; align-items: center; gap: 4px;">
                             <span>🎙️ MiniMax 声线库管理</span>
                             <span id="tts-minimax-voice-count" style="font-size: 11px; color: #aaa; font-weight: normal;">(加载中...)</span>
                         </span>
-                        <button type="button" id="tts-minimax-refresh-voices-btn" class="menu_button" style="padding: 2px 8px; font-size: 11px; cursor: pointer;" title="重新拉取声线列表">🔄 刷新</button>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button type="button" id="tts-minimax-toggle-add-btn" class="st-tts-btn st-tts-btn-xs st-tts-btn-primary" title="展开/收起自定义声线录入面板">
+                                <span id="tts-minimax-toggle-add-text">➕ 录入声线</span>
+                            </button>
+                            <button type="button" id="tts-minimax-refresh-voices-btn" class="st-tts-btn st-tts-btn-xs" title="重新拉取声线列表">🔄 刷新</button>
+                        </div>
                     </div>
 
-                    <!-- 快捷新增自定义音色 -->
-                    <div style="background: rgba(255, 255, 255, 0.04); border-radius: 5px; padding: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.06);">
-                        <small style="display: block; color: #e5e7eb; margin-bottom: 4px; font-size: 11.5px; font-weight: bold;">➕ 快捷录入自定义 / 克隆声线</small>
+                    <!-- 快捷录入/编辑自定义音色可折叠抽屉 -->
+                    <div id="tts-minimax-add-drawer" class="st-tts-collapsible-content st-tts-entry-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <small id="tts-minimax-form-title" style="color: #e5e7eb; font-size: 11.5px; font-weight: bold;">➕ 录入自定义 / 克隆声线</small>
+                            <span id="tts-minimax-editing-hint" style="display:none; font-size: 10.5px; color: #fde047;">(编辑模式)</span>
+                        </div>
                         <div style="display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
                             <input type="text" id="tts-minimax-new-voice-name" class="text_pole" style="flex: 1; min-width: 100px; font-size: 12px;" placeholder="音色备注 (如: 傲娇小师妹)" />
                             <input type="text" id="tts-minimax-new-voice-id" class="text_pole" style="flex: 1.5; min-width: 130px; font-size: 12px;" placeholder="Voice ID (克隆音色ID)" />
@@ -135,10 +151,29 @@
                             </select>
                         </div>
                         <div style="display: flex; gap: 6px; align-items: center;">
-                            <button type="button" id="tts-minimax-add-voice-btn" class="menu_button" style="flex: 1; padding: 4px 10px; font-size: 12px; font-weight: bold; cursor: pointer; background: rgba(59, 130, 246, 0.25); border-color: rgba(59, 130, 246, 0.5);">
-                                <span>➕ 添加到 MiniMax 声线库</span>
+                            <button type="button" id="tts-minimax-add-voice-btn" class="st-tts-btn st-tts-btn-primary" style="flex: 1;">
+                                <span id="tts-minimax-add-btn-text">➕ 保存到声线库</span>
+                            </button>
+                            <button type="button" id="tts-minimax-cancel-edit-btn" class="st-tts-btn" style="display:none;" title="取消当前编辑并重置表单">
+                                <span>取消</span>
                             </button>
                             <span id="tts-minimax-add-voice-status" style="font-size: 11.5px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 分类 Tab 切换栏 -->
+                    <div class="st-tts-tabs" id="tts-minimax-category-tabs">
+                        <div class="st-tts-tab-item active" data-tab="all">
+                            <span>全部</span>
+                            <span class="st-tts-tab-badge" id="tts-minimax-tab-count-all">0</span>
+                        </div>
+                        <div class="st-tts-tab-item" data-tab="preset">
+                            <span>🏛️ 预设</span>
+                            <span class="st-tts-tab-badge" id="tts-minimax-tab-count-preset">0</span>
+                        </div>
+                        <div class="st-tts-tab-item" data-tab="custom">
+                            <span>🌟 自定义</span>
+                            <span class="st-tts-tab-badge" id="tts-minimax-tab-count-custom">0</span>
                         </div>
                     </div>
 
@@ -147,9 +182,19 @@
                         <input type="text" id="tts-minimax-voice-search" class="text_pole" style="width: 100%; font-size: 11.5px; padding: 4px 8px;" placeholder="🔍 快速过滤声线名称或 ID..." />
                     </div>
 
-                    <!-- 声线列表滚动容器 -->
-                    <div id="tts-minimax-voices-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px;">
+                    <!-- 声线列表极窄紧凑滚动容器 (单条 32px) -->
+                    <div id="tts-minimax-voices-list" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px;">
                         <div style="text-align: center; color: #888; font-size: 11px; padding: 10px;">正在加载音色库...</div>
+                    </div>
+
+                    <!-- 底部分页控制器 -->
+                    <div class="st-tts-pagination" id="tts-minimax-pagination" style="display: none;">
+                        <span id="tts-minimax-page-summary">第 1/1 页</span>
+                        <div class="st-tts-page-controls">
+                            <button type="button" id="tts-minimax-page-prev" class="st-tts-btn st-tts-btn-xs" title="上一页">◀ 上一页</button>
+                            <span id="tts-minimax-page-info" style="font-family: monospace; font-size: 11px; padding: 0 4px;">1 / 1</span>
+                            <button type="button" id="tts-minimax-page-next" class="st-tts-btn st-tts-btn-xs" title="下一页">下一页 ▶</button>
+                        </div>
                     </div>
                 </div>
             </div>

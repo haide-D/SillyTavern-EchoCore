@@ -768,18 +768,71 @@
     color: #f1f5f9 !important;
 }
 
-#tts-immortal-modal .mobile-settings-content .tts-compact-item {
-    background: rgba(14, 18, 22, 0.7) !important;
-    border: 0.8px solid rgba(140, 181, 174, 0.18) !important;
+#tts-immortal-modal .mobile-settings-content .tts-btn-subtle {
+    background: rgba(18, 24, 29, 0.8) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    color: #c2a675 !important;
     border-radius: 4px !important;
-    padding: 8px !important;
+    font-size: 11.5px !important;
+    padding: 3px 8px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-btn-subtle:hover,
+#tts-immortal-modal .mobile-settings-content .tts-btn-subtle.active {
+    background: rgba(92, 141, 137, 0.25) !important;
+    border-color: #c2a675 !important;
+    color: #fef08a !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-drawer-inner {
+    background: rgba(8, 12, 15, 0.85) !important;
+    border: 0.8px dashed rgba(194, 166, 117, 0.3) !important;
+    border-radius: 6px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-mapping-card,
+#tts-immortal-modal .mobile-settings-content .tts-compact-item {
+    background: rgba(14, 18, 22, 0.75) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
     margin-bottom: 6px !important;
     color: #f1f5f9 !important;
     box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
 }
 
+#tts-immortal-modal .mobile-settings-content .tts-mapping-card:hover,
 #tts-immortal-modal .mobile-settings-content .tts-compact-item:hover {
-    border-color: rgba(194, 166, 117, 0.35) !important;
+    border-color: rgba(194, 166, 117, 0.45) !important;
+    background: rgba(20, 26, 32, 0.85) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-char-name {
+    color: #fef08a !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-voice-badge {
+    background: rgba(10, 14, 17, 0.85) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-voice-badge .voice-badge-name {
+    color: #cbd5e1 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-btn-action {
+    background: rgba(18, 24, 29, 0.8) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    color: #cbd5e1 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-btn-action:hover {
+    border-color: #c2a675 !important;
+    color: #fff !important;
 }
 
 #tts-immortal-modal .mobile-settings-content .tts-custom-select {
@@ -814,4 +867,22 @@
     background: rgba(92, 141, 137, 0.2) !important;
     color: #f1f5f9 !important;
 }
+
+#tts-immortal-modal .mobile-settings-content .tts-dashboard-footer {
+    background: rgba(10, 14, 17, 0.8) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.2) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-dashboard-footer .footer-hint {
+    color: #8a9ba8 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-dashboard-footer .footer-hint b {
+    color: #c2a675 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-dashboard-footer .footer-link {
+    color: #c2a675 !important;
+}
+
 

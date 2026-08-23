@@ -508,18 +508,41 @@ export function ensureCSS() {
     color: rgba(255, 240, 200, 1) !important;
 }
 
-/* 紧凑角色绑定卡片流 */
+/* 紧凑/双行角色绑定卡片流 */
+#tts-dh-modal .mobile-settings-content .tts-mapping-card,
 #tts-dh-modal .mobile-settings-content .tts-compact-item {
     background: rgba(14, 10, 20, 0.85) !important;
     border: 1px solid rgba(196, 155, 79, 0.22) !important;
     transition: all 0.2s ease;
 }
+#tts-dh-modal .mobile-settings-content .tts-mapping-card:hover,
 #tts-dh-modal .mobile-settings-content .tts-compact-item:hover {
     border-color: rgba(196, 155, 79, 0.55) !important;
     box-shadow: 0 0 8px rgba(196, 155, 79, 0.2) !important;
 }
+#tts-dh-modal .mobile-settings-content .tts-char-name {
+    color: #fef08a !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+#tts-dh-modal .mobile-settings-content .tts-voice-badge {
+    background: rgba(8, 6, 14, 0.85) !important;
+    border: 0.8px solid rgba(196, 155, 79, 0.2) !important;
+}
+#tts-dh-modal .mobile-settings-content .tts-voice-badge .voice-badge-name {
+    color: rgba(220, 200, 160, 0.9) !important;
+}
 #tts-dh-modal .mobile-settings-content .tts-mapping-check {
     accent-color: rgba(196, 155, 79, 1);
+}
+#tts-dh-modal .mobile-settings-content .tts-btn-subtle {
+    background: rgba(20, 15, 30, 0.85) !important;
+    border: 1px solid rgba(196, 155, 79, 0.35) !important;
+    color: #fef08a !important;
+}
+#tts-dh-modal .mobile-settings-content .tts-drawer-inner {
+    background: rgba(12, 9, 18, 0.9) !important;
+    border: 1px dashed rgba(196, 155, 79, 0.35) !important;
 }
 
 /* Custom Select Dropdowns */

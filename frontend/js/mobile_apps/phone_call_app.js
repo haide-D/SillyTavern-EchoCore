@@ -11,7 +11,7 @@ import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
 import { NotificationHandler } from '../notification_handler.js';
 import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
-import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar } from './shared/utils.js';
+import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar, getAuthHeaders } from './shared/utils.js';
 import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
 import { showHistoryPlaybackUI } from './incoming_call_app.js';
 
@@ -522,8 +522,8 @@ async function initPresetsAndSpeakers() {
         const fetchWithTimeout = (url, ms = 3000) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), ms);
-            return fetch(url, { signal: controller.signal })
-                .then(r => r.json())
+            return fetch(url, { signal: controller.signal, headers: getAuthHeaders() })
+                .then(r => r.ok ? r.json() : null)
                 .catch(() => null)
                 .finally(() => clearTimeout(timeoutId));
         };
@@ -600,12 +600,12 @@ async function renderCurrentBranchCalls($container, $parentRoot) {
             ? `${apiHost}/api/phone_call/history?chat_branch=${encodeURIComponent(chatBranch)}&limit=40`
             : `${apiHost}/api/phone_call/history?limit=40`;
         
-        const res = await fetch(url).then(r => r.json());
+        const res = await fetch(url, { headers: getAuthHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null);
         _currentCallsCache = (res && (res.history || res.records)) || [];
 
         if (_currentCallsCache.length === 0 && chatBranch) {
             // 如果指定分支暂无记录，尝试读取总历史作为智能兜底
-            const fallbackRes = await fetch(`${apiHost}/api/phone_call/history?limit=20`).then(r => r.json()).catch(() => null);
+            const fallbackRes = await fetch(`${apiHost}/api/phone_call/history?limit=20`, { headers: getAuthHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null);
             const allList = (fallbackRes && (fallbackRes.history || fallbackRes.records)) || [];
             if (allList.length > 0) {
                 const unbranched = allList.filter(r => !r.chat_branch || r.chat_branch === 'default' || r.chat_branch === '');
@@ -642,7 +642,7 @@ async function renderAllHistoryCalls($container, $parentRoot = null) {
     const apiHost = getApiHost();
 
     try {
-        const res = await fetch(`${apiHost}/api/phone_call/history?limit=80`).then(r => r.json());
+        const res = await fetch(`${apiHost}/api/phone_call/history?limit=80`, { headers: getAuthHeaders() }).then(r => r.ok ? r.json() : null).catch(() => null);
         _allCallsCache = (res && (res.history || res.records)) || [];
 
         const applyFilterAndRender = () => {
@@ -1152,7 +1152,7 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
 
         const buildRes = await fetch(`${apiHost}/api/phone_call/build_prompt`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(buildPayload)
         });
 
@@ -1179,7 +1179,7 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
         $btn.html(statusTexts.btnLoading(statusTexts.step3TTS));
         const parseRes = await fetch(`${apiHost}/api/phone_call/parse_and_generate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 char_name: caller,
                 llm_response: llmResponse,

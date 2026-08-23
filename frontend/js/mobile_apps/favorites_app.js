@@ -3,6 +3,8 @@
  * 显示当前对话和其他收藏的语音气泡
  */
 
+import { getAuthHeaders } from './shared/utils.js';
+
 /**
  * 渲染收藏夹 App
  * @param {jQuery} container - App 容器
@@ -151,7 +153,7 @@ export async function render(container, createNavbar) {
                 if (!url.startsWith('blob:')) {
                     try {
                         console.log("🔄 转换服务器路径为 Blob URL:", url);
-                        const response = await fetch(url);
+                        const response = await fetch(url, { headers: getAuthHeaders() });
                         if (!response.ok) throw new Error('获取音频失败');
                         const blob = await response.blob();
                         const blobUrl = URL.createObjectURL(blob);

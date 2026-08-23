@@ -199,3 +199,66 @@
 #mobile-screen-content .tts-card {
     overflow: visible !important;
 }
+
+/* 移动端双行卡片与抽屉微调 */
+#mobile-screen-content .tts-card-header-flex {
+    padding: 10px 15px 5px 15px !important;
+}
+
+#mobile-screen-content .tts-card-header-flex .tts-card-title {
+    padding: 0 !important;
+}
+
+#mobile-screen-content .tts-drawer-inner {
+    margin: 8px 15px !important;
+    background: #f2f2f7 !important;
+    border: 1px dashed rgba(0, 0, 0, 0.15) !important;
+}
+
+#mobile-screen-content .tts-mapping-toolbar {
+    padding: 8px 15px !important;
+}
+
+#mobile-screen-content .tts-list-zone {
+    padding: 0 15px 10px 15px !important;
+}
+
+#mobile-screen-content .tts-mapping-card {
+    background: #f9f9fb !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: #1c1c1e !important;
+}
+
+#mobile-screen-content .tts-char-name {
+    color: #1c1c1e !important;
+}
+
+#mobile-screen-content .tts-voice-badge {
+    background: rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+#mobile-screen-content .tts-voice-badge .voice-badge-name {
+    color: #48484a !important;
+}
+
+#mobile-screen-content .tts-btn-action {
+    background: #e5e5ea !important;
+    border: none !important;
+    color: #1c1c1e !important;
+}
+
+#mobile-screen-content .tts-dashboard-footer {
+    margin: 10px 15px !important;
+    background: #f2f2f7 !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+#mobile-screen-content .tts-dashboard-footer .footer-hint {
+    color: #666 !important;
+}
+
+#mobile-screen-content .tts-dashboard-footer .footer-hint b {
+    color: #1c1c1e !important;
+}
+
