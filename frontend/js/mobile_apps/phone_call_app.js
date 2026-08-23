@@ -1172,7 +1172,7 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
             api_key: buildData.llm_config.api_key,
             model: buildData.llm_config.model,
             temperature: buildData.llm_config.temperature || 0.8,
-            max_tokens: buildData.llm_config.max_tokens || 4000,
+            max_tokens: Math.min(parseInt(buildData.llm_config.max_tokens || 4000, 10), 8192),
             prompt: buildData.prompt
         };
 

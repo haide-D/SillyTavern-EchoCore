@@ -65,7 +65,7 @@ class SceneAnalyzer:
                 "model": llm_config.get("model"),
                 "temperature": 0.3,  # 场景分析使用低温度
                 "max_tokens": 500,   # 分析结果不需要太长
-                "max_retries": llm_config.get("max_retries", 5)
+                "max_retries": min(int(llm_config.get("max_retries", 2) or 2), 3)
             }
         }
     
@@ -123,7 +123,7 @@ class SceneAnalyzer:
                 "model": llm_config.get("model"),
                 "temperature": 0.3,  # 场景分析使用低温度确保稳定性
                 "max_tokens": 500,   # 分析结果不需要太长
-                "max_retries": llm_config.get("max_retries", 5)
+                "max_retries": min(int(llm_config.get("max_retries", 2) or 2), 3)
             },
             "speakers": speakers
         }

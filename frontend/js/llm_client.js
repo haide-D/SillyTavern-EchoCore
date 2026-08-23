@@ -28,7 +28,7 @@ async function fetchModels(apiUrl, apiKey) {
         throw new Error('缺少 API 地址');
     }
 
-    // 统一通过后端代理获取模型列表 (彻底规避浏览器跨域 CORS 拦截)
+    // 1. 优先通过后端代理获取模型列表 (规避浏览器跨域 CORS 拦截)
     try {
         const proxyUrl = getBackendProxyUrl('/api/admin/llm/models');
         const resp = await fetch(proxyUrl, {
@@ -38,7 +38,7 @@ async function fetchModels(apiUrl, apiKey) {
         });
         if (resp.ok) {
             const data = await resp.json();
-            if (data.success && Array.isArray(data.models)) {
+            if (data.success && Array.isArray(data.models) && data.models.length > 0) {
                 console.log(`[LLM_Client] ✅ 通过后端代理成功拉取到 ${data.models.length} 个模型`);
                 return data.models;
             }
@@ -48,6 +48,39 @@ async function fetchModels(apiUrl, apiKey) {
         }
     } catch (proxyErr) {
         console.warn('[LLM_Client] 后端代理拉取模型请求异常:', proxyErr);
+    }
+
+    // 2. 降级容灾: 尝试前端直连拉取模型
+    try {
+        const baseUrl = apiUrl.trim().replace(/\/chat\/completions.*$/, '').replace(/\/+$/, '');
+        const candidateUrls = [
+            `${baseUrl}/models`,
+            `${baseUrl}/v1/models`
+        ];
+        const headers = {};
+        if (apiKey && apiKey.trim()) {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+        }
+        for (const mUrl of candidateUrls) {
+            try {
+                const resp = await fetch(mUrl, { headers });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    let models = [];
+                    if (Array.isArray(data.data)) {
+                        models = data.data.map(m => (typeof m === 'object' ? (m.id || m.name) : m)).filter(Boolean);
+                    } else if (Array.isArray(data.models)) {
+                        models = data.models.map(m => (typeof m === 'object' ? (m.id || m.name) : m)).filter(Boolean);
+                    }
+                    if (models.length > 0) {
+                        console.log(`[LLM_Client] ✅ 前端直连成功拉取到 ${models.length} 个模型 (${mUrl})`);
+                        return Array.from(new Set(models));
+                    }
+                }
+            } catch {}
+        }
+    } catch (directErr) {
+        console.warn('[LLM_Client] 前端直连拉取模型失败:', directErr);
     }
 
     return [];
@@ -93,35 +126,68 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * 格式化远程 API 端点 (确保兼容 OpenAI 标准规范)
+ */
+function normalizeChatUrl(rawUrl) {
+    if (!rawUrl) return '';
+    let url = rawUrl.trim();
+    if (!url.includes('/chat/completions')) {
+        url = url.replace(/\/+$/, '') + '/chat/completions';
+    }
+    return url;
+}
+
+/**
+ * 深度解析并格式化错误信息，识别 524、CORS 与超时原因
+ */
+function formatLLMErrorMessage(error, context = {}) {
+    const rawMsg = error?.message || String(error);
+    const is524 = rawMsg.includes('524') || rawMsg.includes('ERR_FAILED 524');
+    const isCorsOrFetch = rawMsg.includes('Failed to fetch') || rawMsg.includes('CORS') || rawMsg.includes('NetworkError');
+    const isTimeout = rawMsg.includes('超时') || rawMsg.includes('timeout') || rawMsg.includes('504') || rawMsg.includes('408');
+
+    if (is524 || (isCorsOrFetch && context.isTunnel)) {
+        return `远程 LLM 响应超时 (Cloudflare 隧道 524 超时)。上游模型服务响应耗时超过了隧道限制(100s)。建议：1. 检查模型名称是否正确(${context.model || ''}) 2. 降低 max_tokens 3. 检查中转站响应速度。`;
+    }
+    if (isTimeout) {
+        return `LLM 请求超时: 上游模型响应时间过长。(${rawMsg})`;
+    }
+    return rawMsg;
+}
+
 async function callLLM(config) {
     if (!config.api_url) {
         throw new Error('缺少必要的 LLM 配置: api_url');
     }
 
-    const MAX_RETRIES = Math.max(1, parseInt(config.max_retries || 5, 10));
-
-    // ✅ 彻底统一走后端代理，杜绝前端直连导致的 CORS 跨域拦截
+    const MAX_RETRIES = Math.min(Math.max(1, parseInt(config.max_retries || 2, 10)), 3);
+    const targetModel = config.model || 'gpt-3.5-turbo';
     const proxyUrl = getBackendProxyUrl('/api/admin/llm/chat');
+    const isCloudflareTunnel = proxyUrl.includes('trycloudflare.com') || proxyUrl.includes('cloudflare');
+
     const requestBody = {
         api_url: config.api_url.trim(),
         api_key: config.api_key ? config.api_key.trim() : '',
-        model: config.model || 'gpt-3.5-turbo',
+        model: targetModel,
         messages: config.messages || [{ role: "user", content: config.prompt }],
         prompt: config.prompt,
         temperature: config.temperature !== undefined ? config.temperature : 0.8,
-        max_retries: MAX_RETRIES
+        max_retries: 2
     };
 
     if (config.max_tokens) {
         requestBody.max_tokens = config.max_tokens;
     }
 
-    console.log(`[LLM_Client] 🚀 通过后端代理调用 LLM -> 模型: ${requestBody.model}, 目标服务: ${requestBody.api_url}, 最大重试次数: ${MAX_RETRIES}`);
+    console.log(`[LLM_Client] 🚀 准备调用 LLM -> 模型: ${targetModel}, 服务地址: ${requestBody.api_url}, 代理地址: ${proxyUrl}`);
 
     let lastError = null;
 
+    // 阶段 1: 优先尝试后端代理转发
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
+            console.log(`[LLM_Client] [第 ${attempt}/${MAX_RETRIES} 次] 发起后端代理请求...`);
             const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: getAuthHeaders(),
@@ -136,10 +202,12 @@ async function callLLM(config) {
                 } catch {
                     errorDetail = await response.text();
                 }
-                console.error('[LLM_Client] ❌ 后端 LLM 代理返回错误');
-                console.error('[LLM_Client] 目标模型:', requestBody.model);
-                console.error('[LLM_Client] 响应状态:', response.status);
-                console.error('[LLM_Client] 错误详情:', errorDetail);
+                console.error(`[LLM_Client] ❌ 后端 LLM 代理返回 HTTP ${response.status}:`, errorDetail);
+                
+                // 若为 401/403 明确鉴权失败或 400 明确参数错误，直接抛出不进行无意义重试
+                if (response.status === 401 || response.status === 403 || (response.status === 400 && !errorDetail.includes('超时'))) {
+                    throw new Error(`(HTTP ${response.status}): ${errorDetail}`);
+                }
                 throw new Error(`(HTTP ${response.status}): ${errorDetail.substring(0, 300)}`);
             }
 
@@ -148,38 +216,75 @@ async function callLLM(config) {
 
         } catch (error) {
             lastError = error;
+            const errMsg = error.message || '';
 
-            if (attempt === 1 || attempt === MAX_RETRIES) {
-                console.error('[LLM_Client] ❌ LLM 调用失败:', error.message);
-                console.error('[LLM_Client] 请求配置:', JSON.stringify({
-                    model: requestBody.model,
-                    temperature: requestBody.temperature,
-                    max_tokens: requestBody.max_tokens,
-                    prompt_length: config.prompt?.length || 0,
-                    max_retries: MAX_RETRIES
-                }));
-                if (error.rawResponse) {
-                    console.error('[LLM_Client] 原始响应数据:', JSON.stringify(error.rawResponse, null, 2));
-                }
+            // 如果是明确的鉴权或不可恢复错误，直接跳出
+            if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API Key') || errMsg.includes('鉴权失败')) {
+                throw error;
             }
 
-            // 可重试错误且未耗尽次数
-            if (isNetworkError(error) && attempt < MAX_RETRIES) {
-                console.warn(`[LLM_Client] ⚠️ LLM 请求异常, 第 ${attempt}/${MAX_RETRIES} 次重试... (${error.message})`);
+            console.warn(`[LLM_Client] ⚠️ 后端代理调用异常 (第 ${attempt} 次): ${errMsg}`);
+
+            // 如果未用尽重试次数，短暂停顿后重试
+            if (attempt < MAX_RETRIES && isNetworkError(error)) {
                 await delay(1000 * attempt);
-                continue;
             }
-
-            // 非网络/临时错误或已用尽重试次数，直接抛出
-            throw error;
         }
     }
 
-    const cleanMsg = lastError?.message || '未知错误';
-    if (cleanMsg.includes('已重试') || cleanMsg.includes('均失败')) {
-        throw lastError;
+    // 阶段 2: 若后端代理因 524 隧道超时 / CORS / 网络中断失败，自动尝试【前端直连目标 LLM 服务】降级容灾
+    console.warn('[LLM_Client] ⚠️ 后端代理全部尝试失败，正在尝试前端直连降级调用目标 API...');
+    try {
+        const directUrl = normalizeChatUrl(config.api_url);
+        const directHeaders = { 'Content-Type': 'application/json' };
+        if (config.api_key && config.api_key.trim()) {
+            directHeaders['Authorization'] = `Bearer ${config.api_key.trim()}`;
+        }
+
+        const directPayload = {
+            model: targetModel,
+            messages: requestBody.messages,
+            temperature: requestBody.temperature,
+            stream: false
+        };
+        if (requestBody.max_tokens) {
+            directPayload.max_tokens = requestBody.max_tokens;
+        }
+
+        console.log(`[LLM_Client] 🌐 发起前端直连请求 -> ${directUrl}`);
+        const directResponse = await fetch(directUrl, {
+            method: 'POST',
+            headers: directHeaders,
+            body: JSON.stringify(directPayload)
+        });
+
+        if (directResponse.ok) {
+            const directData = await directResponse.json();
+            console.log('[LLM_Client] ✅ 前端直连成功获取响应！');
+            return parseResponse(directData);
+        } else {
+            const errText = await directResponse.text().catch(() => '');
+            console.warn(`[LLM_Client] 前端直连返回 HTTP ${directResponse.status}:`, errText);
+        }
+    } catch (directErr) {
+        console.warn('[LLM_Client] 前端直连尝试同样失败 (可能目标服务不支持前端 CORS):', directErr.message);
     }
-    throw new Error(`LLM 调用失败: API 已重试 ${MAX_RETRIES} 次均失败 (${cleanMsg})`);
+
+    // 阶段 3: 构造精准可读的诊断错误信息
+    const formattedError = formatLLMErrorMessage(lastError, {
+        isTunnel: isCloudflareTunnel,
+        model: targetModel
+    });
+
+    console.error('[LLM_Client] ❌ LLM 调用最终失败:', formattedError);
+    console.error('[LLM_Client] 请求配置摘要:', JSON.stringify({
+        model: targetModel,
+        api_url: config.api_url,
+        max_tokens: config.max_tokens,
+        prompt_length: config.prompt?.length || 0
+    }));
+
+    throw new Error(formattedError);
 }
 
 function parseResponse(data) {

@@ -143,8 +143,8 @@ class PhoneCallService:
                 "api_key": llm_config.get("api_key"),
                 "model": llm_config.get("model"),
                 "temperature": llm_config.get("temperature", 0.8),
-                "max_tokens": llm_config.get("max_tokens", 5000),
-                "max_retries": llm_config.get("max_retries", 5)
+                "max_tokens": min(int(llm_config.get("max_tokens", 4000) or 4000), 8192),
+                "max_retries": min(int(llm_config.get("max_retries", 2) or 2), 3)
             },
             "emotions": emotions,
             "caller": effective_caller,

@@ -638,7 +638,16 @@ async def proxy_llm_chat(data: dict):
         )
         return resp
     except Exception as e:
-        print(f"[Admin Router] ❌ LLM 代理转发失败: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        err_str = str(e)
+        print(f"[Admin Router] ❌ LLM 代理转发失败: {err_str}")
+        if "超时" in err_str or "Timeout" in err_str:
+            status_code = 504
+        elif "401" in err_str or "鉴权失败" in err_str or "API Key" in err_str:
+            status_code = 401
+        elif "403" in err_str:
+            status_code = 403
+        else:
+            status_code = 400
+        raise HTTPException(status_code=status_code, detail=err_str)
 
 
