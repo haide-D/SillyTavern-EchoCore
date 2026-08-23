@@ -1,4 +1,5 @@
 import { createNavbar, createFallbackRenderer } from '../themes/theme_utils.js';
+import { getAuthHeaders } from './shared/utils.js';
 
 export const id = 'theme_store';
 export const defaultName = '主题工坊';
@@ -113,7 +114,10 @@ function renderThemeItem(theme, engine, $container) {
     $item.find('.ts-action-delete').on('click', async () => {
         if (!confirm(`确定要删除主题 "${theme.name}" 吗？`)) return;
         try {
-            const res = await fetch(`${engine.getApiHost()}/api/themes/${theme.id}`, { method: 'DELETE' });
+            const res = await fetch(`${engine.getApiHost()}/api/themes/${theme.id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
             if (res.ok) {
                 alert('删除成功，即将刷新。');
                 location.reload();
@@ -241,6 +245,7 @@ export const render = function ($container, createNavbarOrCtx, possibleCtx) {
             $content.find('#theme-list-container').html('<div style="grid-column:1/-1; text-align:center; padding: 20px; color: #aaa;">正在安装...</div>');
             const res = await fetch(`${ctx.engine.getApiHost()}/api/themes/upload`, {
                 method: 'POST',
+                headers: getAuthHeaders(),
                 body: formData
             });
             
@@ -304,7 +309,7 @@ export const render = function ($container, createNavbarOrCtx, possibleCtx) {
         try {
             const res = await fetch(`${ctx.engine.getApiHost()}/api/themes/install_text`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ files })
             });
             

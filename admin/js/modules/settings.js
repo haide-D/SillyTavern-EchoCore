@@ -430,33 +430,58 @@ export async function saveSettings() {
 }
 
 /**
- * 远程获取指定 LLM API 提供的模型列表
+ * 远程获取指定 LLM API 提供的模型列表 (优先后端代理规避 CORS，前端直连兜底)
  */
 export async function fetchLLMModels(apiUrl, apiKey) {
-    const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
-    const modelsUrl = baseUrl + '/models';
+    try {
+        const response = await fetch(`${API_BASE}/llm/models`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_url: apiUrl,
+                api_key: apiKey
+            })
+        });
 
-    const response = await fetch(modelsUrl, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && Array.isArray(data.models)) {
+                return data.models;
+            }
+        } else {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${response.status}`);
         }
-    });
+    } catch (backendError) {
+        console.warn('后端代理获取模型失败，尝试前端直连兜底:', backendError);
+        // 兜底：尝试前端直接请求（适用于同域或完全开放 CORS 的服务）
+        const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
+        const modelsUrl = baseUrl + '/models';
 
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
+        const response = await fetch(modelsUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        });
 
-    const data = await response.json();
-    let models = [];
-    if (data.data && Array.isArray(data.data)) {
-        models = data.data.map(m => m.id || m.name || m);
-    } else if (Array.isArray(data)) {
-        models = data.map(m => m.id || m.name || m);
-    } else if (data.models && Array.isArray(data.models)) {
-        models = data.models.map(m => m.id || m.name || m);
+        if (!response.ok) {
+            throw new Error(backendError.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        let models = [];
+        if (data.data && Array.isArray(data.data)) {
+            models = data.data.map(m => m.id || m.name || m);
+        } else if (Array.isArray(data)) {
+            models = data.map(m => m.id || m.name || m);
+        } else if (data.models && Array.isArray(data.models)) {
+            models = data.models.map(m => m.id || m.name || m);
+        }
+        return models;
     }
-    return models;
 }
 
 /**
@@ -529,25 +554,23 @@ export function bindTestConnectionButton() {
         btn.textContent = '🧪 测试中...';
 
         try {
-            const endpoint = apiUrl.endsWith('/chat/completions') ? apiUrl : apiUrl + '/chat/completions';
-            const response = await fetch(endpoint, {
+            const response = await fetch(`${API_BASE}/llm/test`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: model || 'gpt-3.5-turbo',
-                    messages: [{ role: 'user', content: 'Hi' }],
-                    max_tokens: 5
+                    api_url: apiUrl,
+                    api_key: apiKey,
+                    model: model || 'gpt-3.5-turbo'
                 })
             });
 
-            if (response.ok) {
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
                 showNotification('LLM 连接测试成功！', 'success');
             } else {
-                const errData = await response.json().catch(() => ({}));
-                showNotification(`连接失败: HTTP ${response.status} ${errData.error?.message || ''}`, 'error');
+                showNotification(`连接失败: ${data.message || data.detail || '未知错误'}`, 'error');
             }
         } catch (error) {
             console.error('测试连接失败:', error);
@@ -624,25 +647,23 @@ export function bindAnalysisLLMButtons() {
             testBtn.textContent = '🧪 测试中...';
 
             try {
-                const endpoint = apiUrl.endsWith('/chat/completions') ? apiUrl : apiUrl + '/chat/completions';
-                const response = await fetch(endpoint, {
+                const response = await fetch(`${API_BASE}/llm/test`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: model || 'gpt-3.5-turbo',
-                        messages: [{ role: 'user', content: 'Ping' }],
-                        max_tokens: 5
+                        api_url: apiUrl,
+                        api_key: apiKey,
+                        model: model || 'gpt-3.5-turbo'
                     })
                 });
 
-                if (response.ok) {
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
                     showNotification('分析引擎 LLM 连接测试成功！', 'success');
                 } else {
-                    const errData = await response.json().catch(() => ({}));
-                    showNotification(`连接失败: HTTP ${response.status} ${errData.error?.message || ''}`, 'error');
+                    showNotification(`连接失败: ${data.message || data.detail || '未知错误'}`, 'error');
                 }
             } catch (error) {
                 console.error('测试连接失败:', error);

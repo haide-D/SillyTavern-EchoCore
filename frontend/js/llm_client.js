@@ -1,4 +1,49 @@
-﻿async function fetchModels(apiUrl, apiKey) {
+function getBackendProxyUrl(endpoint) {
+    let base = '';
+    if (window.TTS_API && typeof window.TTS_API.getBaseUrl === 'function') {
+        base = window.TTS_API.getBaseUrl();
+    } else if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
+        const cfg = window.TTS_Utils.getLatestRemoteConfig();
+        const resolved = window.TTS_Utils.resolveBackendUrls(cfg);
+        if (resolved && resolved.httpUrl) {
+            base = resolved.httpUrl;
+        }
+    }
+    base = (base || '').replace(/\/+$/, '');
+    return `${base}${endpoint}`;
+}
+
+function getAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = window.TTS_API?.apiToken || (window.TTS_Utils?.getLatestRemoteConfig?.()?.token) || localStorage.getItem('st_tts_auth_token') || '';
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-Api-Token'] = token;
+    }
+    return headers;
+}
+
+async function fetchModels(apiUrl, apiKey) {
+    // 1. 优先尝试通过后端代理获取 (规避公网 VPS 跨域 CORS 拦截)
+    try {
+        const proxyUrl = getBackendProxyUrl('/api/admin/llm/models');
+        const resp = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ api_url: apiUrl, api_key: apiKey })
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.models) && data.models.length > 0) {
+                console.log(`[LLM_Client] ✅ 通过后端代理成功拉取到 ${data.models.length} 个模型`);
+                return data.models;
+            }
+        }
+    } catch (proxyErr) {
+        console.warn('[LLM_Client] 后端代理拉取模型失败，回退前端直连:', proxyErr);
+    }
+
+    // 2. 前端直连兜底 (本地开发或已开放 CORS 场景)
     const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
     const modelsUrl = baseUrl + '/models';
 
@@ -43,7 +88,8 @@ function isNetworkError(error) {
         'net::ERR_',
         'ECONNRESET',
         'ETIMEDOUT',
-        'ENOTFOUND'
+        'ENOTFOUND',
+        'CORS'
     ];
 
     const errorMessage = error.message || error.toString();
@@ -125,6 +171,37 @@ async function callLLM(config) {
                 }));
                 if (error.rawResponse) {
                     console.error('[LLM_Client] 原始响应数据:', JSON.stringify(error.rawResponse, null, 2));
+                }
+            }
+
+            // 如果遇到网络错误或跨域拦截，尝试通过中间件后端进行中转代理
+            if (isNetworkError(error)) {
+                console.warn(`[LLM_Client] ⚠️ 检测到网络/跨域异常 (${error.message})，尝试通过后端中间件代理调用...`);
+                try {
+                    const proxyUrl = getBackendProxyUrl('/api/admin/llm/chat');
+                    const proxyResp = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            api_url: config.api_url,
+                            api_key: config.api_key,
+                            model: config.model,
+                            messages: [{ role: "user", content: config.prompt }],
+                            temperature: config.temperature || 0.8,
+                            max_tokens: config.max_tokens
+                        })
+                    });
+
+                    if (proxyResp.ok) {
+                        const proxyData = await proxyResp.json();
+                        console.log('[LLM_Client] ✅ 通过后端代理调用成功');
+                        return parseResponse(proxyData);
+                    } else {
+                        const errText = await proxyResp.text();
+                        console.warn(`[LLM_Client] 后端代理返回错误 HTTP ${proxyResp.status}:`, errText);
+                    }
+                } catch (proxyErr) {
+                    console.warn('[LLM_Client] 后端代理调用异常:', proxyErr);
                 }
             }
 

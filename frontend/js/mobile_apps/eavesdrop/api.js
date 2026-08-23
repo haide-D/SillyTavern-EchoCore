@@ -2,7 +2,7 @@
  * 对话追踪数据与生成全链路 API 客户端 (Eavesdrop API Client)
  */
 
-import { getApiHost, getChatBranch } from '../shared/utils.js';
+import { getApiHost, getChatBranch, getAuthHeaders } from '../shared/utils.js';
 import { getEavesdropStatusTexts } from '../../themes/theme_status_helper.js';
 import { NotificationHandler } from '../../notification_handler.js';
 
@@ -26,7 +26,7 @@ export async function initPresetsAndSpeakers() {
         const fetchWithTimeout = (url, ms = 3000) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), ms);
-            return fetch(url, { signal: controller.signal })
+            return fetch(url, { signal: controller.signal, headers: getAuthHeaders() })
                 .then(r => r.json())
                 .catch(() => null)
                 .finally(() => clearTimeout(timeoutId));
@@ -60,12 +60,12 @@ export async function fetchCurrentBranchHistory(limit = 40) {
         ? `${apiHost}/api/eavesdrop/history?chat_branch=${encodeURIComponent(chatBranch)}&limit=${limit}`
         : `${apiHost}/api/eavesdrop/history?limit=${limit}`;
     
-    const res = await fetch(url).then(r => r.json());
+    const res = await fetch(url, { headers: getAuthHeaders() }).then(r => r.json());
     let list = (res && (res.history || res.records)) || [];
 
     if (list.length === 0 && chatBranch) {
         // 如果指定分支暂无记录，尝试读取总历史中未绑定分支的记录作为智能兜底
-        const fallbackRes = await fetch(`${apiHost}/api/eavesdrop/history?limit=20`).then(r => r.json()).catch(() => null);
+        const fallbackRes = await fetch(`${apiHost}/api/eavesdrop/history?limit=20`, { headers: getAuthHeaders() }).then(r => r.json()).catch(() => null);
         const allList = (fallbackRes && (fallbackRes.history || fallbackRes.records)) || [];
         if (allList.length > 0) {
             const unbranched = allList.filter(r => !r.chat_branch || r.chat_branch === 'default' || r.chat_branch === '');
@@ -82,7 +82,7 @@ export async function fetchCurrentBranchHistory(limit = 40) {
  */
 export async function fetchAllHistory(limit = 80) {
     const apiHost = getApiHost();
-    const res = await fetch(`${apiHost}/api/eavesdrop/history?limit=${limit}`).then(r => r.json());
+    const res = await fetch(`${apiHost}/api/eavesdrop/history?limit=${limit}`, { headers: getAuthHeaders() }).then(r => r.json());
     return (res && (res.history || res.records)) || [];
 }
 
@@ -120,7 +120,7 @@ export async function generateAndLaunchEavesdrop({ speakers, presetId, reason, t
 
     const buildRes = await fetch(`${apiHost}/api/eavesdrop/build_prompt`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(buildPayload)
     });
 
@@ -147,7 +147,7 @@ export async function generateAndLaunchEavesdrop({ speakers, presetId, reason, t
     setStatus(statusTexts.btnLoading(statusTexts.step3TTS));
     const parseRes = await fetch(`${apiHost}/api/eavesdrop/parse_and_generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
             llm_response: llmResponse,
             speakers: speakers,

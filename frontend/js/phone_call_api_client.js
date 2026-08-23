@@ -9,6 +9,19 @@
 
 export class PhoneCallAPIClient {
     /**
+     * 获取携带鉴权 Token 的标准请求头
+     */
+    static getAuthHeaders(extra = {}) {
+        if (window.TTS_API && typeof window.TTS_API._headers === 'function') {
+            return window.TTS_API._headers(extra);
+        }
+        if (window.TTS_Utils && typeof window.TTS_Utils.getAuthHeaders === 'function') {
+            return window.TTS_Utils.getAuthHeaders(extra);
+        }
+        return { ...extra };
+    }
+
+    /**
      * 获取 API Host
      */
     static getApiHost() {
@@ -47,7 +60,7 @@ export class PhoneCallAPIClient {
 
             const response = await fetch(`${apiHost}/api/phone_call/webhook/message`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
 
@@ -85,7 +98,7 @@ export class PhoneCallAPIClient {
 
             const response = await fetch(`${apiHost}/api/phone_call/complete_generation`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
 
@@ -125,7 +138,7 @@ export class PhoneCallAPIClient {
 
             const response = await fetch(`${apiHost}/api/scene_analysis/complete`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
 
@@ -161,7 +174,7 @@ export class PhoneCallAPIClient {
 
             const response = await fetch(`${apiHost}/api/eavesdrop/complete_generation`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(data)
             });
 
@@ -206,7 +219,7 @@ export class PhoneCallAPIClient {
             // 异步发送,不阻塞主流程,也不抛出错误
             fetch(`${apiHost}/api/phone_call/log_error`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(report)
             }).catch(err => {
                 console.warn('[PhoneCallAPIClient] ⚠️ 发送错误报告失败:', err);
@@ -232,7 +245,7 @@ export class PhoneCallAPIClient {
 
             const response = await fetch(`${apiHost}/api/phone_call/trigger`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     char_name: charName,
                     ...options

@@ -93,6 +93,31 @@ export function getApiHost() {
     return `http://${apiHost}:3000`;
 }
 
+/**
+ * 获取携带鉴权 Token 的标准请求头
+ * @param {Object} extra - 附加 Headers
+ * @returns {Object} 带有 Authorization 与 X-Api-Token 的 Headers
+ */
+export function getAuthHeaders(extra = {}) {
+    const headers = { ...extra };
+    let token = '';
+    if (window.TTS_API && window.TTS_API.apiToken) {
+        token = window.TTS_API.apiToken;
+    } else if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
+        token = window.TTS_Utils.getLatestRemoteConfig().token || '';
+    } else {
+        try {
+            const saved = localStorage.getItem('tts_plugin_remote_config');
+            if (saved) token = JSON.parse(saved).token || '';
+        } catch (e) {}
+    }
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['X-Api-Token'] = token;
+    }
+    return headers;
+}
+
 const MODULE_NAME = 'st_direct_tts';
 
 /**

@@ -599,3 +599,219 @@
     border-color: #c2a675 !important;
     background: rgba(14, 18, 22, 0.95) !important;
 }
+
+/* ==================== 8. 洞府法仪 (系统配置 Settings App 深度适配) ==================== */
+#tts-immortal-modal .mobile-settings-content {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 10px 4px 40px 4px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-card {
+    background: rgba(18, 24, 29, 0.75) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.22) !important;
+    border-left: 2.5px solid rgba(194, 166, 117, 0.75) !important;
+    border-radius: 6px !important;
+    padding: 12px 10px !important;
+    margin-bottom: 12px !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-card:hover {
+    border-color: rgba(194, 166, 117, 0.45) !important;
+    background: rgba(24, 32, 38, 0.85) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-card-title {
+    color: #f1f5f9 !important;
+    font-size: 13.5px !important;
+    font-weight: 400 !important;
+    letter-spacing: 1px !important;
+    border-bottom: 0.8px solid rgba(194, 166, 117, 0.2) !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 10px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-switch-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    padding: 4px 0 !important;
+    cursor: pointer;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-switch-label,
+#tts-immortal-modal .mobile-settings-content .tts-input-label {
+    color: #cbd5e1 !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.5px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 34px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.4) !important;
+    border-radius: 18px;
+    position: relative;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-toggle:before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: rgba(140, 181, 174, 0.7);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-toggle:checked {
+    background: rgba(92, 141, 137, 0.3) !important;
+    border-color: #c2a675 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-toggle:checked:before {
+    left: 18px;
+    background: #c2a675;
+    box-shadow: 0 0 6px rgba(194, 166, 117, 0.6);
+}
+
+#tts-immortal-modal .mobile-settings-content input[type="text"],
+#tts-immortal-modal .mobile-settings-content input[type="number"],
+#tts-immortal-modal .mobile-settings-content input[type="password"],
+#tts-immortal-modal .mobile-settings-content select,
+#tts-immortal-modal .mobile-settings-content .tts-modern-input {
+    background: rgba(10, 14, 17, 0.85) !important;
+    color: #f1f5f9 !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    outline: none !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+#tts-immortal-modal .mobile-settings-content select option {
+    background: #0d1115 !important;
+    color: #f1f5f9 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content input:focus,
+#tts-immortal-modal .mobile-settings-content select:focus,
+#tts-immortal-modal .mobile-settings-content .tts-modern-input:focus {
+    border-color: #c2a675 !important;
+    background: rgba(14, 18, 22, 0.95) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .btn-primary,
+#tts-immortal-modal .mobile-settings-content #tts-btn-bind-new {
+    background: rgba(92, 141, 137, 0.25) !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.5) !important;
+    color: #f1f5f9 !important;
+    border-radius: 4px !important;
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+    letter-spacing: 1px !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .btn-primary:hover,
+#tts-immortal-modal .mobile-settings-content #tts-btn-bind-new:hover {
+    background: rgba(92, 141, 137, 0.4) !important;
+    border-color: #c2a675 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .btn-secondary,
+#tts-immortal-modal .mobile-settings-content #tts-btn-fill-current-char,
+#tts-immortal-modal .mobile-settings-content #tts-btn-select-all {
+    background: rgba(18, 24, 29, 0.8) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    color: #8a9ba8 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .btn-secondary:hover,
+#tts-immortal-modal .mobile-settings-content #tts-btn-fill-current-char:hover,
+#tts-immortal-modal .mobile-settings-content #tts-btn-select-all:hover {
+    border-color: #c2a675 !important;
+    color: #f1f5f9 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-compact-item {
+    background: rgba(14, 18, 22, 0.7) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.18) !important;
+    border-radius: 4px !important;
+    padding: 8px !important;
+    margin-bottom: 6px !important;
+    color: #f1f5f9 !important;
+    box-sizing: border-box !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-compact-item:hover {
+    border-color: rgba(194, 166, 117, 0.35) !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .tts-custom-select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .select-trigger {
+    background: rgba(10, 14, 17, 0.85) !important;
+    border: 0.8px solid rgba(140, 181, 174, 0.25) !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+    color: #f1f5f9 !important;
+    font-size: 12px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .select-options {
+    background: #0d1115 !important;
+    border: 0.8px solid rgba(194, 166, 117, 0.4) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7) !important;
+    z-index: 10005 !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .option-item {
+    color: #cbd5e1 !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+}
+
+#tts-immortal-modal .mobile-settings-content .option-item:hover {
+    background: rgba(92, 141, 137, 0.2) !important;
+    color: #f1f5f9 !important;
+}
+

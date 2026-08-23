@@ -3,6 +3,7 @@
  */
 import { PhoneCallAPIClient } from '../../phone_call_api_client.js';
 import { WorldInfoExtractor } from '../../world_info_extractor.js';
+import { getAuthHeaders } from '../shared/utils.js';
 
 let _boundSpeakersCache = [];
 
@@ -28,7 +29,7 @@ export function getApiHost() {
 export async function getLlmConfig() {
     try {
         const apiHost = getApiHost();
-        const dataRes = await fetch(`${apiHost}/api/get_data`).then(r => r.json());
+        const dataRes = await fetch(`${apiHost}/api/get_data`, { headers: getAuthHeaders() }).then(r => r.json());
         const phoneCallConfig = (dataRes && dataRes.settings && dataRes.settings.phone_call) || {};
         const llmConfig = phoneCallConfig.llm || {};
         return {
@@ -57,7 +58,7 @@ export async function getContextInfo() {
     // 1. 获取后端已绑定 TTS 模型的 Speaker 列表
     try {
         const apiHost = getApiHost();
-        const dataRes = await fetch(`${apiHost}/api/get_data`).then(r => r.json());
+        const dataRes = await fetch(`${apiHost}/api/get_data`, { headers: getAuthHeaders() }).then(r => r.json());
         if (dataRes && dataRes.mappings) {
             _boundSpeakersCache = Object.keys(dataRes.mappings);
         }
@@ -115,7 +116,9 @@ export function getSpeakerLanguageHint(speakerName) {
  */
 export async function fetchPresets(category) {
     const apiHost = getApiHost();
-    const res = await fetch(`${apiHost}/api/presets?category=${category}`);
+    const res = await fetch(`${apiHost}/api/presets?category=${category}`, {
+        headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error(`加载预设列表失败 (${res.status})`);
     const data = await res.json();
     return data.presets || [];
@@ -126,7 +129,9 @@ export async function fetchPresets(category) {
  */
 export async function fetchActivePresets() {
     const apiHost = getApiHost();
-    const res = await fetch(`${apiHost}/api/presets/active`);
+    const res = await fetch(`${apiHost}/api/presets/active`, {
+        headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error(`加载激活状态失败 (${res.status})`);
     const data = await res.json();
     return data.active_presets || { phone_call: ['standard_call'], eavesdrop: ['standard_eavesdrop'] };
@@ -139,7 +144,7 @@ export async function togglePresetActive(category, presetId) {
     const apiHost = getApiHost();
     const res = await fetch(`${apiHost}/api/presets/active`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
             category: category,
             toggle_preset_id: presetId
@@ -159,7 +164,7 @@ export async function setBatchActivePresets(category, presetIds) {
     const apiHost = getApiHost();
     const res = await fetch(`${apiHost}/api/presets/active`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
             category: category,
             preset_ids: presetIds
@@ -179,7 +184,7 @@ export async function savePreset(category, payload) {
     const apiHost = getApiHost();
     const res = await fetch(`${apiHost}/api/presets/${category}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
     });
     if (!res.ok) {
@@ -195,7 +200,8 @@ export async function savePreset(category, payload) {
 export async function deletePreset(category, presetId) {
     const apiHost = getApiHost();
     const res = await fetch(`${apiHost}/api/presets/${category}/${presetId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
     });
     if (!res.ok) {
         const err = await res.json();
@@ -211,7 +217,7 @@ export async function importPreset(category, rawJson) {
     const apiHost = getApiHost();
     const res = await fetch(`${apiHost}/api/presets/import`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
             category: category,
             raw_json: rawJson

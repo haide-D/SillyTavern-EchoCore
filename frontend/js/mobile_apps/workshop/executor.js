@@ -2,6 +2,7 @@
  * 剧本工坊定向呼叫 / 密谈侦听执行器
  */
 import { getApiHost, getContextInfo } from './api.js';
+import { getAuthHeaders } from '../shared/utils.js';
 import { NotificationHandler } from '../../notification_handler.js';
 import { getWorkshopStepTexts } from '../../themes/theme_status_helper.js';
 
@@ -74,7 +75,7 @@ export async function executeDirectedAction(category, preset, options = {}) {
 
             const buildRes = await fetch(`${apiHost}/api/phone_call/build_prompt`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(buildPayload)
             });
 
@@ -103,7 +104,7 @@ export async function executeDirectedAction(category, preset, options = {}) {
             showToast(stepTexts.step3, true);
             const parseRes = await fetch(`${apiHost}/api/phone_call/parse_and_generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     char_name: caller,
                     llm_response: llmResponse,
@@ -164,7 +165,7 @@ export async function executeDirectedAction(category, preset, options = {}) {
 
             const buildRes = await fetch(`${apiHost}/api/eavesdrop/build_prompt`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(buildPayload)
             });
 
@@ -191,7 +192,7 @@ export async function executeDirectedAction(category, preset, options = {}) {
             showToast(stepTexts.step3, true);
             const parseRes = await fetch(`${apiHost}/api/eavesdrop/parse_and_generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     llm_response: llmResponse,
                     speakers: speakers,

@@ -9,6 +9,7 @@ from config import init_settings, save_json, SETTINGS_FILE
 from utils_admin.service_manager import ServiceManager
 from utils_admin.model_manager import ModelManager
 from utils_admin.version_manager import VersionManager
+from services.llm_service import LLMService
 
 router = APIRouter()
 
@@ -569,4 +570,71 @@ async def restart_service():
         "success": True,
         "message": "服务正在重启..."
     }
+
+
+# ==================== LLM 代理与模型中转 (规避跨域 CORS) ====================
+
+@router.post("/llm/models")
+async def get_llm_models(data: dict):
+    """通过后端服务代理获取远程 LLM 模型列表 (规避浏览器跨域 CORS 拦截)"""
+    api_url = data.get("api_url", "").strip()
+    api_key = data.get("api_key", "").strip()
+    
+    if not api_url:
+        raise HTTPException(status_code=400, detail="缺少 API 地址")
+    
+    try:
+        models = await LLMService.fetch_models(api_url, api_key)
+        return {
+            "success": True,
+            "models": models,
+            "total": len(models)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/llm/test")
+async def test_llm_connection(data: dict):
+    """测试 LLM 服务连通性 (规避浏览器跨域 CORS 拦截)"""
+    api_url = data.get("api_url", "").strip()
+    api_key = data.get("api_key", "").strip()
+    model = data.get("model", "").strip()
+    
+    if not api_url:
+        raise HTTPException(status_code=400, detail="缺少 API 地址")
+    
+    result = await LLMService.test_connection({
+        "api_url": api_url,
+        "api_key": api_key,
+        "model": model,
+        "test_prompt": "你好，请回复“连接成功”。"
+    })
+    return result
+
+@router.post("/llm/chat")
+async def proxy_llm_chat(data: dict):
+    """代理转发 LLM 对话请求 (规避浏览器跨域 CORS 拦截)"""
+    api_url = data.get("api_url", "").strip()
+    api_key = data.get("api_key", "").strip()
+    model = data.get("model", "gpt-3.5-turbo").strip()
+    messages = data.get("messages", [])
+    temperature = data.get("temperature", 0.7)
+    max_tokens = data.get("max_tokens")
+    
+    if not api_url:
+        raise HTTPException(status_code=400, detail="缺少 API 地址")
+    
+    try:
+        resp = await LLMService.chat_completion(
+            api_url=api_url,
+            api_key=api_key,
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+        return resp
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 

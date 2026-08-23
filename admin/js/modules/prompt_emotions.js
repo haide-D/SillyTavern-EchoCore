@@ -359,34 +359,62 @@ ${samplesText}
   "panting": "仅在剧烈运动或极度疲惫喘息时使用"
 }`;
 
-    const endpoint = llmConfig.apiUrl.endsWith('/chat/completions')
-        ? llmConfig.apiUrl
-        : llmConfig.apiUrl.replace(/\/+$/, '') + '/chat/completions';
+    let data;
+    try {
+        const response = await fetch(`${API_BASE}/llm/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_url: llmConfig.apiUrl,
+                api_key: llmConfig.apiKey,
+                model: llmConfig.model || 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: 'You are an expert voice director. Answer concisely and output ONLY valid JSON without extra markdown.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 4096
+            })
+        });
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${llmConfig.apiKey}`
-        },
-        body: JSON.stringify({
-            model: llmConfig.model || 'gpt-3.5-turbo',
-            messages: [
-                { role: 'system', content: 'You are an expert voice director. Answer concisely and output ONLY valid JSON without extra markdown.' },
-                { role: 'user', content: prompt }
-            ],
-            temperature: 0.3,
-            max_tokens: 14096,
-            max_completion_tokens: 14096
-        })
-    });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${response.status}`);
+        }
 
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(`LLM 接口返回 HTTP ${response.status}: ${err.error?.message || ''}`);
+        data = await response.json();
+    } catch (proxyError) {
+        console.warn('后端代理 Chat 失败，尝试前端直连兜底:', proxyError);
+        const endpoint = llmConfig.apiUrl.endsWith('/chat/completions')
+            ? llmConfig.apiUrl
+            : llmConfig.apiUrl.replace(/\/+$/, '') + '/chat/completions';
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${llmConfig.apiKey}`
+            },
+            body: JSON.stringify({
+                model: llmConfig.model || 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: 'You are an expert voice director. Answer concisely and output ONLY valid JSON without extra markdown.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 4096
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(`LLM 接口返回 HTTP ${response.status}: ${err.error?.message || proxyError.message}`);
+        }
+
+        data = await response.json();
     }
-
-    const data = await response.json();
     const message = data.choices?.[0]?.message || {};
     let content = (message.content || '').trim();
 
