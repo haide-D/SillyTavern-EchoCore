@@ -282,6 +282,203 @@ export async function initSettingsUI() {
             }
         });
 
+        // ============================================================
+        // MiniMax 声线与音色库管理卡片交互
+        // ============================================================
+        let cachedMinimaxVoices = [];
+        let currentPreviewAudio = null;
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        };
+
+        const renderMinimaxVoicesList = (filterText = '') => {
+            const $list = $('#tts-minimax-voices-list');
+            const $count = $('#tts-minimax-voice-count');
+            if ($list.length === 0) return;
+
+            const q = filterText.trim().toLowerCase();
+            const filtered = cachedMinimaxVoices.filter(v => {
+                if (!q) return true;
+                const name = (v.name || '').toLowerCase();
+                const id = (v.id || '').toLowerCase();
+                const desc = (v.description || '').toLowerCase();
+                return name.includes(q) || id.includes(q) || desc.includes(q);
+            });
+
+            $count.text(`(共 ${cachedMinimaxVoices.length} 个${q ? `，过滤出 ${filtered.length} 个` : ''})`);
+
+            if (filtered.length === 0) {
+                $list.html('<div style="text-align: center; color: #888; font-size: 11.5px; padding: 12px;">未找到匹配声线</div>');
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(v => {
+                const isCustom = v.category === 'custom';
+                const genderIcon = v.gender === 'female' ? '♀' : (v.gender === 'male' ? '♂' : '⚥');
+                const badgeColor = isCustom ? 'rgba(234, 179, 8, 0.2)' : 'rgba(59, 130, 246, 0.2)';
+                const badgeBorder = isCustom ? 'rgba(234, 179, 8, 0.5)' : 'rgba(59, 130, 246, 0.4)';
+                const badgeText = isCustom ? '🌟 自定义' : '🏛️ 预设';
+
+                html += `
+                <div class="tts-minimax-voice-item" data-id="${escapeHtml(v.id)}" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 5px; padding: 5px 8px; gap: 6px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="font-size: 10.5px; padding: 1px 4px; border-radius: 3px; background: ${badgeColor}; border: 1px solid ${badgeBorder}; color: #e5e7eb; white-space: nowrap;">${badgeText}</span>
+                            <strong style="font-size: 12px; color: #f3f4f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(v.name || v.id)}</strong>
+                            <span style="font-size: 11px; color: #9ca3af;" title="性别: ${v.gender}">${genderIcon}</span>
+                        </div>
+                        <div style="font-family: monospace; font-size: 10.5px; color: #9ca3af; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(v.id)}">
+                            ID: ${escapeHtml(v.id)}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                        <button type="button" class="menu_button btn-preview-voice" data-id="${escapeHtml(v.id)}" style="padding: 2px 6px; font-size: 11px; cursor: pointer;" title="试听当前声线">▶️ 试听</button>
+                        <button type="button" class="menu_button btn-set-default-voice" data-id="${escapeHtml(v.id)}" style="padding: 2px 6px; font-size: 11px; cursor: pointer;" title="填入默认音色输入框">⭐ 设为默认</button>
+                        ${isCustom ? `<button type="button" class="menu_button btn-del-custom-voice" data-id="${escapeHtml(v.id)}" data-name="${escapeHtml(v.name || v.id)}" style="padding: 2px 6px; font-size: 11px; cursor: pointer; color: #f87171; border-color: rgba(239, 68, 68, 0.4);" title="删除此自定义音色">🗑️</button>` : ''}
+                    </div>
+                </div>`;
+            });
+
+            $list.html(html);
+        };
+
+        const loadMinimaxVoices = async () => {
+            const $count = $('#tts-minimax-voice-count');
+            const $list = $('#tts-minimax-voices-list');
+            $count.text('(加载中...)');
+            try {
+                if (window.TTS_API && typeof window.TTS_API.getMinimaxVoices === 'function') {
+                    const data = await window.TTS_API.getMinimaxVoices();
+                    if (data && data.voices) {
+                        cachedMinimaxVoices = data.voices;
+                        renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
+                    }
+                }
+            } catch (err) {
+                console.warn('[ST-Direct-TTS] 加载 MiniMax 声线列表失败:', err);
+                $list.html('<div style="text-align: center; color: #f87171; font-size: 11px; padding: 10px;">加载声线失败，请确认后端连接正常</div>');
+                $count.text('(加载失败)');
+            }
+        };
+
+        // 初始加载
+        loadMinimaxVoices();
+
+        // 刷新按钮
+        $('#tts-minimax-refresh-voices-btn').on('click', () => {
+            loadMinimaxVoices();
+        });
+
+        // 搜索过滤
+        $('#tts-minimax-voice-search').on('input', (e) => {
+            renderMinimaxVoicesList($(e.target).val());
+        });
+
+        // 快捷添加自定义声线
+        $('#tts-minimax-add-voice-btn').on('click', async () => {
+            const name = $('#tts-minimax-new-voice-name').val().trim();
+            const voiceId = $('#tts-minimax-new-voice-id').val().trim();
+            const gender = $('#tts-minimax-new-voice-gender').val();
+            const $status = $('#tts-minimax-add-voice-status');
+
+            if (!voiceId) {
+                $status.text('❌ 请填写 Voice ID').css('color', '#ff5555');
+                return;
+            }
+
+            $status.text('⏳ 保存中...').css('color', '#aaa');
+
+            try {
+                if (window.TTS_API && typeof window.TTS_API.addMinimaxVoice === 'function') {
+                    const res = await window.TTS_API.addMinimaxVoice({
+                        id: voiceId,
+                        name: name || voiceId,
+                        gender: gender || 'female',
+                        category: 'custom'
+                    });
+                    $status.text('✅ 已添加！').css('color', '#55ff55');
+                    $('#tts-minimax-new-voice-name').val('');
+                    $('#tts-minimax-new-voice-id').val('');
+                    if (res && res.voices) {
+                        cachedMinimaxVoices = res.voices;
+                        renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
+                    } else {
+                        loadMinimaxVoices();
+                    }
+                    setTimeout(() => $status.text(''), 3000);
+                }
+            } catch (err) {
+                $status.text(`❌ ${err.message}`).css('color', '#ff5555');
+            }
+        });
+
+        // 列表事件委托: 试听、设为默认、删除
+        $('#tts-minimax-voices-list').on('click', '.btn-preview-voice', async function () {
+            const $btn = $(this);
+            const voiceId = $btn.data('id');
+            if (!voiceId) return;
+
+            const originText = $btn.text();
+            $btn.text('⏳ 生成中...').prop('disabled', true);
+
+            if (currentPreviewAudio) {
+                currentPreviewAudio.pause();
+                currentPreviewAudio = null;
+            }
+
+            try {
+                if (window.TTS_API && typeof window.TTS_API.previewMinimaxVoice === 'function') {
+                    const blob = await window.TTS_API.previewMinimaxVoice(voiceId);
+                    const audioUrl = URL.createObjectURL(blob);
+                    currentPreviewAudio = new Audio(audioUrl);
+                    $btn.text('🔊 播放中...');
+                    currentPreviewAudio.onended = () => {
+                        $btn.text(originText).prop('disabled', false);
+                    };
+                    currentPreviewAudio.onerror = () => {
+                        $btn.text(originText).prop('disabled', false);
+                    };
+                    await currentPreviewAudio.play();
+                }
+            } catch (err) {
+                alert(`试听失败: ${err.message}`);
+                $btn.text(originText).prop('disabled', false);
+            }
+        });
+
+        $('#tts-minimax-voices-list').on('click', '.btn-set-default-voice', function () {
+            const voiceId = $(this).data('id');
+            if (voiceId) {
+                $('#tts-minimax-voice-id').val(voiceId).trigger('input');
+                alert(`已将「${voiceId}」填入默认音色输入框！`);
+            }
+        });
+
+        $('#tts-minimax-voices-list').on('click', '.btn-del-custom-voice', async function () {
+            const voiceId = $(this).data('id');
+            const voiceName = $(this).data('name');
+            if (!voiceId) return;
+
+            if (!confirm(`确定要从自定义音色库删除声线「${voiceName}」吗？`)) return;
+
+            try {
+                if (window.TTS_API && typeof window.TTS_API.deleteMinimaxVoice === 'function') {
+                    const res = await window.TTS_API.deleteMinimaxVoice(voiceId);
+                    if (res && res.voices) {
+                        cachedMinimaxVoices = res.voices;
+                        renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
+                    } else {
+                        loadMinimaxVoices();
+                    }
+                }
+            } catch (err) {
+                alert(`删除失败: ${err.message}`);
+            }
+        });
+
         // 豆包 字段
         $('#tts-doubao-api-key').on('input', (e) => {
             if (!config.provider_settings.doubao) config.provider_settings.doubao = {};

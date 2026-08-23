@@ -142,6 +142,22 @@ DEFAULT_EMOTION_MAP = {
 }
 
 
+MODEL_ALIASES = {
+    "speech-02": "speech-02-turbo",
+    "speech-01": "speech-01-turbo",
+    "speech-2.6": "speech-2.6-turbo",
+    "speech-2.8": "speech-2.8-turbo",
+}
+
+
+def normalize_minimax_model(model_name: Optional[str]) -> str:
+    """规范化 MiniMax 模型名称，自动修正非法/简写模型名"""
+    if not model_name:
+        return "speech-01-turbo"
+    name = model_name.strip()
+    return MODEL_ALIASES.get(name, name)
+
+
 class MiniMaxTTSService:
     """MiniMax 云端 TTS 服务管理器"""
 
@@ -262,7 +278,8 @@ class MiniMaxTTSService:
             (cached, filename, file_path_if_exists)
         """
         cache_dir = MiniMaxTTSService.get_cache_dir()
-        _, filename = MiniMaxTTSService.get_cache_key(text, voice_id, emotion, speed, pitch, vol, model)
+        normalized_model = normalize_minimax_model(model)
+        _, filename = MiniMaxTTSService.get_cache_key(text, voice_id, emotion, speed, pitch, vol, normalized_model)
         file_path = os.path.join(cache_dir, filename)
         
         if os.path.exists(file_path) and os.path.getsize(file_path) > 100:
@@ -378,12 +395,13 @@ class MiniMaxTTSService:
         if not text or not text.strip():
             raise ValueError("TTS 待合成文本为空")
 
-        # 2. 读取配置
+        # 2. 读取配置并规范化模型名称
         cfg = cls.get_config()
         api_key = cfg.get("api_key", "").strip()
         group_id = cfg.get("group_id", "").strip()
         api_url = cfg.get("api_url", "https://api.minimax.chat/v1/t2a_v2").strip()
-        active_model = (model or cfg.get("model") or "speech-01-turbo").strip()
+        raw_model = (model or cfg.get("model") or "speech-01-turbo").strip()
+        active_model = normalize_minimax_model(raw_model)
 
         if not api_key:
             raise ValueError("MiniMax API Key 未配置，请在设置中填入有效的 MiniMax API Key")
@@ -461,9 +479,9 @@ class MiniMaxTTSService:
             "vol": final_vol,
             "pitch": final_pitch
         }
-        # 仅在支持 emotion 参数的模型（如 speech-01 系列）中传递 emotion
-        # speech-02 等模型官方 API 不支持 emotion 参数（传入会报 2013 错误）
-        if not active_model.startswith("speech-02") and final_emotion:
+        # MiniMax 仅 speech-01 系列模型支持在 voice_setting 中传入 emotion 参数
+        # speech-02, speech-2.6, speech-2.8 等新模型传入 emotion 会报 2013 错误
+        if active_model.startswith("speech-01") and final_emotion:
             voice_setting["emotion"] = final_emotion
 
         payload = {
@@ -482,14 +500,31 @@ class MiniMaxTTSService:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(request_url, headers=headers, json=payload)
                 
-                # 如果遇到不支持 emotion 的模型（错误码 2013），自动剔除 emotion 再次自适应重试
+                # 自适应容错与重试 (错误码 2013)
                 if response.status_code == 200:
                     res_json = response.json()
                     base_resp = res_json.get("base_resp", {})
-                    if base_resp.get("status_code") == 2013 and "emotion" in payload.get("voice_setting", {}):
-                        print(f"[MiniMax TTS] ⚠️ 当前模型 {active_model} 不支持 emotion 参数，自动剔除后重试...")
-                        del payload["voice_setting"]["emotion"]
-                        response = await client.post(request_url, headers=headers, json=payload)
+                    if base_resp.get("status_code") == 2013:
+                        status_msg = str(base_resp.get("status_msg", ""))
+                        
+                        # 1. 尝试剔除不支持的 emotion 参数
+                        if "emotion" in payload.get("voice_setting", {}):
+                            print(f"[MiniMax TTS] ⚠️ 当前模型 {active_model} 不支持 emotion 参数，自动剔除后重试...")
+                            del payload["voice_setting"]["emotion"]
+                            response = await client.post(request_url, headers=headers, json=payload)
+                            res_json = response.json()
+                            base_resp = res_json.get("base_resp", {})
+
+                        # 2. 若模型名称仍然不被接口识别，自动降级为官方通用 speech-01-turbo
+                        if base_resp.get("status_code") == 2013 and "not have model" in status_msg:
+                            fallback_model = "speech-01-turbo"
+                            print(f"[MiniMax TTS] ⚠️ 模型 {active_model} 不存在或不支持，自动降级为 {fallback_model} 重试...")
+                            payload["model"] = fallback_model
+                            if final_emotion:
+                                payload["voice_setting"]["emotion"] = final_emotion
+                            response = await client.post(request_url, headers=headers, json=payload)
+        except (httpx.ConnectError, httpx.RequestError) as req_err:
+            raise RuntimeError(f"无法连接到 MiniMax 云端 API: {req_err}")
         except (httpx.ConnectError, httpx.RequestError) as req_err:
             raise RuntimeError(f"无法连接到 MiniMax 云端 API: {req_err}")
 

@@ -94,7 +94,6 @@
                         <option value="speech-2.6-hd">speech-2.6-hd (Speech 2.6 高清)</option>
                         <option value="speech-02-turbo">speech-02-turbo (Speech 02 极速)</option>
                         <option value="speech-02-hd">speech-02-hd (Speech 02 高清)</option>
-                        <option value="speech-02">speech-02 (Speech 02 基础)</option>
                         <option value="speech-01-turbo">speech-01-turbo (Speech 01 经典极速)</option>
                         <option value="speech-01-hd">speech-01-hd (Speech 01 经典高清)</option>
                         <option value="speech-01-240228">speech-01-240228 (Speech 01 标准)</option>
@@ -104,11 +103,54 @@
                     <small>默认音色 / Voice ID:</small>
                     <input type="text" id="tts-minimax-voice-id" class="text_pole" placeholder="例如: female-shaonv 或自定义克隆ID" />
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                     <button id="tts-minimax-test-btn" class="menu_button" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">
                         <span>⚡ 测试 MiniMax 连接</span>
                     </button>
                     <span id="tts-minimax-test-result" style="font-size: 12px;"></span>
+                </div>
+
+                <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.15); margin: 10px 0;" />
+
+                <!-- MiniMax 声线与音色库管理卡片 -->
+                <div id="tts-minimax-voice-mgr-card" style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: bold; font-size: 12.5px; color: #fde047; display: flex; align-items: center; gap: 4px;">
+                            <span>🎙️ MiniMax 声线库管理</span>
+                            <span id="tts-minimax-voice-count" style="font-size: 11px; color: #aaa; font-weight: normal;">(加载中...)</span>
+                        </span>
+                        <button type="button" id="tts-minimax-refresh-voices-btn" class="menu_button" style="padding: 2px 8px; font-size: 11px; cursor: pointer;" title="重新拉取声线列表">🔄 刷新</button>
+                    </div>
+
+                    <!-- 快捷新增自定义音色 -->
+                    <div style="background: rgba(255, 255, 255, 0.04); border-radius: 5px; padding: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                        <small style="display: block; color: #e5e7eb; margin-bottom: 4px; font-size: 11.5px; font-weight: bold;">➕ 快捷录入自定义 / 克隆声线</small>
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <input type="text" id="tts-minimax-new-voice-name" class="text_pole" style="flex: 1; min-width: 100px; font-size: 12px;" placeholder="音色备注 (如: 傲娇小师妹)" />
+                            <input type="text" id="tts-minimax-new-voice-id" class="text_pole" style="flex: 1.5; min-width: 130px; font-size: 12px;" placeholder="Voice ID (克隆音色ID)" />
+                            <select id="tts-minimax-new-voice-gender" class="text_pole" style="width: 65px; font-size: 12px;">
+                                <option value="female">女性</option>
+                                <option value="male">男性</option>
+                                <option value="unknown">通用</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button type="button" id="tts-minimax-add-voice-btn" class="menu_button" style="flex: 1; padding: 4px 10px; font-size: 12px; font-weight: bold; cursor: pointer; background: rgba(59, 130, 246, 0.25); border-color: rgba(59, 130, 246, 0.5);">
+                                <span>➕ 添加到 MiniMax 声线库</span>
+                            </button>
+                            <span id="tts-minimax-add-voice-status" style="font-size: 11.5px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 搜索过滤 -->
+                    <div style="margin-bottom: 6px;">
+                        <input type="text" id="tts-minimax-voice-search" class="text_pole" style="width: 100%; font-size: 11.5px; padding: 4px 8px;" placeholder="🔍 快速过滤声线名称或 ID..." />
+                    </div>
+
+                    <!-- 声线列表滚动容器 -->
+                    <div id="tts-minimax-voices-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 2px;">
+                        <div style="text-align: center; color: #888; font-size: 11px; padding: 10px;">正在加载音色库...</div>
+                    </div>
                 </div>
             </div>
 

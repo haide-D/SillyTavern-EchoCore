@@ -94,6 +94,20 @@ class MiniMaxTestRequest(BaseModel):
     api_url: Optional[str] = "https://api.minimax.chat/v1/t2a_v2"
 
 
+class MiniMaxVoiceItem(BaseModel):
+    id: str
+    name: str
+    gender: Optional[str] = "female"
+    category: Optional[str] = "custom"
+    description: Optional[str] = "用户自定义克隆音色"
+
+
+class MiniMaxPreviewRequest(BaseModel):
+    voice_id: str
+    text: Optional[str] = "主人，您好！这是我的MiniMax语音合成试听效果。"
+    speed: Optional[float] = 1.0
+
+
 @router.post("/tts/minimax/test")
 async def test_minimax(req: MiniMaxTestRequest):
     """测试 MiniMax API Key 与 Group ID 连通性"""
@@ -109,6 +123,87 @@ def get_minimax_voices():
         "status": "success",
         "voices": minimax_service.get_preset_voices()
     }
+
+
+@router.post("/tts/minimax/voices")
+def add_minimax_voice(voice: MiniMaxVoiceItem):
+    """添加或更新 MiniMax 自定义音色"""
+    from config import load_json, save_json, SETTINGS_FILE, init_settings
+    settings = load_json(SETTINGS_FILE)
+    if "minimax_tts" not in settings:
+        settings["minimax_tts"] = {}
+    if "custom_voices" not in settings["minimax_tts"]:
+        settings["minimax_tts"]["custom_voices"] = []
+    
+    custom_list = settings["minimax_tts"]["custom_voices"]
+    voice_dict = {
+        "id": voice.id.strip(),
+        "name": voice.name.strip() or voice.id.strip(),
+        "gender": voice.gender or "female",
+        "category": "custom",
+        "description": voice.description or "用户自定义克隆音色"
+    }
+    
+    found = False
+    for idx, item in enumerate(custom_list):
+        if isinstance(item, dict) and item.get("id") == voice_dict["id"]:
+            custom_list[idx] = voice_dict
+            found = True
+            break
+    if not found:
+        custom_list.append(voice_dict)
+    
+    save_json(SETTINGS_FILE, settings)
+    init_settings()
+    from services.minimax_service import minimax_service
+    return {
+        "status": "success",
+        "message": f"声线「{voice_dict['name']}」已成功保存至 MiniMax 音色库",
+        "voices": minimax_service.get_preset_voices()
+    }
+
+
+@router.delete("/tts/minimax/voices/{voice_id}")
+def delete_minimax_voice(voice_id: str):
+    """删除 MiniMax 自定义音色"""
+    from config import load_json, save_json, SETTINGS_FILE, init_settings
+    settings = load_json(SETTINGS_FILE)
+    clean_id = voice_id.strip()
+    if clean_id.startswith("minimax:"):
+        clean_id = clean_id[len("minimax:"):].strip()
+
+    if "minimax_tts" in settings and "custom_voices" in settings["minimax_tts"]:
+        settings["minimax_tts"]["custom_voices"] = [
+            v for v in settings["minimax_tts"]["custom_voices"] 
+            if isinstance(v, dict) and v.get("id") != clean_id
+        ]
+        save_json(SETTINGS_FILE, settings)
+        init_settings()
+    from services.minimax_service import minimax_service
+    return {
+        "status": "success",
+        "message": "音色已从自定义库移除",
+        "voices": minimax_service.get_preset_voices()
+    }
+
+
+@router.post("/tts/minimax/preview")
+async def preview_minimax_voice(req: MiniMaxPreviewRequest):
+    """快速试听指定 MiniMax 声线"""
+    from services.minimax_service import minimax_service
+    try:
+        result = await minimax_service.generate_audio(
+            text=req.text or "主人，您好！这是我的MiniMax语音合成试听效果。",
+            voice_id=req.voice_id,
+            speed=req.speed or 1.0
+        )
+        custom_headers = {
+            "X-Audio-Filename": result["filename"],
+            "Access-Control-Expose-Headers": "X-Audio-Filename"
+        }
+        return FileResponse(result["file_path"], media_type="audio/wav", headers=custom_headers)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"试听生成失败: {str(e)}")
 
 
 @router.get("/tts_proxy")

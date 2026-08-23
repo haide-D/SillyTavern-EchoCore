@@ -73,6 +73,52 @@ export const TTS_API = {
             body: JSON.stringify(payload)
         });
     },
+
+    async getMinimaxVoices() {
+        const res = await fetch(this._url('/api/tts/minimax/voices'), {
+            headers: this._headers()
+        });
+        if (!res.ok) throw new Error('获取 MiniMax 音色列表失败');
+        return await res.json();
+    },
+
+    async addMinimaxVoice(voice) {
+        const res = await fetch(this._url('/api/tts/minimax/voices'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(voice)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || '添加声线失败');
+        }
+        return await res.json();
+    },
+
+    async deleteMinimaxVoice(voiceId) {
+        const res = await fetch(this._url(`/api/tts/minimax/voices/${encodeURIComponent(voiceId)}`), {
+            method: 'DELETE',
+            headers: this._headers()
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || '删除声线失败');
+        }
+        return await res.json();
+    },
+
+    async previewMinimaxVoice(voiceId, text = "主人，您好！这是我的MiniMax语音合成试听效果。") {
+        const res = await fetch(this._url('/api/tts/minimax/preview'), {
+            method: 'POST',
+            headers: this._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ voice_id: voiceId, text: text })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || '试听生成失败');
+        }
+        return await res.blob();
+    },
     //TODO 修改为V2端口
     async checkCache(params) {
         const queryParams = { ...params, check_only: "true" };
