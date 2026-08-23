@@ -245,7 +245,7 @@ export const TTS_UI = window.TTS_UI;
                 modelName = `minimax:${rawId}`;
 
                 if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
-                    window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                    await window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
                 }
             }
 

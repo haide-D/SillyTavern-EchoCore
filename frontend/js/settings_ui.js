@@ -396,6 +396,12 @@ export async function initSettingsUI() {
                     const data = await window.TTS_API.getMinimaxVoices();
                     if (data && data.voices) {
                         cachedMinimaxVoices = data.voices;
+                        if (window.TTS_State && window.TTS_State.CACHE) {
+                            window.TTS_State.CACHE.minimax_voices = data.voices;
+                        }
+                        if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                            window.TTS_UI.renderModelOptions();
+                        }
                         renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
                     }
                 }
@@ -515,6 +521,12 @@ export async function initSettingsUI() {
 
                     if (res && res.voices) {
                         cachedMinimaxVoices = res.voices;
+                        if (window.TTS_State && window.TTS_State.CACHE) {
+                            window.TTS_State.CACHE.minimax_voices = res.voices;
+                        }
+                        if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                            window.TTS_UI.renderModelOptions();
+                        }
                         renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
                     } else {
                         loadMinimaxVoices();
@@ -605,6 +617,19 @@ export async function initSettingsUI() {
                     const res = await window.TTS_API.deleteMinimaxVoice(voiceId);
                     if (res && res.voices) {
                         cachedMinimaxVoices = res.voices;
+                        if (window.TTS_State && window.TTS_State.CACHE) {
+                            window.TTS_State.CACHE.minimax_voices = res.voices;
+                        }
+                        if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                            window.TTS_UI.renderModelOptions();
+                        }
+                        try {
+                            const saved = localStorage.getItem('tts_custom_minimax_voices');
+                            if (saved) {
+                                const list = (JSON.parse(saved) || []).filter(v => v.id !== voiceId && v.id !== `minimax:${voiceId}`);
+                                localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
+                            }
+                        } catch (e) {}
                         renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
                     } else {
                         loadMinimaxVoices();

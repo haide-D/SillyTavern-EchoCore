@@ -104,11 +104,13 @@ export const TTS_Parser = {
         $('#tts-quick-bind-modal').remove();
 
         let optionsHtml = '';
+        const currentBound = (CACHE.mappings && CACHE.mappings[speakerName]) ? CACHE.mappings[speakerName] : '';
+
         if (modelKeys.length > 0) {
             optionsHtml += '<optgroup label="📁 本地 GPT-SoVITS 模型">';
             optionsHtml += modelKeys.map(k => {
-                const isMatch = k.toLowerCase().includes(speakerName.toLowerCase()) || speakerName.toLowerCase().includes(k.toLowerCase());
-                return `<option value="${escapeHtmlAttr(k)}" ${isMatch ? 'selected' : ''}>🎙️ ${escapeHtmlAttr(k)}</option>`;
+                const isSelected = currentBound ? (currentBound === k) : (k.toLowerCase().includes(speakerName.toLowerCase()) || speakerName.toLowerCase().includes(k.toLowerCase()));
+                return `<option value="${escapeHtmlAttr(k)}" ${isSelected ? 'selected' : ''}>🎙️ ${escapeHtmlAttr(k)}</option>`;
             }).join('');
             optionsHtml += '</optgroup>';
         }
@@ -116,14 +118,18 @@ export const TTS_Parser = {
         if (customVoices.length > 0) {
             optionsHtml += '<optgroup label="✨ 我的自定义克隆音色">';
             optionsHtml += customVoices.map(v => {
-                return `<option value="minimax:${escapeHtmlAttr(v.id)}">✨ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+                const val = `minimax:${v.id}`;
+                const isSelected = currentBound === val;
+                return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>✨ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
             }).join('');
             optionsHtml += '</optgroup>';
         }
 
         optionsHtml += '<optgroup label="☁️ MiniMax 官方预设声线">';
         optionsHtml += presetVoices.map(v => {
-            return `<option value="minimax:${escapeHtmlAttr(v.id)}">☁️ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+            const val = `minimax:${v.id}`;
+            const isSelected = currentBound === val;
+            return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>☁️ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
         }).join('');
         optionsHtml += '<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>';
         optionsHtml += '</optgroup>';
@@ -186,7 +192,7 @@ export const TTS_Parser = {
                 selectedModel = `minimax:${rawId}`;
 
                 if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
-                    window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                    await window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
                 }
             }
 

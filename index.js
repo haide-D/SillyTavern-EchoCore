@@ -128,6 +128,7 @@ function initPlugin() {
             // 更新 State
             CACHE.models = data.models;
             CACHE.mappings = data.mappings;
+            if (data.minimax_voices) CACHE.minimax_voices = data.minimax_voices;
             if (data.settings) CACHE.settings = { ...CACHE.settings, ...data.settings };
 
             if (CACHE.settings.bubble_style) {
