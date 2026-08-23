@@ -254,13 +254,15 @@ export const TTS_Parser = {
         // 更新主界面
         _doUpdate($('body'));
 
-        // 更新 Iframe 内部
-        $('iframe').each(function () {
-            try {
-                const $iframeBody = $(this).contents().find('body');
-                if ($iframeBody.length > 0) _doUpdate($iframeBody);
-            } catch (e) { }
-        });
+        // 更新 Iframe 内部 (仅在开启 iframe_mode 时执行)
+        if (CACHE.settings && CACHE.settings.iframe_mode === true) {
+            $('iframe').each(function () {
+                try {
+                    const $iframeBody = $(this).contents().find('body');
+                    if ($iframeBody.length > 0) _doUpdate($iframeBody);
+                } catch (e) { }
+            });
+        }
     },
 
     _executeScan() {
@@ -321,6 +323,10 @@ export const TTS_Parser = {
                 NEW_SPEAKER_REGEX.lastIndex = 0;
                 modifiedHtml = modifiedHtml.replace(NEW_SPEAKER_REGEX, (match, speaker, spokenText) => {
                     const cleanSpeaker = speaker.trim();
+                    // 排除纯数字或系统保留字
+                    if (/^\d+$/.test(cleanSpeaker) || /^(?:ONSTAGE|RECALL|ARCHIVE|FLOOR|STATUS|SYS|VAR|STAGE|SYSTEM)$/i.test(cleanSpeaker)) {
+                        return match;
+                    }
                     const textPart = spokenText ? ` ${spokenText}` : '';
                     const safeSpeaker = escapeHtmlAttr(cleanSpeaker);
 
@@ -339,12 +345,35 @@ export const TTS_Parser = {
             }
 
             // 2. 解析 ElevenLabs V3 格式: [Speaker, emotion] 或 【Speaker, emotion】
-            // 采用稳健的“标签定位 + 后文对白窥探”机制，彻底杜绝正则可选短路与引号截断
+            // 采用稳健的“标签定位 + 后文对白窥探 + 智能防误伤”机制
             const TAG_REGEX = /[\[【]([^\],:【】\[\]\n]{1,30})\s*[,，]\s*([^\]】\n]{1,30})[\]】]/g;
             let result = '';
             let lastIndex = 0;
             let match;
             let matchedV3 = false;
+
+            // 获取已知角色列表用于白名单与优先级匹配
+            const knownSpeakers = new Set();
+            if (CACHE.mappings) {
+                Object.keys(CACHE.mappings).forEach(k => {
+                    if (k && k.trim()) knownSpeakers.add(k.trim().toLowerCase());
+                });
+            }
+            try {
+                if (window.SillyTavern && typeof window.SillyTavern.getContext === 'function') {
+                    const ctx = window.SillyTavern.getContext();
+                    if (ctx.characters && ctx.characterId !== undefined && ctx.characters[ctx.characterId]) {
+                        const name = ctx.characters[ctx.characterId].name;
+                        if (name && name.trim()) knownSpeakers.add(name.trim().toLowerCase());
+                    }
+                    if (ctx.name2 && String(ctx.name2).trim()) {
+                        knownSpeakers.add(String(ctx.name2).trim().toLowerCase());
+                    }
+                }
+            } catch (e) { }
+
+            // 排除常见的系统状态/数据库/缝合怪关键词
+            const SYSTEM_KEYWORDS_REGEX = /^(?:ONSTAGE|RECALL|ARCHIVE|FLOOR|STATUS|SYS|VAR|STAGE|SYSTEM|CONFIG|DATA|MEMORY|DATABASE|DEBUG|INFO|ERROR|WARN|TAG|SETTING|VALUE|VARIABLE)$/i;
 
             while ((match = TAG_REGEX.exec(modifiedHtml)) !== null) {
                 const fullTag = match[0];
@@ -355,15 +384,26 @@ export const TTS_Parser = {
 
                 const cleanName = rawName.trim();
                 const cleanEmotion = rawEmotion.trim();
+                const cleanNameLower = cleanName.toLowerCase();
+                const cleanEmotionLower = cleanEmotion.toLowerCase();
 
                 // 过滤保留字与 New
-                if (cleanEmotion.toLowerCase() === 'new' || cleanName.toLowerCase().startsWith('tts')) {
+                if (cleanEmotionLower === 'new' || cleanNameLower.startsWith('tts')) {
                     continue;
                 }
 
-                matchedV3 = true;
-                result += modifiedHtml.slice(lastIndex, tagIndex);
-                lastIndex = tagEnd;
+                // 🌟 【防误伤规则 1】：排除系统/变量/数字/符号数据标签
+                // - 情绪字段包含数字、冒号、斜杠、加减号、百分号（如 0, 力量:10, 100/100, +5）
+                // - 角色名命中全大写系统关键字（如 ONSTAGE, RECALL, ARCHIVE, FLOOR, VAR 等）
+                // - 角色名全为纯数字
+                if (
+                    /\d|[:：\+\-\/\\%=><]/.test(cleanEmotion) ||
+                    SYSTEM_KEYWORDS_REGEX.test(cleanName) ||
+                    /^\d+$/.test(cleanName) ||
+                    cleanEmotion.length > 20
+                ) {
+                    continue; // 这是其它插件的数据或系统标签，坚决不碰！
+                }
 
                 // 检查是否在跳过列表中
                 if (window.TTS_PromptInjector && window.TTS_PromptInjector.getSkippedSpeakers().includes(cleanName)) {
@@ -373,6 +413,7 @@ export const TTS_Parser = {
                 // 向后窥探对白内容 (Peek following text)
                 const afterText = modifiedHtml.slice(tagEnd);
                 let spokenText = '';
+                let isQuoted = false;
 
                 // ① 越过标签与开头可能存在的 HTML 标签（如 </p><p>、<em>、<br> 等）、冒号与空白字符
                 const stripped = afterText.replace(/^(?:<[^>]+>|[:：\s]|\&nbsp;)+/gi, '');
@@ -382,21 +423,30 @@ export const TTS_Parser = {
                     const quoteMatch = stripped.match(/^(?:([“"「『]|&ldquo;|&quot;|&#8220;)([\s\S]*?)([”"」』]|&rdquo;|&quot;|&#8221;))/i);
                     if (quoteMatch && quoteMatch[2]) {
                         spokenText = quoteMatch[2].replace(/<[^>]+>|&lt;[^&]+&gt;|&nbsp;/g, ' ').trim();
+                        isQuoted = true;
                     }
 
-                    // ③ 普通文本匹配 (如果没有使用引号包裹，提取到下一个标签/换行为止)
-                    if (!spokenText) {
+                    // ③ 普通文本匹配 (如果没有使用引号包裹，只有当角色名属于已知绑定/在场角色时才提取到下一个标签/换行为止)
+                    if (!spokenText && (knownSpeakers.has(cleanNameLower) || knownSpeakers.size === 0)) {
                         const plainMatch = stripped.match(/^([^<\[【\n\r]+)/);
                         if (plainMatch && plainMatch[1]) {
-                            spokenText = plainMatch[1].replace(/&nbsp;/g, ' ').trim();
+                            const candidate = plainMatch[1].replace(/&nbsp;/g, ' ').trim();
+                            // 避免把空文本或单个符号当台词
+                            if (candidate && candidate.length > 1) {
+                                spokenText = candidate;
+                            }
                         }
                     }
                 }
 
-                // ④ 兜底
-                if (!spokenText) {
-                    spokenText = cleanName;
+                // 🌟 【防误伤规则 2】：如果既没有引号对白，名字又不是已知角色，则判定为普通文本或系统数据，直接跳过
+                if (!spokenText || (!isQuoted && !knownSpeakers.has(cleanNameLower))) {
+                    continue;
                 }
+
+                matchedV3 = true;
+                result += modifiedHtml.slice(lastIndex, tagIndex);
+                lastIndex = tagEnd;
 
                 const d = Math.max(2, Math.ceil(spokenText.length * 0.25));
                 console.log(`🎙️ [Direct-TTS 解析日志] 匹配标签: "${fullTag}" -> 角色: "${cleanName}", 情绪: "${cleanEmotion}", 提取台词: "${spokenText}" (${spokenText.length}字, 预估时长: ${d}秒)`);
@@ -453,61 +503,53 @@ export const TTS_Parser = {
             }
         });
 
-        // 扫描所有 iframe
-        $('iframe').each(function () {
-            try {
-                const $iframe = $(this);
-                const doc = $iframe.contents();
-                const head = doc.find('head');
-                const body = doc.find('body');
+        // 扫描所有 iframe (严格受 iframe_mode 开关控制，默认不侵入其他扩展 iframe)
+        if (isIframeMode) {
+            $('iframe').each(function () {
+                try {
+                    const $iframe = $(this);
+                    const doc = $iframe.contents();
+                    const head = doc.find('head');
+                    const body = doc.find('body');
 
-                if (currentCSS && head.length > 0 && head.find('#sovits-iframe-style').length === 0) {
-                    head.append(`<style id='sovits-iframe-style'>${currentCSS}</style>`);
-                }
-                if (body.attr('data-bubble-style') !== activeStyle) {
-                    body.attr('data-bubble-style', activeStyle);
-                }
-
-                if (!body.data('tts-event-bound')) {
-                    body.on('click', '.voice-bubble', function (e) {
-                        e.stopPropagation();
-                        const $this = $(this);
-                        window.top.postMessage({
-                            type: 'play_tts',
-                            key: $this.attr('data-key'),
-                            text: $this.attr('data-text'),
-                            charName: $this.attr('data-voice-name'),
-                            emotion: $this.attr('data-voice-emotion')
-                        }, '*');
-                    });
-                    body.data('tts-event-bound', true);
-                }
-
-                const targets = body.find('*').filter(function () {
-                    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'BUTTON'].includes(this.tagName)) return false;
-                    let hasTargetText = false;
-                    $(this).contents().each(function () {
-                        if (this.nodeType === 3 && this.nodeValue && (this.nodeValue.indexOf("[") !== -1 || this.nodeValue.indexOf("【") !== -1)) {
-                            hasTargetText = true;
-                            return false;
-                        }
-                    });
-                    return hasTargetText;
-                });
-
-                targets.each(function () {
-                    const $this = $(this);
-                    const html = $this.html();
-                    if (!html || (!html.includes('[') && !html.includes('【'))) return;
-                    const newHtml = parseTextToBubbles(html);
-                    if (newHtml !== html) {
-                        $this.html(newHtml);
-                        if (CACHE.settings && CACHE.settings.auto_generate) {
-                            setTimeout(() => Scheduler.scanAndSchedule(), 100);
-                        }
+                    if (currentCSS && head.length > 0 && head.find('#sovits-iframe-style').length === 0) {
+                        head.append(`<style id='sovits-iframe-style'>${currentCSS}</style>`);
                     }
-                });
-            } catch (e) { }
-        });
+                    if (body.attr('data-bubble-style') !== activeStyle) {
+                        body.attr('data-bubble-style', activeStyle);
+                    }
+
+                    if (!body.data('tts-event-bound')) {
+                        body.on('click', '.voice-bubble', function (e) {
+                            e.stopPropagation();
+                            const $this = $(this);
+                            window.top.postMessage({
+                                type: 'play_tts',
+                                key: $this.attr('data-key'),
+                                text: $this.attr('data-text'),
+                                charName: $this.attr('data-voice-name'),
+                                emotion: $this.attr('data-voice-emotion')
+                            }, '*');
+                        });
+                        body.data('tts-event-bound', true);
+                    }
+
+                    // 仅扫描可能包含消息内容的容器，避免无差别破坏 iframe 全局结构
+                    const targets = body.find('.mes_text, .message-body, .markdown-content, #chat .mes_text, .mes .text');
+                    targets.each(function () {
+                        const $this = $(this);
+                        const html = $this.html();
+                        if (!html || (!html.includes('[') && !html.includes('【'))) return;
+                        const newHtml = parseTextToBubbles(html);
+                        if (newHtml !== html) {
+                            $this.html(newHtml);
+                            if (CACHE.settings && CACHE.settings.auto_generate) {
+                                setTimeout(() => Scheduler.scanAndSchedule(), 100);
+                            }
+                        }
+                    });
+                } catch (e) { }
+            });
+        }
     }
 };
