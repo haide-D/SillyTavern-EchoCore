@@ -410,7 +410,7 @@ export async function saveSettings() {
 }
 
 /**
- * 远程获取指定 LLM API 提供的模型列表 (优先后端代理规避 CORS，前端直连兜底，404 友好预设)
+ * 远程获取指定 LLM API 提供的模型列表 (统一走后端代理规避 CORS)
  */
 export async function fetchLLMModels(apiUrl, apiKey) {
     try {
@@ -435,38 +435,7 @@ export async function fetchLLMModels(apiUrl, apiKey) {
             throw new Error(errData.detail || `HTTP ${response.status}`);
         }
     } catch (backendError) {
-        console.warn('后端代理获取模型失败，尝试前端直连兜底:', backendError);
-        // 兜底：尝试前端直接请求（适用于同域或完全开放 CORS 的服务）
-        try {
-            const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
-            const modelsUrl = baseUrl + '/models';
-
-            const response = await fetch(modelsUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                let models = [];
-                if (data.data && Array.isArray(data.data)) {
-                    models = data.data.map(m => m.id || m.name || m);
-                } else if (Array.isArray(data)) {
-                    models = data.map(m => m.id || m.name || m);
-                } else if (data.models && Array.isArray(data.models)) {
-                    models = data.models.map(m => m.id || m.name || m);
-                }
-                if (models.length > 0) {
-                    return { success: true, models, is_fallback: false };
-                }
-            }
-        } catch (e) {
-            console.warn('前端直连亦失败:', e);
-        }
-
-        // 当远程接口未开放 /models（如 404）时，返回空列表并提示自由输入
+        console.warn('后端代理获取模型失败:', backendError);
         return {
             success: true,
             models: [],

@@ -614,6 +614,11 @@ async def proxy_llm_chat(data: dict):
     api_key = data.get("api_key", "").strip()
     model = data.get("model", "gpt-3.5-turbo").strip()
     messages = data.get("messages", [])
+    prompt = data.get("prompt", "")
+    
+    if not messages and prompt:
+        messages = [{"role": "user", "content": prompt}]
+
     temperature = data.get("temperature", 0.7)
     max_tokens = data.get("max_tokens")
     
@@ -631,6 +636,7 @@ async def proxy_llm_chat(data: dict):
         )
         return resp
     except Exception as e:
+        print(f"[Admin Router] ❌ LLM 代理转发失败: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

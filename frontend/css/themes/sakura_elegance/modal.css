@@ -319,35 +319,305 @@
     color: #F8FAFC !important;
 }
 
-#tts-sakura-modal input,
+#tts-sakura-modal input:not(.tts-toggle),
 #tts-sakura-modal select,
 #tts-sakura-modal textarea {
-    background: rgba(15, 23, 42, 0.85) !important;
-    border: 0.8px solid rgba(147, 197, 253, 0.28) !important;
+    background: rgba(10, 17, 30, 0.88) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.25) !important;
     color: #F8FAFC !important;
-    border-radius: 6px !important;
+    border-radius: 4px !important;
 }
 
-#tts-sakura-modal input:focus,
+#tts-sakura-modal input:focus:not(.tts-toggle),
 #tts-sakura-modal select:focus,
 #tts-sakura-modal textarea:focus {
     border-color: #F4A6B8 !important;
     box-shadow: 0 0 8px rgba(244, 166, 184, 0.4) !important;
+    background: rgba(13, 21, 36, 0.96) !important;
     outline: none !important;
 }
 
-#tts-sakura-modal .btn,
-#tts-sakura-modal button:not(.sakura-close-btn):not(.sakura-btn-action) {
-    background: linear-gradient(135deg, rgba(244, 166, 184, 0.22), rgba(147, 197, 253, 0.18)) !important;
-    border: 0.8px solid rgba(245, 208, 169, 0.45) !important;
+/* ==================== 9. 阴阳寮律 (系统配置 Settings App 深度美化适配) ==================== */
+#tts-sakura-modal .mobile-settings-content {
+    background: transparent !important;
     color: #F8FAFC !important;
-    border-radius: 6px !important;
-    transition: all 0.25s ease !important;
+    flex: 1;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 10px 4px 40px 4px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
 }
 
-#tts-sakura-modal .btn:hover,
-#tts-sakura-modal button:not(.sakura-close-btn):not(.sakura-btn-action):hover {
-    background: linear-gradient(135deg, rgba(244, 166, 184, 0.42), rgba(147, 197, 253, 0.3)) !important;
+/* 优雅夜樱和纸卡片容器 */
+#tts-sakura-modal .mobile-settings-content .tts-card {
+    background: rgba(13, 21, 36, 0.82) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.22) !important;
+    border-left: 3px solid rgba(244, 166, 184, 0.85) !important;
+    border-radius: 6px !important;
+    padding: 12px 10px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(147, 197, 253, 0.03) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    transition: all 0.25s ease !important;
+    overflow: visible !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-card:hover {
+    border-color: rgba(244, 166, 184, 0.5) !important;
+    background: rgba(16, 26, 44, 0.9) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(244, 166, 184, 0.15) !important;
+}
+
+/* 晨曦金小标 */
+#tts-sakura-modal .mobile-settings-content .tts-card-title {
+    color: #F5D0A9 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    letter-spacing: 1px !important;
+    border-bottom: 0.8px solid rgba(147, 197, 253, 0.18) !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 10px !important;
+    text-shadow: 0 0 8px rgba(245, 208, 169, 0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: transparent !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* 开关行与设置行 */
+#tts-sakura-modal .mobile-settings-content .tts-switch-row,
+#tts-sakura-modal .mobile-settings-content .tts-input-row,
+#tts-sakura-modal .mobile-settings-content .tts-list-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    padding: 4px 0 !important;
+    cursor: pointer;
+    background: transparent !important;
+    border: none !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-switch-label,
+#tts-sakura-modal .mobile-settings-content .tts-input-label {
+    color: #E2E8F0 !important;
+    font-size: 12px !important;
+    font-weight: 300 !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1.4 !important;
+    background: transparent !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-switch-label span,
+#tts-sakura-modal .mobile-settings-content .tts-input-label span,
+#tts-sakura-modal .mobile-settings-content small {
+    color: #94A3B8 !important;
+    font-size: 11px !important;
+}
+
+/* 和风式水引同心开关 (Toggle Switch) */
+#tts-sakura-modal .mobile-settings-content .tts-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 34px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.4) !important;
+    border-radius: 18px !important;
+    position: relative;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+    margin: 0 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-toggle:before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: rgba(147, 197, 253, 0.75);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-toggle:checked {
+    background: rgba(244, 166, 184, 0.25) !important;
+    border-color: #F4A6B8 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-toggle:checked:before {
+    left: 18px;
+    background: #F4A6B8;
+    box-shadow: 0 0 8px rgba(244, 166, 184, 0.8);
+}
+
+/* 莳绘墨色输入框与下拉选择框 */
+#tts-sakura-modal .mobile-settings-content input[type="text"],
+#tts-sakura-modal .mobile-settings-content input[type="number"],
+#tts-sakura-modal .mobile-settings-content input[type="password"],
+#tts-sakura-modal .mobile-settings-content select,
+#tts-sakura-modal .mobile-settings-content .tts-modern-input {
+    background: rgba(10, 17, 30, 0.88) !important;
+    color: #F8FAFC !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.25) !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    outline: none !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+}
+
+#tts-sakura-modal .mobile-settings-content select option {
+    background: #0b1321 !important;
+    color: #F8FAFC !important;
+}
+
+#tts-sakura-modal .mobile-settings-content input:focus,
+#tts-sakura-modal .mobile-settings-content select:focus,
+#tts-sakura-modal .mobile-settings-content .tts-modern-input:focus {
+    border-color: #F4A6B8 !important;
+    background: rgba(13, 21, 36, 0.96) !important;
+    box-shadow: 0 0 8px rgba(244, 166, 184, 0.35) !important;
+}
+
+/* 主要操作按钮 (如 "+ 绑定角色音色与头像") */
+#tts-sakura-modal .mobile-settings-content .btn-primary,
+#tts-sakura-modal .mobile-settings-content #tts-btn-bind-new {
+    background: linear-gradient(135deg, rgba(244, 166, 184, 0.22), rgba(147, 197, 253, 0.18)) !important;
+    border: 0.8px solid rgba(245, 208, 169, 0.5) !important;
+    color: #F8FAFC !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    letter-spacing: 1px !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .btn-primary:hover,
+#tts-sakura-modal .mobile-settings-content #tts-btn-bind-new:hover {
+    background: linear-gradient(135deg, rgba(244, 166, 184, 0.38), rgba(147, 197, 253, 0.28)) !important;
     border-color: #F4A6B8 !important;
     box-shadow: 0 0 12px rgba(244, 166, 184, 0.35) !important;
+}
+
+/* 次要操作按钮 (如快速获取、当前角色、全部等) */
+#tts-sakura-modal .mobile-settings-content .btn-secondary,
+#tts-sakura-modal .mobile-settings-content #tts-btn-fill-current-char,
+#tts-sakura-modal .mobile-settings-content #tts-btn-select-all,
+#tts-sakura-modal .mobile-settings-content .tts-btn-icon {
+    background: rgba(13, 21, 36, 0.85) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.25) !important;
+    color: #CBD5E1 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .btn-secondary:hover,
+#tts-sakura-modal .mobile-settings-content #tts-btn-fill-current-char:hover,
+#tts-sakura-modal .mobile-settings-content #tts-btn-select-all:hover,
+#tts-sakura-modal .mobile-settings-content .tts-btn-icon:hover {
+    border-color: #F4A6B8 !important;
+    color: #FFF0F5 !important;
+    background: rgba(244, 166, 184, 0.2) !important;
+}
+
+/* 角色与模型绑定列表项 (Compact Item) */
+#tts-sakura-modal .mobile-settings-content .tts-compact-item {
+    background: rgba(10, 17, 30, 0.75) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.2) !important;
+    border-radius: 4px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+    color: #F8FAFC !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .tts-compact-item:hover {
+    border-color: rgba(244, 166, 184, 0.4) !important;
+    background: rgba(13, 21, 36, 0.9) !important;
+}
+
+/* 角色头像预览与上传按钮 */
+#tts-sakura-modal .mobile-settings-content .tts-avatar-preview {
+    border: 1px solid rgba(245, 208, 169, 0.4) !important;
+    border-radius: 4px !important;
+    background: rgba(10, 17, 30, 0.8) !important;
+}
+
+/* 自定义下拉组件 */
+#tts-sakura-modal .mobile-settings-content .tts-custom-select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .select-trigger {
+    background: rgba(10, 17, 30, 0.88) !important;
+    border: 0.8px solid rgba(147, 197, 253, 0.25) !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+    color: #F8FAFC !important;
+    font-size: 12px !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .select-options {
+    background: #0b1321 !important;
+    border: 0.8px solid rgba(245, 208, 169, 0.4) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8) !important;
+    z-index: 10005 !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .option-item {
+    color: #CBD5E1 !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .option-item:hover {
+    background: rgba(244, 166, 184, 0.2) !important;
+    color: #FFF0F5 !important;
+}
+
+/* 删除与危险按钮 */
+#tts-sakura-modal .mobile-settings-content .btn-red,
+#tts-sakura-modal .mobile-settings-content .tts-btn-delete {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 0.8px solid rgba(239, 68, 68, 0.4) !important;
+    color: #FCA5A5 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#tts-sakura-modal .mobile-settings-content .btn-red:hover,
+#tts-sakura-modal .mobile-settings-content .tts-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+    border-color: #EF4444 !important;
+    color: #FFF !important;
 }
