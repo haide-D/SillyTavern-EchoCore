@@ -9,6 +9,10 @@ export const TTS_API = {
         console.log("🔵 [API] 服务地址已设定:", this.baseUrl, this.apiToken ? "(已携带访问 Token)" : "(免密模式)");
     },
 
+    reconfigure: function (url, wsUrl = "", token = "") {
+        this.init(url, token);
+    },
+
     getBaseUrl: function () {
         if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
             const cfg = window.TTS_Utils.getLatestRemoteConfig();

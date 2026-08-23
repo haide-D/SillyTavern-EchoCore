@@ -129,8 +129,13 @@ export async function initSettingsUI() {
         const updateAdminLink = () => {
             const urls = getCurrentManagerUrls(config);
             $('#tts-ext-open-admin-btn').attr('href', urls.adminUrl);
-            if (window.TTS_API) {
-                window.TTS_API.reconfigure(urls.httpUrl, urls.wsUrl, config.remote_token || '');
+            const api = window.TTS_API || TTS_API;
+            if (api) {
+                if (typeof api.reconfigure === 'function') {
+                    api.reconfigure(urls.httpUrl, urls.wsUrl, config.remote_token || '');
+                } else if (typeof api.init === 'function') {
+                    api.init(urls.httpUrl, config.remote_token || '');
+                }
             }
         };
         updateAdminLink();
