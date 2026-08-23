@@ -174,18 +174,8 @@ export async function loadSettings() {
         if (analysisApiUrlEl) analysisApiUrlEl.value = analysisLlm.api_url || '';
         if (analysisApiKeyEl) analysisApiKeyEl.value = analysisLlm.api_key || '';
 
-        const analysisModelSelect = document.getElementById('setting-analysis-llm-model');
-        const savedAnalysisModel = analysisLlm.model || '';
-        if (analysisModelSelect && savedAnalysisModel) {
-            let hasOpt = Array.from(analysisModelSelect.options).some(o => o.value === savedAnalysisModel);
-            if (!hasOpt) {
-                const opt = document.createElement('option');
-                opt.value = savedAnalysisModel;
-                opt.textContent = savedAnalysisModel;
-                analysisModelSelect.appendChild(opt);
-            }
-            analysisModelSelect.value = savedAnalysisModel;
-        }
+        const analysisModelEl = document.getElementById('setting-analysis-llm-model');
+        if (analysisModelEl) analysisModelEl.value = analysisLlm.model || '';
 
         const analysisTempEl = document.getElementById('setting-analysis-llm-temperature');
         const analysisMaxTokensEl = document.getElementById('setting-analysis-llm-max-tokens');
@@ -203,18 +193,8 @@ export async function loadSettings() {
         if (llmApiUrlEl) llmApiUrlEl.value = llm.api_url || 'http://127.0.0.1:7861/v1';
         if (llmApiKeyEl) llmApiKeyEl.value = llm.api_key || '';
 
-        const modelSelect = document.getElementById('setting-llm-model');
-        const savedModel = llm.model || 'gemini-2.5-flash';
-        if (modelSelect) {
-            let hasOption = Array.from(modelSelect.options).some(o => o.value === savedModel);
-            if (!hasOption && savedModel) {
-                const option = document.createElement('option');
-                option.value = savedModel;
-                option.textContent = savedModel;
-                modelSelect.appendChild(option);
-            }
-            modelSelect.value = savedModel;
-        }
+        const llmModelEl = document.getElementById('setting-llm-model');
+        if (llmModelEl) llmModelEl.value = llm.model || '';
 
         const llmTempEl = document.getElementById('setting-llm-temperature');
         const llmMaxTokensEl = document.getElementById('setting-llm-max-tokens');
@@ -430,7 +410,7 @@ export async function saveSettings() {
 }
 
 /**
- * 远程获取指定 LLM API 提供的模型列表 (优先后端代理规避 CORS，前端直连兜底)
+ * 远程获取指定 LLM API 提供的模型列表 (优先后端代理规避 CORS，前端直连兜底，404 友好预设)
  */
 export async function fetchLLMModels(apiUrl, apiKey) {
     try {
@@ -447,8 +427,8 @@ export async function fetchLLMModels(apiUrl, apiKey) {
 
         if (response.ok) {
             const data = await response.json();
-            if (data.success && Array.isArray(data.models)) {
-                return data.models;
+            if (data.models && Array.isArray(data.models)) {
+                return data;
             }
         } else {
             const errData = await response.json().catch(() => ({}));
@@ -457,30 +437,62 @@ export async function fetchLLMModels(apiUrl, apiKey) {
     } catch (backendError) {
         console.warn('后端代理获取模型失败，尝试前端直连兜底:', backendError);
         // 兜底：尝试前端直接请求（适用于同域或完全开放 CORS 的服务）
-        const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
-        const modelsUrl = baseUrl + '/models';
+        try {
+            const baseUrl = apiUrl.replace(/\/chat\/completions.*$/, '');
+            const modelsUrl = baseUrl + '/models';
 
-        const response = await fetch(modelsUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`
+            const response = await fetch(modelsUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                let models = [];
+                if (data.data && Array.isArray(data.data)) {
+                    models = data.data.map(m => m.id || m.name || m);
+                } else if (Array.isArray(data)) {
+                    models = data.map(m => m.id || m.name || m);
+                } else if (data.models && Array.isArray(data.models)) {
+                    models = data.models.map(m => m.id || m.name || m);
+                }
+                if (models.length > 0) {
+                    return { success: true, models, is_fallback: false };
+                }
             }
-        });
-
-        if (!response.ok) {
-            throw new Error(backendError.message || `HTTP ${response.status}`);
+        } catch (e) {
+            console.warn('前端直连亦失败:', e);
         }
 
-        const data = await response.json();
-        let models = [];
-        if (data.data && Array.isArray(data.data)) {
-            models = data.data.map(m => m.id || m.name || m);
-        } else if (Array.isArray(data)) {
-            models = data.map(m => m.id || m.name || m);
-        } else if (data.models && Array.isArray(data.models)) {
-            models = data.models.map(m => m.id || m.name || m);
-        }
-        return models;
+        // 当远程接口未开放 /models（如 404）时，返回空列表并提示自由输入
+        return {
+            success: true,
+            models: [],
+            is_fallback: true,
+            message: `远程接口未提供 /models 查询列表 (${backendError.message})，请直接在输入框中填入您要使用的模型名称`
+        };
+    }
+}
+
+/**
+ * 填充模型 Datalist 自动补全建议列表
+ */
+function populateModelDatalist(datalistId, inputId, models) {
+    const datalist = document.getElementById(datalistId);
+    const input = document.getElementById(inputId);
+    if (!datalist) return;
+
+    datalist.innerHTML = '';
+    models.forEach(model => {
+        const opt = document.createElement('option');
+        opt.value = model;
+        datalist.appendChild(opt);
+    });
+
+    if (input && !input.value.trim() && models.length > 0) {
+        input.value = models[0];
     }
 }
 
@@ -494,6 +506,7 @@ export function bindFetchModelsButton() {
     btn.addEventListener('click', async () => {
         const apiUrl = document.getElementById('setting-llm-api-url').value.trim();
         const apiKey = document.getElementById('setting-llm-api-key').value.trim();
+        const input = document.getElementById('setting-llm-model');
 
         if (!apiUrl) {
             showNotification('请先填写 LLM API 地址', 'warning');
@@ -504,25 +517,16 @@ export function bindFetchModelsButton() {
         btn.textContent = '🔄 获取中...';
 
         try {
-            const models = await fetchLLMModels(apiUrl, apiKey);
-            const select = document.getElementById('setting-llm-model');
-            const currentVal = select.value;
+            const res = await fetchLLMModels(apiUrl, apiKey);
+            const models = res.models || [];
 
-            select.innerHTML = '<option value="">请选择模型...</option>';
-            models.forEach(model => {
-                const opt = document.createElement('option');
-                opt.value = model;
-                opt.textContent = model;
-                select.appendChild(opt);
-            });
+            populateModelDatalist('setting-llm-model-list', 'setting-llm-model', models);
 
-            if (currentVal && models.includes(currentVal)) {
-                select.value = currentVal;
-            } else if (models.length > 0) {
-                select.value = models[0];
+            if (res.is_fallback) {
+                showNotification(res.message || '远程接口未提供 /models 列表，您可直接在输入框中填入模型名称', 'info');
+            } else {
+                showNotification(`成功获取到 ${models.length} 个可用模型，已加入输入建议`, 'success');
             }
-
-            showNotification(`成功获取到 ${models.length} 个可用模型`, 'success');
         } catch (error) {
             console.error('获取模型列表失败:', error);
             showNotification(`获取模型失败: ${error.message}`, 'error');
@@ -549,6 +553,10 @@ export function bindTestConnectionButton() {
             showNotification('请先填写 API 地址', 'warning');
             return;
         }
+        if (!model) {
+            showNotification('请先填入模型名称', 'warning');
+            return;
+        }
 
         btn.disabled = true;
         btn.textContent = '🧪 测试中...';
@@ -562,7 +570,7 @@ export function bindTestConnectionButton() {
                 body: JSON.stringify({
                     api_url: apiUrl,
                     api_key: apiKey,
-                    model: model || 'gpt-3.5-turbo'
+                    model: model
                 })
             });
 
@@ -603,25 +611,16 @@ export function bindAnalysisLLMButtons() {
             fetchBtn.textContent = '🔄 获取中...';
 
             try {
-                const models = await fetchLLMModels(apiUrl, apiKey);
-                const select = document.getElementById('setting-analysis-llm-model');
-                const currentVal = select.value;
+                const res = await fetchLLMModels(apiUrl, apiKey);
+                const models = res.models || [];
 
-                select.innerHTML = '<option value="">请选择模型...</option>';
-                models.forEach(model => {
-                    const opt = document.createElement('option');
-                    opt.value = model;
-                    opt.textContent = model;
-                    select.appendChild(opt);
-                });
+                populateModelDatalist('setting-analysis-llm-model-list', 'setting-analysis-llm-model', models);
 
-                if (currentVal && models.includes(currentVal)) {
-                    select.value = currentVal;
-                } else if (models.length > 0) {
-                    select.value = models[0];
+                if (res.is_fallback) {
+                    showNotification(res.message || '远程接口未提供 /models 列表，您可直接在输入框中填入模型名称', 'info');
+                } else {
+                    showNotification(`成功获取到 ${models.length} 个分析模型，已加入输入建议`, 'success');
                 }
-
-                showNotification(`成功获取到 ${models.length} 个分析模型`, 'success');
             } catch (error) {
                 console.error('获取分析模型失败:', error);
                 showNotification(`获取失败: ${error.message}`, 'error');
@@ -642,6 +641,10 @@ export function bindAnalysisLLMButtons() {
                 showNotification('请先填写分析 API 地址', 'warning');
                 return;
             }
+            if (!model) {
+                showNotification('请先填入模型名称', 'warning');
+                return;
+            }
 
             testBtn.disabled = true;
             testBtn.textContent = '🧪 测试中...';
@@ -655,7 +658,7 @@ export function bindAnalysisLLMButtons() {
                     body: JSON.stringify({
                         api_url: apiUrl,
                         api_key: apiKey,
-                        model: model || 'gpt-3.5-turbo'
+                        model: model
                     })
                 });
 

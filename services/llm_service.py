@@ -6,56 +6,82 @@ class LLMService:
     """LLM 交互与服务端中转代理服务"""
 
     @staticmethod
-    async def fetch_models(api_url: str, api_key: str = "") -> List[str]:
+    async def fetch_models(api_url: str, api_key: str = "") -> Dict[str, Any]:
         """
-        通过服务端代理获取远程 LLM 模型的可用列表 (规避浏览器跨域 CORS 拦截)
+        通过服务端代理获取远程 LLM 模型的可用列表 (规避浏览器跨域 CORS 拦截并兼容 404 无 /models 接口的代理网关)
         """
         if not api_url:
             raise ValueError("缺少 API 地址")
 
-        # 提取 Base URL 并构建 /models 路径
+        # 提取 Base URL
         base_url = api_url.strip().replace("/chat/completions", "").rstrip("/")
-        models_url = f"{base_url}/models"
+        
+        # 针对不同格式的代理网关准备候选模型路径列表
+        candidate_urls = [
+            f"{base_url}/models",
+        ]
+        if "/api/v1" in base_url:
+            candidate_urls.append(f"{base_url.replace('/api/v1', '/v1')}/models")
+            candidate_urls.append(f"{base_url.replace('/api/v1', '')}/v1/models")
+            candidate_urls.append(f"{base_url.replace('/api/v1', '')}/models")
+        elif "/v1" in base_url:
+            candidate_urls.append(f"{base_url.replace('/v1', '')}/models")
+        else:
+            candidate_urls.append(f"{base_url}/v1/models")
 
         headers = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        print(f"[LLMService] 服务端代理拉取模型: {models_url}")
-        async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as client:
-            try:
-                resp = await client.get(models_url, headers=headers)
-                if resp.status_code != 200:
-                    error_detail = resp.text[:300]
-                    print(f"[LLMService] ❌ 获取模型失败 HTTP {resp.status_code}: {error_detail}")
-                    raise Exception(f"远程接口返回 HTTP {resp.status_code}: {error_detail}")
+        last_error = ""
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            for models_url in candidate_urls:
+                try:
+                    print(f"[LLMService] 尝试服务端代理拉取模型: {models_url}")
+                    resp = await client.get(models_url, headers=headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        models = []
+                        if isinstance(data, dict):
+                            if "data" in data and isinstance(data["data"], list):
+                                models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["data"]]
+                            elif "models" in data and isinstance(data["models"], list):
+                                models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["models"]]
+                            elif "id" in data:
+                                models = [data["id"]]
+                        elif isinstance(data, list):
+                            models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data]
 
-                data = resp.json()
-                models = []
-                if isinstance(data, dict):
-                    if "data" in data and isinstance(data["data"], list):
-                        models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["data"]]
-                    elif "models" in data and isinstance(data["models"], list):
-                        models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["models"]]
-                    elif "id" in data:
-                        models = [data["id"]]
-                elif isinstance(data, list):
-                    models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data]
+                        seen = set()
+                        deduped = []
+                        for m in models:
+                            if m and m not in seen:
+                                seen.add(m)
+                                deduped.append(m)
 
-                # 过滤并去重
-                seen = set()
-                deduped = []
-                for m in models:
-                    if m and m not in seen:
-                        seen.add(m)
-                        deduped.append(m)
+                        if deduped:
+                            print(f"[LLMService] [OK] 成功拉取到 {len(deduped)} 个可用模型 ({models_url})")
+                            return {
+                                "success": True,
+                                "models": deduped,
+                                "total": len(deduped),
+                                "is_fallback": False
+                            }
+                    else:
+                        last_error = f"HTTP {resp.status_code}"
+                except Exception as e:
+                    last_error = str(e)
 
-                print(f"[LLMService] ✅ 成功拉取到 {len(deduped)} 个可用模型")
-                return deduped
+        # 若远程接口未提供 /models 列表接口（如 api.cline.bot 等纯 Chat 代理服务返回 404）
+        print(f"[LLMService] [INFO] 远程 API 未开放 /models 接口 ({last_error})，允许用户自由输入模型名称")
+        return {
+            "success": True,
+            "models": [],
+            "total": 0,
+            "is_fallback": True,
+            "message": f"远程服务未开放 /models 查询接口 ({last_error})，请直接在模型输入框中填写您要使用的模型名称（如 cline-pass/deepseek-v4-pro）"
+        }
 
-            except httpx.RequestError as e:
-                print(f"[LLMService] ❌ 网络连接错误: {str(e)}")
-                raise Exception(f"连接远程 API 失败: {str(e)}")
 
     @staticmethod
     async def call(config: Dict, prompt: str) -> str:

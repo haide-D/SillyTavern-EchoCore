@@ -689,22 +689,22 @@
                         <div class="form-group">
                             <div
                                 style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
-                                <label>模型</label>
+                                <label>模型名称</label>
                                 <div style="display:flex; gap:8px;">
                                     <button type="button" id="test-analysis-llm-btn" class="btn btn-secondary"
                                         style="padding:4px 12px; font-size:12px;">
                                         🧪 测试连接
                                     </button>
                                     <button type="button" id="fetch-analysis-models-btn" class="btn btn-secondary"
-                                        style="padding:4px 12px; font-size:12px;">
+                                        style="padding:4px 12px; font-size:12px;" title="从 API 探测可用模型列表">
                                         🔄 获取模型列表
                                     </button>
                                 </div>
                             </div>
-                            <select id="setting-analysis-llm-model" class="select">
-                                <option value="">请选择模型...</option>
-                            </select>
-                            <small>用于角色状态分析的 LLM 模型</small>
+                            <input type="text" id="setting-analysis-llm-model" class="input" list="setting-analysis-llm-model-list"
+                                placeholder="直接输入模型名称，例: cline-pass/deepseek-v4-pro">
+                            <datalist id="setting-analysis-llm-model-list"></datalist>
+                            <small>用于角色状态分析的 LLM 模型名称（可直接自由输入任意自定义模型名称）</small>
                         </div>
 
                         <div class="form-group">
@@ -753,22 +753,22 @@
                         <div class="form-group">
                             <div
                                 style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
-                                <label>LLM 模型</label>
+                                <label>LLM 模型名称</label>
                                 <div style="display:flex; gap:8px;">
                                     <button type="button" id="test-llm-connection-btn" class="btn btn-secondary"
                                         style="padding:4px 12px; font-size:12px;">
                                         🧪 测试连接
                                     </button>
                                     <button type="button" id="fetch-llm-models-btn" class="btn btn-secondary"
-                                        style="padding:4px 12px; font-size:12px;">
+                                        style="padding:4px 12px; font-size:12px;" title="从 API 探测可用模型列表">
                                         🔄 获取模型列表
                                     </button>
                                 </div>
                             </div>
-                            <select id="setting-llm-model" class="select">
-                                <option value="">请选择模型...</option>
-                            </select>
-                            <small>使用的 LLM 模型名称,点击上方按钮从 API 获取可用模型</small>
+                            <input type="text" id="setting-llm-model" class="input" list="setting-llm-model-list"
+                                placeholder="直接输入模型名称，例: cline-pass/deepseek-v4-pro">
+                            <datalist id="setting-llm-model-list"></datalist>
+                            <small>用于电话呼叫的 LLM 模型名称（可直接自由输入任意自定义模型名称）</small>
                         </div>
 
                         <div class="form-group">

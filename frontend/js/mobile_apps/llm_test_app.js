@@ -70,10 +70,10 @@ export async function render(container, createNavbar) {
                             🔄 获取模型列表
                         </button>
                     </div>
-                    <select id="llm-model" 
+                    <input type="text" id="llm-model" list="llm-model-list" value="${defaultConfig.model || ''}"
+                        placeholder="直接输入模型名，例: cline-pass/deepseek-v4-pro"
                         style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:#fff;">
-                        <option value="${defaultConfig.model}">${defaultConfig.model}</option>
-                    </select>
+                    <datalist id="llm-model-list"></datalist>
                 </div>
                 
                 <div style="display:flex; gap:10px; margin-bottom:12px;">
@@ -115,7 +115,8 @@ export async function render(container, createNavbar) {
     // 使用事件委托确保元素存在
     $content.on('click', '#llm-fetch-models', async function () {
         const $btn = $(this);
-        const $select = $('#llm-model');
+        const $input = $('#llm-model');
+        const $datalist = $('#llm-model-list');
         const apiUrl = $('#llm-api-url').val().trim();
         const apiKey = $('#llm-api-key').val().trim();
 
@@ -131,20 +132,21 @@ export async function render(container, createNavbar) {
             const models = await window.LLM_Client.fetchModels(apiUrl, apiKey);
             console.log('[LLM测试] 成功获取模型:', models);
 
-            const currentValue = $select.val();
-            $select.empty();
-            models.forEach(model => {
-                $select.append(`<option value="${model}">${model}</option>`);
-            });
-
-            if (models.includes(currentValue)) {
-                $select.val(currentValue);
+            $datalist.empty();
+            if (Array.isArray(models)) {
+                models.forEach(model => {
+                    $datalist.append(`<option value="${model}">`);
+                });
             }
 
-            alert(`成功获取 ${models.length} 个模型`);
+            if (!$input.val().trim() && Array.isArray(models) && models.length > 0) {
+                $input.val(models[0]);
+            }
+
+            alert(`已拉取可用模型列表，您可直接在输入框中自由填入或修改任意模型名称`);
         } catch (error) {
             console.error('[LLM测试] 获取模型失败:', error);
-            alert(`获取模型失败: ${error.message}`);
+            alert(`获取模型列表失败: ${error.message} (您可直接在输入框中手动输入模型名称)`);
         } finally {
             $btn.prop('disabled', false).text('🔄 获取模型列表');
         }

@@ -584,12 +584,8 @@ async def get_llm_models(data: dict):
         raise HTTPException(status_code=400, detail="缺少 API 地址")
     
     try:
-        models = await LLMService.fetch_models(api_url, api_key)
-        return {
-            "success": True,
-            "models": models,
-            "total": len(models)
-        }
+        result = await LLMService.fetch_models(api_url, api_key)
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
