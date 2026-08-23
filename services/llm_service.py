@@ -1,12 +1,15 @@
+import asyncio
 import httpx
 from typing import Dict, List, Optional, Any
+
+DEFAULT_MAX_RETRIES = 5
 
 
 class LLMService:
     """LLM 交互与服务端中转代理服务"""
 
     @staticmethod
-    async def fetch_models(api_url: str, api_key: str = "") -> Dict[str, Any]:
+    async def fetch_models(api_url: str, api_key: str = "", max_retries: int = 2) -> Dict[str, Any]:
         """
         通过服务端代理获取远程 LLM 模型的可用列表 (规避浏览器跨域 CORS 拦截并兼容 404 无 /models 接口的代理网关)
         """
@@ -34,43 +37,46 @@ class LLMService:
             headers["Authorization"] = f"Bearer {api_key}"
 
         last_error = ""
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-            for models_url in candidate_urls:
-                try:
-                    print(f"[LLMService] 尝试服务端代理拉取模型: {models_url}")
-                    resp = await client.get(models_url, headers=headers)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        models = []
-                        if isinstance(data, dict):
-                            if "data" in data and isinstance(data["data"], list):
-                                models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["data"]]
-                            elif "models" in data and isinstance(data["models"], list):
-                                models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["models"]]
-                            elif "id" in data:
-                                models = [data["id"]]
-                        elif isinstance(data, list):
-                            models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data]
+        for attempt in range(1, max(1, max_retries) + 1):
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                for models_url in candidate_urls:
+                    try:
+                        print(f"[LLMService] 尝试服务端代理拉取模型 (第 {attempt} 轮): {models_url}")
+                        resp = await client.get(models_url, headers=headers)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            models = []
+                            if isinstance(data, dict):
+                                if "data" in data and isinstance(data["data"], list):
+                                    models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["data"]]
+                                elif "models" in data and isinstance(data["models"], list):
+                                    models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data["models"]]
+                                elif "id" in data:
+                                    models = [data["id"]]
+                            elif isinstance(data, list):
+                                models = [m.get("id") or m.get("name") if isinstance(m, dict) else str(m) for m in data]
 
-                        seen = set()
-                        deduped = []
-                        for m in models:
-                            if m and m not in seen:
-                                seen.add(m)
-                                deduped.append(m)
+                            seen = set()
+                            deduped = []
+                            for m in models:
+                                if m and m not in seen:
+                                    seen.add(m)
+                                    deduped.append(m)
 
-                        if deduped:
-                            print(f"[LLMService] [OK] 成功拉取到 {len(deduped)} 个可用模型 ({models_url})")
-                            return {
-                                "success": True,
-                                "models": deduped,
-                                "total": len(deduped),
-                                "is_fallback": False
-                            }
-                    else:
-                        last_error = f"HTTP {resp.status_code}"
-                except Exception as e:
-                    last_error = str(e)
+                            if deduped:
+                                print(f"[LLMService] [OK] 成功拉取到 {len(deduped)} 个可用模型 ({models_url})")
+                                return {
+                                    "success": True,
+                                    "models": deduped,
+                                    "total": len(deduped),
+                                    "is_fallback": False
+                                }
+                        else:
+                            last_error = f"HTTP {resp.status_code}"
+                    except Exception as e:
+                        last_error = str(e)
+            if attempt < max_retries:
+                await asyncio.sleep(1.0)
 
         # 若远程接口未提供 /models 列表接口（如 api.cline.bot 等纯 Chat 代理服务返回 404）
         print(f"[LLMService] [INFO] 远程 API 未开放 /models 接口 ({last_error})，允许用户自由输入模型名称")
@@ -84,15 +90,21 @@ class LLMService:
 
 
     @staticmethod
-    async def call(config: Dict, prompt: str) -> str:
+    async def call(config: Dict, prompt: str, max_retries: Optional[int] = None) -> str:
         """
-        调用 LLM API 并返回响应文本
+        调用 LLM API 并返回响应文本 (支持自动重试机制与阶梯退避)
         """
         api_url = config.get("api_url")
         api_key = config.get("api_key", "")
         model = config.get("model", "gpt-3.5-turbo")
         temperature = config.get("temperature", 0.7)
         max_tokens = config.get("max_tokens")
+
+        retries = max_retries if max_retries is not None else config.get("max_retries", DEFAULT_MAX_RETRIES)
+        try:
+            retries = max(1, int(retries))
+        except (ValueError, TypeError):
+            retries = DEFAULT_MAX_RETRIES
 
         if not api_url:
             raise ValueError("缺少必要的 LLM 配置: api_url")
@@ -115,19 +127,42 @@ class LLMService:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        print(f"[LLMService] 请求 URL: {api_url}, 模型: {model}")
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-            try:
-                resp = await client.post(api_url, headers=headers, json=request_body)
-                if resp.status_code != 200:
-                    error_text = resp.text[:400]
-                    raise Exception(f"HTTP {resp.status_code}: {error_text}")
+        print(f"[LLMService] [REQUEST] 发起请求 -> URL: {api_url}, 模型: {model}, 最大重试次数: {retries}")
 
-                data = resp.json()
-                return LLMService.parse_response(data)
+        last_error = ""
+        for attempt in range(1, retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                    resp = await client.post(api_url, headers=headers, json=request_body)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        parsed = LLMService.parse_response(data)
+                        if attempt > 1:
+                            print(f"[LLMService] [OK] 第 {attempt} 次重试成功获取响应")
+                        return parsed
+
+                    error_text = resp.text[:400]
+                    # 鉴权错误通常不可通过重试恢复，直接快速报错
+                    if resp.status_code in (401, 403):
+                        raise Exception(f"HTTP {resp.status_code} (鉴权失败/API Key无效): {error_text}")
+
+                    last_error = f"HTTP {resp.status_code}: {error_text}"
 
             except httpx.RequestError as e:
-                raise Exception(f"请求失败: {str(e)}")
+                last_error = f"网络连接异常 ({type(e).__name__}): {str(e)}"
+            except httpx.TimeoutException as e:
+                last_error = f"请求超时: {str(e)}"
+            except Exception as e:
+                if "鉴权失败" in str(e) or "API Key无效" in str(e):
+                    raise
+                last_error = str(e)
+
+            if attempt < retries:
+                delay = min(1.5 * attempt, 6.0)
+                print(f"[LLMService] [WARN] 第 {attempt}/{retries} 次调用失败 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
+                await asyncio.sleep(delay)
+
+        raise Exception(f"LLM API 调用失败: 已自动重试 {retries} 次均失败 (最后错误: {last_error})")
 
     @staticmethod
     async def chat_completion(
@@ -137,10 +172,11 @@ class LLMService:
         messages: List[Dict[str, Any]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        extra_body: Optional[Dict[str, Any]] = None
+        extra_body: Optional[Dict[str, Any]] = None,
+        max_retries: int = DEFAULT_MAX_RETRIES
     ) -> Dict[str, Any]:
         """
-        通用 Chat Completion 服务端代理转发
+        通用 Chat Completion 服务端代理转发 (支持自动重试机制与阶梯退避)
         """
         if not api_url:
             raise ValueError("缺少必要的 LLM 配置: api_url")
@@ -165,14 +201,44 @@ class LLMService:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        async with httpx.AsyncClient(timeout=90.0, follow_redirects=True) as client:
+        try:
+            retries = max(1, int(max_retries or DEFAULT_MAX_RETRIES))
+        except (ValueError, TypeError):
+            retries = DEFAULT_MAX_RETRIES
+
+        print(f"[LLMService] [REQUEST] 代理转发 -> URL: {api_url}, 模型: {model}, 最大重试次数: {retries}")
+
+        last_error = ""
+        for attempt in range(1, retries + 1):
             try:
-                resp = await client.post(api_url, headers=headers, json=request_body)
-                if resp.status_code != 200:
-                    raise Exception(f"HTTP {resp.status_code}: {resp.text[:400]}")
-                return resp.json()
+                async with httpx.AsyncClient(timeout=90.0, follow_redirects=True) as client:
+                    resp = await client.post(api_url, headers=headers, json=request_body)
+                    if resp.status_code == 200:
+                        if attempt > 1:
+                            print(f"[LLMService] [OK] 代理转发第 {attempt} 次重试成功")
+                        return resp.json()
+
+                    error_text = resp.text[:400]
+                    if resp.status_code in (401, 403):
+                        raise Exception(f"HTTP {resp.status_code} (鉴权失败/API Key无效): {error_text}")
+
+                    last_error = f"HTTP {resp.status_code}: {error_text}"
+
             except httpx.RequestError as e:
-                raise Exception(f"代理请求失败: {str(e)}")
+                last_error = f"代理请求网络异常 ({type(e).__name__}): {str(e)}"
+            except httpx.TimeoutException as e:
+                last_error = f"代理请求超时: {str(e)}"
+            except Exception as e:
+                if "鉴权失败" in str(e) or "API Key无效" in str(e):
+                    raise
+                last_error = str(e)
+
+            if attempt < retries:
+                delay = min(1.5 * attempt, 6.0)
+                print(f"[LLMService] [WARN] 代理转发第 {attempt}/{retries} 次失败 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
+                await asyncio.sleep(delay)
+
+        raise Exception(f"LLM 代理请求失败: API 已重试 {retries} 次均失败 (最后错误: {last_error})")
 
     @staticmethod
     def parse_response(data: Any) -> str:

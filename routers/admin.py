@@ -621,6 +621,7 @@ async def proxy_llm_chat(data: dict):
 
     temperature = data.get("temperature", 0.7)
     max_tokens = data.get("max_tokens")
+    max_retries = data.get("max_retries", 5)
     
     if not api_url:
         raise HTTPException(status_code=400, detail="缺少 API 地址")
@@ -632,7 +633,8 @@ async def proxy_llm_chat(data: dict):
             model=model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            max_retries=max_retries
         )
         return resp
     except Exception as e:

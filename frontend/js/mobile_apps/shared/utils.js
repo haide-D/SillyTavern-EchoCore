@@ -35,18 +35,33 @@ export function formatDuration(seconds) {
 export function resolveAudioUrl(url) {
     if (!url) return '';
 
-    // 已经是完整 URL
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        return url;
-    }
-
+    let resolved = url;
     // 相对路径，添加 API Host
-    if (url.startsWith('/')) {
+    if (resolved.startsWith('/')) {
         const apiHost = getApiHost();
-        return apiHost + url;
+        resolved = apiHost + resolved;
     }
 
-    return url;
+    // 若配置了 API Token，且当前 URL 尚未附带 token 参数，自动追加 ?token=xxx
+    try {
+        let token = '';
+        if (window.TTS_API && window.TTS_API.apiToken) {
+            token = window.TTS_API.apiToken;
+        } else if (window.TTS_Utils && typeof window.TTS_Utils.getLatestRemoteConfig === 'function') {
+            token = window.TTS_Utils.getLatestRemoteConfig().token || '';
+        } else {
+            const saved = localStorage.getItem('tts_plugin_remote_config');
+            if (saved) token = JSON.parse(saved).token || '';
+        }
+        if (token && !resolved.includes('token=')) {
+            const separator = resolved.includes('?') ? '&' : '?';
+            resolved = `${resolved}${separator}token=${encodeURIComponent(token)}`;
+        }
+    } catch (e) {
+        console.warn('[SharedUtils] 追加 token 异常:', e);
+    }
+
+    return resolved;
 }
 
 /**

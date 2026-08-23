@@ -146,7 +146,8 @@ class ContinuousAnalyzer:
                     "api_key": analysis_llm.get("api_key", ""),
                     "model": analysis_llm.get("model", ""),
                     "temperature": analysis_llm.get("temperature", 0.8),
-                    "max_tokens": analysis_llm.get("max_tokens", 2000)
+                    "max_tokens": analysis_llm.get("max_tokens", 2000),
+                    "max_retries": analysis_llm.get("max_retries", 5)
                 }
             }
 

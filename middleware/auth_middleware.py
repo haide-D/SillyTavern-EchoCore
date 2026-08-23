@@ -22,7 +22,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/admin",
         "/docs",
         "/openapi.json",
-        "/favicon.ico"
+        "/favicon.ico",
+        "/auto_call_audio",
+        "/api/audio/eavesdrop",
+        "/avatars",
+        "/favorites",
+        "/api/themes/assets"
     )
 
     # 免鉴权的公开 API / 页面

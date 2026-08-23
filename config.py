@@ -170,7 +170,8 @@ def init_settings():
             "api_key": "",
             "model": "gemini-2.5-flash",
             "temperature": 0.8,
-            "max_tokens": 5000
+            "max_tokens": 5000,
+            "max_retries": 5
         },
         "data_extractors": [
             {
@@ -229,7 +230,8 @@ def init_settings():
             "api_key": "",
             "model": "",
             "temperature": 0.8,
-            "max_tokens": 5000
+            "max_tokens": 5000,
+            "max_retries": 5
         }
     }
     

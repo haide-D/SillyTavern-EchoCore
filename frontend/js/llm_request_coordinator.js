@@ -46,6 +46,7 @@ export class LLMRequestCoordinator {
                 model: llm_config.model,
                 temperature: llm_config.temperature,
                 max_tokens: llm_config.max_tokens,
+                max_retries: llm_config.max_retries || 5,
                 prompt: prompt
             });
 
@@ -75,7 +76,12 @@ export class LLMRequestCoordinator {
                 raw_llm_response: error.rawResponse
             });
 
-            this.showNotification(`生成失败: ${error.message}`, 'error');
+            const retries = llm_config?.max_retries || 5;
+            const notifyMsg = error.message?.includes('已重试') || error.message?.includes('均失败')
+                ? `📞 电话生成失败: ${error.message}`
+                : `📞 电话生成失败: API 已重试 ${retries} 次均失败 (${error.message})`;
+
+            this.showNotification(notifyMsg, 'error');
         }
     }
 
@@ -98,6 +104,7 @@ export class LLMRequestCoordinator {
                 model: llm_config.model,
                 temperature: llm_config.temperature,
                 max_tokens: llm_config.max_tokens,
+                max_retries: llm_config.max_retries || 5,
                 prompt: prompt
             });
 
@@ -129,6 +136,13 @@ export class LLMRequestCoordinator {
                 char_name: char_name,
                 llm_config: llm_config
             });
+
+            const retries = llm_config?.max_retries || 5;
+            const notifyMsg = error.message?.includes('已重试') || error.message?.includes('均失败')
+                ? `🔍 场景分析失败: ${error.message}`
+                : `🔍 场景分析失败: API 已重试 ${retries} 次均失败 (${error.message})`;
+
+            this.showNotification(notifyMsg, 'error');
         }
     }
 
@@ -163,6 +177,7 @@ export class LLMRequestCoordinator {
                 model: llm_config.model,
                 temperature: llm_config.temperature,
                 max_tokens: llm_config.max_tokens,
+                max_retries: llm_config.max_retries || 5,
                 prompt: prompt
             });
 
@@ -191,7 +206,12 @@ export class LLMRequestCoordinator {
                 llm_config: llm_config
             });
 
-            this.showNotification(`对话追踪生成失败: ${error.message}`, 'error');
+            const retries = llm_config?.max_retries || 5;
+            const notifyMsg = error.message?.includes('已重试') || error.message?.includes('均失败')
+                ? `🎧 对话追踪生成失败: ${error.message}`
+                : `🎧 对话追踪生成失败: API 已重试 ${retries} 次均失败 (${error.message})`;
+
+            this.showNotification(notifyMsg, 'error');
         } finally {
             // ✅ 清理处理中状态，标记为已处理
             _processingEavesdropIds.delete(record_id);

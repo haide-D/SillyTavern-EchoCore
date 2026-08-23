@@ -179,8 +179,10 @@ export async function loadSettings() {
 
         const analysisTempEl = document.getElementById('setting-analysis-llm-temperature');
         const analysisMaxTokensEl = document.getElementById('setting-analysis-llm-max-tokens');
+        const analysisMaxRetriesEl = document.getElementById('setting-analysis-llm-max-retries');
         if (analysisTempEl) analysisTempEl.value = analysisLlm.temperature || 0.8;
         if (analysisMaxTokensEl) analysisMaxTokensEl.value = analysisLlm.max_tokens || 5000;
+        if (analysisMaxRetriesEl) analysisMaxRetriesEl.value = analysisLlm.max_retries || 5;
 
         // 电话功能配置
         const phoneCall = settings.phone_call || {};
@@ -198,8 +200,10 @@ export async function loadSettings() {
 
         const llmTempEl = document.getElementById('setting-llm-temperature');
         const llmMaxTokensEl = document.getElementById('setting-llm-max-tokens');
+        const llmMaxRetriesEl = document.getElementById('setting-llm-max-retries');
         if (llmTempEl) llmTempEl.value = llm.temperature || 0.8;
         if (llmMaxTokensEl) llmMaxTokensEl.value = llm.max_tokens || 5000;
+        if (llmMaxRetriesEl) llmMaxRetriesEl.value = llm.max_retries || 5;
 
         // TTS 配置
         const tts = phoneCall.tts_config || {};
@@ -303,6 +307,7 @@ export async function saveSettings() {
     const analysisModelEl = document.getElementById('setting-analysis-llm-model');
     const analysisTempEl = document.getElementById('setting-analysis-llm-temperature');
     const analysisMaxTokensEl = document.getElementById('setting-analysis-llm-max-tokens');
+    const analysisMaxRetriesEl = document.getElementById('setting-analysis-llm-max-retries');
 
     const extractTagEl = document.getElementById('setting-extract-tag');
     const filterTagsEl = document.getElementById('setting-filter-tags');
@@ -313,6 +318,7 @@ export async function saveSettings() {
     const llmModelEl = document.getElementById('setting-llm-model');
     const llmTempEl = document.getElementById('setting-llm-temperature');
     const llmMaxTokensEl = document.getElementById('setting-llm-max-tokens');
+    const llmMaxRetriesEl = document.getElementById('setting-llm-max-retries');
 
     const ttsTextLangEl = document.getElementById('setting-tts-text-lang');
     const ttsPromptLangEl = document.getElementById('setting-tts-prompt-lang');
@@ -366,7 +372,8 @@ export async function saveSettings() {
                 api_key: analysisApiKeyEl ? analysisApiKeyEl.value.trim() : '',
                 model: analysisModelEl ? analysisModelEl.value.trim() : '',
                 temperature: analysisTempEl ? parseFloat(analysisTempEl.value) || 0.8 : 0.8,
-                max_tokens: analysisMaxTokensEl ? parseInt(analysisMaxTokensEl.value) || 5000 : 5000
+                max_tokens: analysisMaxTokensEl ? parseInt(analysisMaxTokensEl.value) || 5000 : 5000,
+                max_retries: analysisMaxRetriesEl ? parseInt(analysisMaxRetriesEl.value) || 5 : 5
             }
         },
 
@@ -383,7 +390,8 @@ export async function saveSettings() {
                 api_key: llmApiKeyEl ? llmApiKeyEl.value.trim() : '',
                 model: llmModelEl ? llmModelEl.value.trim() : '',
                 temperature: llmTempEl ? parseFloat(llmTempEl.value) || 0.8 : 0.8,
-                max_tokens: llmMaxTokensEl ? parseInt(llmMaxTokensEl.value) || 5000 : 5000
+                max_tokens: llmMaxTokensEl ? parseInt(llmMaxTokensEl.value) || 5000 : 5000,
+                max_retries: llmMaxRetriesEl ? parseInt(llmMaxRetriesEl.value) || 5 : 5
             },
             tts_config: {
                 text_lang: ttsTextLangEl ? ttsTextLangEl.value : 'zh',

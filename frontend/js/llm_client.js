@@ -54,10 +54,10 @@ async function fetchModels(apiUrl, apiKey) {
 }
 
 /**
- * 判断是否为网络错误（可重试）
+ * 判断是否为网络或可重试的临时错误
  */
 function isNetworkError(error) {
-    const networkErrorPatterns = [
+    const retryablePatterns = [
         'Failed to fetch',
         'NetworkError',
         'ERR_CONNECTION_RESET',
@@ -68,11 +68,22 @@ function isNetworkError(error) {
         'ECONNRESET',
         'ETIMEDOUT',
         'ENOTFOUND',
-        'CORS'
+        'CORS',
+        '429',
+        '502',
+        '503',
+        '504',
+        '520',
+        '521',
+        '522',
+        '524',
+        '408',
+        '超时',
+        'timeout'
     ];
 
     const errorMessage = error.message || error.toString();
-    return networkErrorPatterns.some(pattern => errorMessage.includes(pattern));
+    return retryablePatterns.some(pattern => errorMessage.toLowerCase().includes(pattern.toLowerCase()));
 }
 
 /**
@@ -87,6 +98,8 @@ async function callLLM(config) {
         throw new Error('缺少必要的 LLM 配置: api_url');
     }
 
+    const MAX_RETRIES = Math.max(1, parseInt(config.max_retries || 5, 10));
+
     // ✅ 彻底统一走后端代理，杜绝前端直连导致的 CORS 跨域拦截
     const proxyUrl = getBackendProxyUrl('/api/admin/llm/chat');
     const requestBody = {
@@ -95,16 +108,16 @@ async function callLLM(config) {
         model: config.model || 'gpt-3.5-turbo',
         messages: config.messages || [{ role: "user", content: config.prompt }],
         prompt: config.prompt,
-        temperature: config.temperature !== undefined ? config.temperature : 0.8
+        temperature: config.temperature !== undefined ? config.temperature : 0.8,
+        max_retries: MAX_RETRIES
     };
 
     if (config.max_tokens) {
         requestBody.max_tokens = config.max_tokens;
     }
 
-    console.log(`[LLM_Client] 🚀 通过后端代理调用 LLM -> 模型: ${requestBody.model}, 目标服务: ${requestBody.api_url}`);
+    console.log(`[LLM_Client] 🚀 通过后端代理调用 LLM -> 模型: ${requestBody.model}, 目标服务: ${requestBody.api_url}, 最大重试次数: ${MAX_RETRIES}`);
 
-    const MAX_RETRIES = 3;
     let lastError = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -127,7 +140,7 @@ async function callLLM(config) {
                 console.error('[LLM_Client] 目标模型:', requestBody.model);
                 console.error('[LLM_Client] 响应状态:', response.status);
                 console.error('[LLM_Client] 错误详情:', errorDetail);
-                throw new Error(`LLM 代理调用失败 (HTTP ${response.status}): ${errorDetail.substring(0, 300)}`);
+                throw new Error(`(HTTP ${response.status}): ${errorDetail.substring(0, 300)}`);
             }
 
             const data = await response.json();
@@ -142,26 +155,31 @@ async function callLLM(config) {
                     model: requestBody.model,
                     temperature: requestBody.temperature,
                     max_tokens: requestBody.max_tokens,
-                    prompt_length: config.prompt?.length || 0
+                    prompt_length: config.prompt?.length || 0,
+                    max_retries: MAX_RETRIES
                 }));
                 if (error.rawResponse) {
                     console.error('[LLM_Client] 原始响应数据:', JSON.stringify(error.rawResponse, null, 2));
                 }
             }
 
-            // 只有网络连接错误才重试
+            // 可重试错误且未耗尽次数
             if (isNetworkError(error) && attempt < MAX_RETRIES) {
-                console.warn(`[LLM_Client] ⚠️ 网络连接异常, 第 ${attempt}/${MAX_RETRIES} 次重试... (${error.message})`);
+                console.warn(`[LLM_Client] ⚠️ LLM 请求异常, 第 ${attempt}/${MAX_RETRIES} 次重试... (${error.message})`);
                 await delay(1000 * attempt);
                 continue;
             }
 
-            // 非网络错误或已用尽重试次数，直接抛出
+            // 非网络/临时错误或已用尽重试次数，直接抛出
             throw error;
         }
     }
 
-    throw lastError;
+    const cleanMsg = lastError?.message || '未知错误';
+    if (cleanMsg.includes('已重试') || cleanMsg.includes('均失败')) {
+        throw lastError;
+    }
+    throw new Error(`LLM 调用失败: API 已重试 ${MAX_RETRIES} 次均失败 (${cleanMsg})`);
 }
 
 function parseResponse(data) {

@@ -85,6 +85,12 @@ export class SceneAnalyzer {
 
         } catch (error) {
             console.error('[SceneAnalyzer] ❌ 场景分析失败:', error);
+            const notifyMsg = error.message?.includes('已重试') || error.message?.includes('均失败')
+                ? `🔍 场景分析失败: ${error.message}`
+                : `🔍 场景分析失败: API 已重试 5 次均失败 (${error.message})`;
+            if (window.toastr && typeof window.toastr.warning === 'function') {
+                window.toastr.warning(notifyMsg, '场景分析异常');
+            }
         }
     }
 
@@ -109,14 +115,9 @@ export class SceneAnalyzer {
 对话:
 ${conversationText}
 
-已知角色: ${speakers.join(', ')}
+可用角色: ${speakers.join(', ')}
 
-请分析:
-1. 哪些角色离开了现场? (离场)
-2. 哪些角色来到了现场? (到场)
-3. 角色们现在在哪里? (位置)
-
-以 JSON 格式回复:
+请分析每个角色的状态,输出 JSON 格式:
 {
   "角色名": {
     "present": true/false,
@@ -147,6 +148,7 @@ ${conversationText}
             model: llmConfig.model,
             temperature: 0.3,  // 使用较低温度,提高准确性
             max_tokens: 500,
+            max_retries: llmConfig.max_retries || 5,
             prompt: prompt
         });
 

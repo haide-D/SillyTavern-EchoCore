@@ -77,11 +77,11 @@ export class ContinuousAnalysisHandler {
                 model: llm_config.model,
                 prompt: prompt,
                 temperature: llm_config.temperature || 0.8,
-                max_tokens: llm_config.max_tokens || 2000
+                max_tokens: llm_config.max_tokens || 2000,
+                max_retries: llm_config.max_retries || 5
             });
 
             console.log('[ContinuousAnalysisHandler] ✅ LLM分析完成');
-
 
             // 回传结果到后端（包含对话上下文）
             await this.sendResultToBackend({
@@ -97,6 +97,16 @@ export class ContinuousAnalysisHandler {
 
         } catch (error) {
             console.error('[ContinuousAnalysisHandler] ❌ 分析失败:', error);
+
+            const retries = llm_config?.max_retries || 5;
+            const notifyMsg = error.message?.includes('已重试') || error.message?.includes('均失败')
+                ? `📊 分析模型调用失败: ${error.message}`
+                : `📊 分析模型调用失败: API 已重试 ${retries} 次均失败 (${error.message})`;
+
+            // 弹出用户可见的 Toastr 错误通知
+            if (window.toastr && typeof window.toastr.error === 'function') {
+                window.toastr.error(notifyMsg, '分析模型异常', { timeOut: 8000 });
+            }
 
             // ✅ 通知后端失败，并附带原始响应数据
             await this.sendResultToBackend({
