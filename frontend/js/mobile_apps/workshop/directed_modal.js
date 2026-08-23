@@ -3,7 +3,7 @@
  */
 import { SVG } from './svgs.js';
 import { QUICK_MOTIVATIONS, getWorkshopModalThemeClass } from './templates.js';
-import { getContextInfo, getSpeakerLanguageHint } from './api.js';
+import { getContextInfo, getSpeakerLanguageHint, validateSpeakerLanguageAudio } from './api.js';
 import { executeDirectedAction } from './executor.js';
 
 export async function openDirectedCallModal(category, preset) {
@@ -150,10 +150,18 @@ export async function openDirectedCallModal(category, preset) {
 
     // 快捷直拨
     $('#ws-directed-quick-btn').on('click', async () => {
-        closeModal();
         const caller = $('#ws-direct-caller').val() || defaultSpeaker;
         const langInfo = getSpeakerLanguageHint(caller);
-        await executeDirectedAction(category, preset, { isQuick: true, caller, language: langInfo.recommended });
+        const effectiveLang = langInfo.recommended || 'zh';
+
+        const check = validateSpeakerLanguageAudio(caller, effectiveLang);
+        if (!check.valid) {
+            alert(check.message);
+            return;
+        }
+
+        closeModal();
+        await executeDirectedAction(category, preset, { isQuick: true, caller, language: effectiveLang });
     });
 
     // 定向发起
@@ -178,6 +186,23 @@ export async function openDirectedCallModal(category, preset) {
             if (selectedSpeakers.length < 2) {
                 alert('请至少勾选 2 位说话人以展开密谈！');
                 return;
+            }
+        }
+
+        // 前置校验目标角色在指定语言下是否存在参考音频
+        if (isPhone) {
+            const check = validateSpeakerLanguageAudio(caller, effectiveLang);
+            if (!check.valid) {
+                alert(check.message);
+                return;
+            }
+        } else {
+            for (const spk of selectedSpeakers) {
+                const check = validateSpeakerLanguageAudio(spk, effectiveLang);
+                if (!check.valid) {
+                    alert(check.message);
+                    return;
+                }
             }
         }
 

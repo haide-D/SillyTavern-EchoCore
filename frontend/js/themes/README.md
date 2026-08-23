@@ -603,13 +603,13 @@ export const eavesdropScene = {
 
 | 字段名 | 仙途凌霄 (`immortal_sword`) | 死亡圣器 (`deathly_hallows`) | 默认现代通讯 |
 | :--- | :--- | :--- | :--- |
-| `tabCurrent` | `${STATUS_SVGS.chat} 当下前尘` | `${STATUS_SVGS.chat} 当前对话` | `${STATUS_SVGS.chat} 当前对话` |
-| `tabAll` | `${STATUS_SVGS.scroll} 乾坤总录` | `${STATUS_SVGS.history} 总历史` | `${STATUS_SVGS.history} 总历史` |
+| `tabCurrent` | `${STATUS_SVGS.chat} 当下前尘` | `${STATUS_SVGS.chat} 镜中回响 / 门后私语` | `${STATUS_SVGS.chat} 当前对话` |
+| `tabAll` | `${STATUS_SVGS.scroll} 乾坤总录` | `${STATUS_SVGS.history} 冥想盆记忆 / 隐秘秘闻` | `${STATUS_SVGS.history} 总历史` |
 | `tabDial / tabLaunch` | `${STATUS_SVGS.sword} 祭剑传书 / ${STATUS_SVGS.divineEye} 释放神识` | `${STATUS_SVGS.wand} 魔法传讯 / ${STATUS_SVGS.ear} 伸缩耳探听` | `${STATUS_SVGS.callOut} 主动呼叫 / ${STATUS_SVGS.theater} 开启密谈` |
-| `btnIdle` | `${STATUS_SVGS.sword} 祭出飞剑传书` | `${STATUS_SVGS.wand} 施展魔法传讯` | `${STATUS_SVGS.callOut} 立即呼出电话` |
+| `btnIdle` | `${STATUS_SVGS.sword} 祭出飞剑传书` | `${STATUS_SVGS.wand} 施展魔法传讯 / 开启伸缩耳探听` | `${STATUS_SVGS.callOut} 立即呼出电话` |
 | `emptyIcon` | 仙门飞剑 / 八卦灵印 SVG | 魔法魔杖 / 伸缩耳 SVG | 现代电话 / 耳机 SVG |
-| `emptyCurrentTitle` | `当前卷轴暂无飞剑传讯` | `当前对话暂无魔法传讯` | `当前对话暂无通话记录` |
-| `emptyBtnText` | `${STATUS_SVGS.scroll} 翻阅乾坤总录` | `${STATUS_SVGS.history} 查看总历史记录` | `${STATUS_SVGS.history} 查看总历史记录` |
+| `emptyCurrentTitle` | `当前卷轴暂无飞剑传讯` | `双面镜中暂无镜影回响 / 伸缩耳暂未捕捉到私语` | `当前对话暂无通话记录` |
+| `emptyBtnText` | `${STATUS_SVGS.scroll} 翻阅乾坤总录` | `${STATUS_SVGS.history} 翻阅冥想盆记忆 / 查阅隐秘秘闻` | `${STATUS_SVGS.history} 查看总历史记录` |
 
 > ⚠️ **强制规范**：所有 `tabXxx` 与 `emptyBtnText` 必须使用 `<svg>` 矢量图标（如 `${STATUS_SVGS.scroll}`）与文字组合，**严禁嵌入任何操作系统原生 Emoji 表情**！
 

@@ -89,10 +89,13 @@ class PhoneCallService:
         extracted_data = self.data_extractor.extract(context, extractors)
         speaker_for_emotions = effective_caller or char_name
         try:
-            emotions = self.emotion_service.get_available_emotions(speaker_for_emotions)
+            emotions = self.emotion_service.get_available_emotions(speaker_for_emotions, lang=effective_lang)
             if not emotions:
                 emotions = ["default", "neutral"]
-        except Exception:
+        except HTTPException:
+            raise
+        except Exception as err:
+            print(f"[PhoneCallService] ⚠️ 获取可用情绪异常，使用默认兜底: {err}")
             emotions = ["default", "neutral", "happy", "sad", "angry", "whisper"]
 
         # 尝试从数据库补充前情剧情总结 (三级梯队：指纹 -> 分支ID -> 角色最近记录)
@@ -338,8 +341,9 @@ class PhoneCallService:
         phone_call_config = settings.get("phone_call", {})
         parser_config = phone_call_config.get("response_parser", {})
         try:
-            emotions = self.emotion_service.get_available_emotions(char_name)
-        except Exception:
+            emotions = self.emotion_service.get_available_emotions(char_name, lang=text_lang)
+        except Exception as em_err:
+            print(f"[PhoneCallService] ⚠️ 无法获取可用情绪: {em_err}")
             emotions = ["default", "neutral"]
         if not emotions:
             emotions = ["default", "neutral"]
@@ -387,6 +391,7 @@ class PhoneCallService:
             tts_config = dict(phone_call_config.get("tts_config", {}))
             if text_lang and text_lang != "auto":
                 tts_config["text_lang"] = text_lang
+                tts_config["prompt_lang"] = text_lang
             audio_merge_config = phone_call_config.get("audio_merge", {})
 
             merged_audio, segments = await self.audio_pipeline.synthesize_segments(

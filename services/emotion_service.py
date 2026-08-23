@@ -10,27 +10,59 @@ from utils import scan_audio_files
 class EmotionService:
     """情绪管理服务"""
     
+    LANG_DIR_MAP = {
+        "zh": ("Chinese", "中文"),
+        "chinese": ("Chinese", "中文"),
+        "all_zh": ("Chinese", "中文"),
+        "en": ("English", "英文"),
+        "english": ("English", "英文"),
+        "ja": ("Japanese", "日文"),
+        "japanese": ("Japanese", "日文"),
+        "all_ja": ("Japanese", "日文")
+    }
+
     @staticmethod
-    def get_available_emotions(char_name: str) -> List[str]:
+    def _resolve_lang_info(lang_code: Optional[str]) -> tuple[str, str]:
+        """将语言代码解析为 (目录名, 显示名)"""
+        if not lang_code or lang_code == "auto":
+            settings = load_json(SETTINGS_FILE)
+            lang_code = settings.get("phone_call", {}).get("tts_config", {}).get("prompt_lang") or settings.get("phone_call", {}).get("tts_config", {}).get("text_lang", "zh")
+        key = str(lang_code).lower().strip()
+        return EmotionService.LANG_DIR_MAP.get(key, ("Chinese", "中文"))
+
+    @staticmethod
+    def _resolve_model_target(char_name: str) -> str:
+        """解析角色对应的模型目标 (支持 mapping 与模型名直通)"""
+        mappings = load_json(MAPPINGS_FILE)
+        base_dir, _ = get_current_dirs()
+        
+        if char_name in mappings:
+            return str(mappings[char_name])
+        
+        if os.path.exists(os.path.join(base_dir, char_name)):
+            return char_name
+            
+        raise HTTPException(
+            status_code=404, 
+            detail=f"角色【{char_name}】未绑定模型，且模型库中未找到同名模型文件夹。"
+        )
+
+    @staticmethod
+    def get_available_emotions(char_name: str, lang: Optional[str] = None) -> List[str]:
         """
-        获取角色可用情绪列表
+        获取角色在指定语言下的可用情绪列表
         
         Args:
             char_name: 角色名称
+            lang: 语言代码 (zh/en/ja/auto)
             
         Returns:
             情绪列表 (已排序)
         """
-        mappings = load_json(MAPPINGS_FILE)
-        
-        if char_name not in mappings:
-            raise HTTPException(status_code=404, detail=f"角色 {char_name} 未绑定模型")
-        
-        model_target = str(mappings[char_name])
+        model_target = EmotionService._resolve_model_target(char_name)
 
         # ========== MiniMax 角色情绪处理 ==========
         if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
-            # 优先从系统配置中读取用户自定义配置的 MiniMax 情绪列表
             try:
                 settings = load_json(SETTINGS_FILE)
                 minimax_cfg = settings.get("minimax_tts", {})
@@ -48,7 +80,6 @@ class EmotionService:
             except Exception as e:
                 print(f"[EmotionService] ⚠️ 读取 MiniMax 自定义情绪配置异常: {e}")
 
-            # MiniMax 云端音色原生默认支持的全量情绪
             return [
                 "default", "neutral", "happy", "sad", "angry", 
                 "fear", "whisper", "surprise", "disgust", 
@@ -57,38 +88,41 @@ class EmotionService:
         
         model_folder = model_target
         base_dir, _ = get_current_dirs()
+        lang_dir, lang_display = EmotionService._resolve_lang_info(lang)
         
-        # 从 tts_config.prompt_lang 读取语言设置并转换为目录名
-        settings = load_json(SETTINGS_FILE)
-        prompt_lang = settings.get("phone_call", {}).get("tts_config", {}).get("prompt_lang", "zh")
-        
-        # 语言代码转目录名映射
-        lang_map = {
-            "zh": "Chinese",
-            "en": "English",
-            "ja": "Japanese",
-            "all_zh": "Chinese",
-            "all_ja": "Japanese"
-        }
-        lang_dir = lang_map.get(prompt_lang, "Chinese")
-        
-        # 使用配置的语言目录下的 emotions 文件夹
+        # 优先使用配置的语言目录下的 emotions 文件夹
         ref_dir = os.path.join(base_dir, model_folder, "reference_audios", lang_dir, "emotions")
         
-        # 兼容性回退：如果不存在子目录，回退到 reference_audios 根目录
+        # 兼容性回退：检查语言根目录
         if not os.path.exists(ref_dir):
-            fallback_dir = os.path.join(base_dir, model_folder, "reference_audios")
-            if os.path.exists(fallback_dir):
-                ref_dir = fallback_dir
+            lang_root = os.path.join(base_dir, model_folder, "reference_audios", lang_dir)
+            if os.path.exists(lang_root):
+                ref_dir = lang_root
             else:
-                print(f"[EmotionService] 警告: 参考音频目录不存在: {ref_dir}")
-                return []
+                fallback_dir = os.path.join(base_dir, model_folder, "reference_audios")
+                if os.path.exists(fallback_dir):
+                    ref_dir = fallback_dir
+                else:
+                    ref_dir = None
+
+        if not ref_dir or not os.path.exists(ref_dir):
+            raise HTTPException(
+                status_code=400,
+                detail=f"角色【{char_name}】绑定的模型【{model_folder}】在【{lang_display} ({lang_dir})】路径下未找到可用参考音频，请在模型管理中添加对应语言音频或切换为支持的语言。"
+            )
         
-        # 使用 scan_audio_files 扫描
+        # 扫描音频文件
         audio_files = scan_audio_files(ref_dir)
+        if not audio_files:
+            raise HTTPException(
+                status_code=400,
+                detail=f"角色【{char_name}】绑定的模型【{model_folder}】在【{lang_display} ({lang_dir})】路径下音频文件为空，请先添加参考音频。"
+            )
         
         # 提取唯一的情绪标签
         emotions = set(a["emotion"] for a in audio_files if a.get("emotion"))
+        if not emotions:
+            emotions = {"default", "neutral"}
         
         return sorted(list(emotions))
     
@@ -100,18 +134,12 @@ class EmotionService:
         Args:
             char_name: 角色名称
             emotion: 情绪名称
-            prompt_lang: 可选语言代码 (zh/en/ja)，如不传则从 settings.json 中读取
+            prompt_lang: 可选语言代码 (zh/en/ja/auto)
             
         Returns:
             参考音频信息 {"path": str, "text": str} 或 None
         """
-        mappings = load_json(MAPPINGS_FILE)
-        
-        if char_name not in mappings:
-            print(f"[EmotionService] 错误: 角色 {char_name} 未绑定模型")
-            return None
-        
-        model_target = str(mappings[char_name])
+        model_target = EmotionService._resolve_model_target(char_name)
 
         # ========== MiniMax 角色参考音频虚拟对象 ==========
         if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
@@ -125,31 +153,21 @@ class EmotionService:
 
         model_folder = model_target
         base_dir, _ = get_current_dirs()
+        lang_dir, lang_display = EmotionService._resolve_lang_info(prompt_lang)
         
-        if not prompt_lang:
-            settings = load_json(SETTINGS_FILE)
-            prompt_lang = settings.get("phone_call", {}).get("tts_config", {}).get("prompt_lang", "zh")
-        
-        lang_map = {
-            "zh": "Chinese",
-            "en": "English",
-            "ja": "Japanese",
-            "all_zh": "Chinese",
-            "all_ja": "Japanese"
-        }
-        lang_dir = lang_map.get(prompt_lang, "Chinese")
-        
-        # 使用配置的语言目录
         ref_dir = os.path.join(base_dir, model_folder, "reference_audios", lang_dir, "emotions")
         
-        # 兼容性回退
         if not os.path.exists(ref_dir):
-            fallback_dir = os.path.join(base_dir, model_folder, "reference_audios")
-            if os.path.exists(fallback_dir):
-                ref_dir = fallback_dir
+            lang_root = os.path.join(base_dir, model_folder, "reference_audios", lang_dir)
+            if os.path.exists(lang_root):
+                ref_dir = lang_root
             else:
-                print(f"[EmotionService] 错误: 参考音频目录不存在: {ref_dir}")
-                return None
+                fallback_dir = os.path.join(base_dir, model_folder, "reference_audios")
+                if os.path.exists(fallback_dir):
+                    ref_dir = fallback_dir
+                else:
+                    print(f"[EmotionService] 错误: 角色【{char_name}】模型【{model_folder}】的参考音频目录不存在: {ref_dir}")
+                    return None
         
         audio_files = scan_audio_files(ref_dir)
         matching_audios = [a for a in audio_files if a.get("emotion") == emotion]
@@ -157,12 +175,12 @@ class EmotionService:
         if not matching_audios:
             if audio_files:
                 selected = audio_files[0]
-                print(f"[EmotionService] ⚠️ 未找到角色 '{char_name}' 情绪 '{emotion}' 的参考音频, 自动兜底使用首个可用音频: {selected['path']}")
+                print(f"[EmotionService] ⚠️ 未找到角色【{char_name}】情绪【{emotion}】的参考音频, 兜底使用该语言下首个音频: {selected['path']}")
                 return {
                     "path": selected["path"],
                     "text": selected["text"]
                 }
-            print(f"[EmotionService] 警告: 未找到角色 '{char_name}' 情绪 '{emotion}' 的参考音频，且角色无可用音频")
+            print(f"[EmotionService] 警告: 角色【{char_name}】在【{lang_display}】目录下无可用音频")
             return None
         
         selected = random.choice(matching_audios)
@@ -172,16 +190,21 @@ class EmotionService:
         }
 
     @staticmethod
-    def validate_emotion(char_name: str, emotion: str) -> bool:
+    def validate_emotion(char_name: str, emotion: str, lang: Optional[str] = None) -> bool:
         """
         验证情绪是否可用
         
         Args:
             char_name: 角色名称
             emotion: 情绪名称
+            lang: 语言代码
             
         Returns:
             是否可用
         """
-        available_emotions = EmotionService.get_available_emotions(char_name)
-        return emotion in available_emotions
+        try:
+            available_emotions = EmotionService.get_available_emotions(char_name, lang=lang)
+            return emotion in available_emotions
+        except Exception:
+            return False
+

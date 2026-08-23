@@ -6,8 +6,6 @@ export function ensureCSS() {
         const style = document.createElement('style');
         style.id = 'dh-custom-call-css';
         style.innerHTML = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap');
-
 /* ========================================
    DH FULLSCREEN UI - THEMES
    ======================================== */
@@ -35,19 +33,30 @@ export function ensureCSS() {
 
 #dh-true-fullscreen-call {
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100%;
     inset: 0;
     z-index: 100000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
     /* Semi-transparent overlay based on theme */
     background: radial-gradient(ellipse 60% 50% at 50% 50%, var(--dh-bg-center) 0%, rgba(0, 0, 0, 0.94) 100%);
     backdrop-filter: blur(24px) saturate(1.2);
     -webkit-backdrop-filter: blur(24px) saturate(1.2);
-    animation: dh-screen-fadein 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: dh-screen-fadein 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes dh-screen-fadein {
@@ -300,13 +309,16 @@ export function ensureCSS() {
     letter-spacing: 0.1em;
 }
 
-/* Mobile tweaks */
-@media (max-height: 600px) {
-    .dh-call-avatar-wrap { width: 88px; height: 88px; margin-bottom: 20px; }
-    .dh-call-avatar-img  { width: 88px; height: 88px; }
-    .dh-call-status { margin-bottom: 32px; }
-    .dh-waveform    { margin-bottom: 24px; height: 32px; }
-    .dh-action-btn  { width: 60px; height: 60px; }
+/* Mobile tweaks - 全面适配手机竖屏与小屏 */
+@media (max-width: 768px), (max-height: 720px) {
+    .dh-call-content { padding: 0 16px; width: 100%; max-width: 100%; box-sizing: border-box; }
+    .dh-call-avatar-wrap { width: 90px; height: 90px; margin-bottom: 16px; }
+    .dh-call-avatar-img  { width: 90px; height: 90px; }
+    .dh-call-name { font-size: clamp(20px, 6vw, 26px); margin: 0 0 6px 0; }
+    .dh-call-status { font-size: 12px; margin-bottom: 24px; letter-spacing: 0.15em; }
+    .dh-waveform { margin-bottom: 20px; height: 32px; gap: 4px; }
+    .dh-subtitle { font-size: 13px; min-height: 20px; margin-bottom: 20px; padding: 0 16px; max-width: 100%; }
+    .dh-action-btn { width: 62px; height: 62px; }
     .dh-call-actions { gap: 36px; }
 }
 
@@ -944,7 +956,7 @@ export function renderTriggerDOM() {
     
     // 渲染法阵 Trigger 节点
     const triggerHtml = `
-    <div id="tts-dh-trigger" class="dh-container" style="position:fixed; z-index:9999; cursor:pointer;" title="Patronus">
+    <div id="tts-dh-trigger" class="dh-container" style="position:fixed; z-index:9999; cursor:pointer; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;" title="Patronus">
         <div class="dh-inner" id="dhInner">
             <div class="dh-glow"></div>
             <div class="dh-aura"></div>
@@ -1074,6 +1086,15 @@ export function bindDragAndClick() {
 
     $trigger.off('pointerdown pointermove pointerup pointercancel click');
 
+    const triggerClick = function () {
+        const now = Date.now();
+        if (now - (ThemeState.dragState.lastTapTime || 0) < 350) return;
+        ThemeState.dragState.lastTapTime = now;
+        if (ThemeState.engine) {
+            ThemeState.engine.toggle();
+        }
+    };
+
     $trigger.on('pointerdown', function (e) {
         // 忽略多点触控非主要触点
         if (e.isPrimary === false) return;
@@ -1082,6 +1103,7 @@ export function bindDragAndClick() {
         ThemeState.dragState.hasMoved = false;
         ThemeState.dragState.startX = e.clientX;
         ThemeState.dragState.startY = e.clientY;
+        ThemeState.dragState.startTime = Date.now();
 
         const offset = $trigger.offset();
         ThemeState.dragState.initialLeft = offset ? offset.left : 0;
@@ -1098,8 +1120,12 @@ export function bindDragAndClick() {
         if (!ThemeState.dragState.isDragging) return;
         const dx = e.clientX - ThemeState.dragState.startX;
         const dy = e.clientY - ThemeState.dragState.startY;
+        const moveDist = Math.hypot(dx, dy);
 
-        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        if (!ThemeState.dragState.hasMoved) {
+            if (moveDist < DRAG_THRESHOLD) {
+                return; // 未达到真正拖拽阈值前保持静止，防手指微抖
+            }
             ThemeState.dragState.hasMoved = true;
 
             // 拖拽时取消粒子引擎的悬浮微动
@@ -1131,15 +1157,18 @@ export function bindDragAndClick() {
         if (!ThemeState.dragState.isDragging) return;
         ThemeState.dragState.isDragging = false;
 
+        const duration = Date.now() - (ThemeState.dragState.startTime || 0);
+        const dx = (e.clientX !== undefined ? e.clientX : ThemeState.dragState.startX) - ThemeState.dragState.startX;
+        const dy = (e.clientY !== undefined ? e.clientY : ThemeState.dragState.startY) - ThemeState.dragState.startY;
+        const moveDist = Math.hypot(dx, dy);
+
         if ($trigger[0].releasePointerCapture && e.pointerId) {
             try { $trigger[0].releasePointerCapture(e.pointerId); } catch (_) {}
         }
 
-        if (!ThemeState.dragState.hasMoved) {
-            // 点击触发面板开闭
-            if (ThemeState.engine) {
-                ThemeState.engine.toggle();
-            }
+        // 移动端轻触判定：未真正发生拖拽，或轻触时间很短且位移在轻触容忍度内
+        if (!ThemeState.dragState.hasMoved || (duration < 350 && moveDist < 20)) {
+            triggerClick();
         } else {
             // 恢复悬浮粒子动画
             if (ThemeState.particleEngine) {
@@ -1152,6 +1181,13 @@ export function bindDragAndClick() {
     };
 
     $trigger.on('pointerup pointercancel', endDrag);
+
+    // 针对部分浏览器原生 click 事件兜底
+    $trigger.on('click', function (e) {
+        if (!ThemeState.dragState.hasMoved) {
+            triggerClick();
+        }
+    });
 
     // 模态框关闭按钮
     $('.dh-close-btn').off('click').on('click', () => {

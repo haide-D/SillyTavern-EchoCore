@@ -159,14 +159,35 @@ function hideNotification() {
 export function makeDraggable($el, onClick) {
     let isDragging = false;
     let hasMoved = false;
-    let startX, startY, startLeft, startTop;
+    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    let startTime = 0;
+    let lastTapTime = 0;
     const el = $el[0];
+    if (!el) return;
+
+    $el.css({
+        'touch-action': 'none',
+        'user-select': 'none',
+        '-webkit-user-select': 'none',
+        '-webkit-touch-callout': 'none'
+    });
+
+    const triggerClick = () => {
+        const now = Date.now();
+        if (now - lastTapTime < 350) return;
+        lastTapTime = now;
+        if (onClick) onClick();
+    };
 
     const start = (clientX, clientY) => {
-        isDragging = true; hasMoved = false;
-        startX = clientX; startY = clientY;
+        isDragging = true;
+        hasMoved = false;
+        startX = clientX;
+        startY = clientY;
+        startTime = Date.now();
         const rect = el.getBoundingClientRect();
-        startLeft = rect.left; startTop = rect.top;
+        startLeft = rect.left;
+        startTop = rect.top;
         el.style.right = 'auto';
         el.style.left = startLeft + 'px';
         el.style.top = startTop + 'px';
@@ -177,23 +198,54 @@ export function makeDraggable($el, onClick) {
         if (!isDragging) return;
         const dx = clientX - startX;
         const dy = clientY - startY;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) hasMoved = true;
+        const moveDist = Math.hypot(dx, dy);
+
+        if (!hasMoved) {
+            if (moveDist < 15) return;
+            hasMoved = true;
+        }
+
         el.style.left = (startLeft + dx) + 'px';
         el.style.top = (startTop + dy) + 'px';
     };
 
-    const end = () => {
+    const end = (clientX, clientY) => {
+        if (!isDragging) return;
         isDragging = false;
         $el.css('opacity', '1');
-        if (!hasMoved && onClick) onClick();
+
+        const duration = Date.now() - (startTime || 0);
+        const endX = clientX !== undefined ? clientX : startX;
+        const endY = clientY !== undefined ? clientY : startY;
+        const moveDist = Math.hypot(endX - startX, endY - startY);
+
+        if (!hasMoved || (duration < 350 && moveDist < 20)) {
+            triggerClick();
+        }
     };
 
     $el.on('mousedown', e => { start(e.clientX, e.clientY); });
     $(document).on('mousemove', e => { if (isDragging) { e.preventDefault(); move(e.clientX, e.clientY); } });
-    $(document).on('mouseup', () => { if (isDragging) end(); });
-    $el.on('touchstart', e => { const touch = e.originalEvent.touches[0]; start(touch.clientX, touch.clientY); });
-    $el.on('touchmove', e => { if (isDragging) { if (e.cancelable) e.preventDefault(); const touch = e.originalEvent.touches[0]; move(touch.clientX, touch.clientY); } });
-    $el.on('touchend', () => { if (isDragging) end(); });
+    $(document).on('mouseup', e => { if (isDragging) end(e.clientX, e.clientY); });
+
+    $el.on('touchstart', e => {
+        if (e.originalEvent.touches.length > 1) return;
+        const touch = e.originalEvent.touches[0];
+        start(touch.clientX, touch.clientY);
+    });
+    $el.on('touchmove', e => {
+        if (isDragging) {
+            if (e.cancelable) e.preventDefault();
+            const touch = e.originalEvent.touches[0];
+            move(touch.clientX, touch.clientY);
+        }
+    });
+    $el.on('touchend touchcancel', e => {
+        if (isDragging) {
+            const touch = (e.originalEvent.changedTouches && e.originalEvent.changedTouches[0]) ? e.originalEvent.changedTouches[0] : null;
+            end(touch ? touch.clientX : undefined, touch ? touch.clientY : undefined);
+        }
+    });
 }
 
 export function generateFingerprint(text) {

@@ -78,15 +78,21 @@ export class NotificationHandler {
         const pendingBadgeText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
 
         // 统一触发悬浮球动效（保障 DOM 元素直接呈现动画）
-        this.triggerFloatingBallAnimation('incoming-call', `${actualCaller} 来电中...${pendingBadgeText}`);
+        const callTooltip = window.TTS_ThemeStatusHelper?.isHarryPotterTheme?.()
+            ? `✦ 双面镜泛起微光: ${actualCaller} 传讯中...${pendingBadgeText}`
+            : `${actualCaller} 来电中...${pendingBadgeText}`;
+        this.triggerFloatingBallAnimation('incoming-call', callTooltip);
 
         // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现与粒子/法阵状态）
+        let themeHandled = false;
         if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
-            window.TTS_ThemeEngine.notify('incoming_call', window.TTS_IncomingCall);
+            themeHandled = window.TTS_ThemeEngine.notify('incoming_call', window.TTS_IncomingCall);
         }
 
-        // 显示通知
-        this.showNotification(`📞 ${actualCaller} 来电!${pendingBadgeText}`, 'info');
+        // 显示通知 (仅在主题未接管/未处理时触发默认通知，杜绝重复弹窗与文字冲突)
+        if (!themeHandled) {
+            this.showNotification(`📞 ${actualCaller} 来电!${pendingBadgeText}`, 'info');
+        }
     }
 
     /**
@@ -141,18 +147,26 @@ export class NotificationHandler {
         const pendingBadgeText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
 
         // 统一触发悬浮球动效
+        const spkStr = (speakers && speakers.length) ? speakers.join(' & ') : '未知密谈';
+        const eavesdropTooltip = window.TTS_ThemeStatusHelper?.isHarryPotterTheme?.()
+            ? `✦ 伸缩耳捕捉到秘密私语: ${spkStr}...${pendingBadgeText}`
+            : (notification_text || `${(speakers || []).join(' 和 ')} 正在私聊...`) + pendingBadgeText;
+
         this.triggerFloatingBallAnimation(
             'eavesdrop-available',
-            (notification_text || `${(speakers || []).join(' 和 ')} 正在私聊...`) + pendingBadgeText
+            eavesdropTooltip
         );
 
         // 通过 ThemeEngine 分发通知（由当前主题决定视觉表现）
+        let themeHandled = false;
         if (window.TTS_ThemeEngine && window.TTS_ThemeEngine.notify) {
-            window.TTS_ThemeEngine.notify('eavesdrop_ready', window.TTS_EavesdropData);
+            themeHandled = window.TTS_ThemeEngine.notify('eavesdrop_ready', window.TTS_EavesdropData);
         }
 
-        // 显示通知
-        this.showNotification(notification_text || `🎧 检测到 ${(speakers || []).join(' 和 ')} 正在私聊`, 'info');
+        // 显示通知 (仅在主题未接管/未处理时触发默认通知，杜绝重复弹窗与文字冲突)
+        if (!themeHandled) {
+            this.showNotification(notification_text || `🎧 检测到 ${(speakers || []).join(' 和 ')} 正在私聊`, 'info');
+        }
     }
 
     /**

@@ -88,27 +88,93 @@ export async function getContextInfo() {
     };
 }
 
-/**
- * 角色模型语言感知提示
- */
 export function getSpeakerLanguageHint(speakerName) {
     if (!speakerName) return { recommended: 'zh', hint: '默认' };
-    const models = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.models) || {};
-    const speakerModel = models[speakerName];
+    const cache = (window.TTS_State && window.TTS_State.CACHE) || {};
+    const mappings = cache.mappings || {};
+    const models = cache.models || {};
+    const modelName = mappings[speakerName] || speakerName;
+    const speakerModel = models[modelName];
     if (!speakerModel || !speakerModel.languages) {
         return { recommended: 'zh', hint: '默认' };
     }
-    const langs = Object.keys(speakerModel.languages);
-    if (langs.includes('Japanese') && !langs.includes('Chinese')) {
+    const langs = Object.keys(speakerModel.languages).filter(k => Array.isArray(speakerModel.languages[k]) && speakerModel.languages[k].length > 0);
+    if (langs.includes('English') && !langs.includes('Chinese') && !langs.includes('default')) {
+        return { recommended: 'en', hint: '💡 模型含英文音频，推荐英文' };
+    }
+    if (langs.includes('Japanese') && !langs.includes('Chinese') && !langs.includes('default')) {
         return { recommended: 'ja', hint: '💡 模型含纯日语音频，推荐日文' };
     }
-    if (langs.includes('English') && !langs.includes('Chinese')) {
-        return { recommended: 'en', hint: '💡 模型含英文音频，推荐英文' };
+    if (langs.includes('Japanese') && langs.includes('English')) {
+        return { recommended: 'zh', hint: '✨ 支持中/英/日多语' };
+    }
+    if (langs.includes('English')) {
+        return { recommended: 'zh', hint: '✨ 支持中/英双语' };
     }
     if (langs.includes('Japanese')) {
         return { recommended: 'ja', hint: '✨ 支持中/日双语' };
     }
     return { recommended: 'zh', hint: '🇨🇳 中文' };
+}
+
+/**
+ * 校验指定角色在指定语言下是否存在可用的参考音频
+ * @param {string} speakerName 说话人/角色名
+ * @param {string} langCode 语言代码 (zh/en/ja/auto)
+ * @returns {{ valid: boolean, message?: string, modelName?: string }}
+ */
+export function validateSpeakerLanguageAudio(speakerName, langCode) {
+    if (!speakerName) return { valid: false, message: "未指定有效的说话人角色" };
+    
+    const cache = (window.TTS_State && window.TTS_State.CACHE) || {};
+    const mappings = cache.mappings || {};
+    const models = cache.models || {};
+    const modelName = mappings[speakerName] || speakerName;
+
+    // MiniMax 云端模型跳过本地音频校验
+    if (typeof modelName === 'string' && (modelName.startsWith('minimax:') || modelName.startsWith('minimax_'))) {
+        return { valid: true, modelName };
+    }
+
+    const speakerModel = models[modelName];
+    if (!speakerModel || !speakerModel.languages) {
+        // 如果缓存未就绪，放行由后端接口做精准校验
+        return { valid: true, modelName };
+    }
+
+    const languages = speakerModel.languages || {};
+    
+    const langKeyMap = {
+        'zh': ['Chinese', 'default', '中文'],
+        'en': ['English', '英文'],
+        'ja': ['Japanese', '日文']
+    };
+    const langNameMap = {
+        'zh': '中文 (Chinese)',
+        'en': '英文 (English)',
+        'ja': '日文 (Japanese)'
+    };
+
+    let targetLang = langCode;
+    if (targetLang === 'auto') {
+        const hint = getSpeakerLanguageHint(speakerName);
+        targetLang = hint.recommended || 'zh';
+    }
+
+    const expectedKeys = langKeyMap[targetLang] || [targetLang];
+    const hasAudio = expectedKeys.some(k => Array.isArray(languages[k]) && languages[k].length > 0);
+
+    if (!hasAudio) {
+        const langDisplay = langNameMap[targetLang] || targetLang;
+        const availableLangs = Object.keys(languages).filter(k => Array.isArray(languages[k]) && languages[k].length > 0).join(', ') || '无';
+        return {
+            valid: false,
+            modelName,
+            message: `⚠️ 角色【${speakerName}】绑定的模型【${modelName}】在【${langDisplay}】路径下没有可用的参考音频！\n\n该模型当前可用语言路径: [${availableLangs}]\n请先在模型管理中为该模型添加对应语言参考音频，或将对话语言切换为支持的语言。`
+        };
+    }
+
+    return { valid: true, modelName };
 }
 
 /**

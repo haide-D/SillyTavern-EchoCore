@@ -118,19 +118,35 @@ export function bindDragAndClick() {
     // 确保定位正确
     fixTriggerPosition();
 
-    $trigger.off('pointerdown pointermove pointerup pointercancel');
+    $trigger.off('pointerdown pointermove pointerup pointercancel click');
+
+    const triggerClick = function () {
+        const now = Date.now();
+        if (now - (ThemeState.drag.lastTapTime || 0) < 350) return;
+        ThemeState.drag.lastTapTime = now;
+
+        if (ThemeState.particleEngine) {
+            ThemeState.particleEngine.burstParticles(8, 'jade');
+        }
+        if (ThemeState.engine) {
+            ThemeState.engine.toggle();
+        }
+    };
 
     $trigger.on('pointerdown', function (e) {
+        if (e.isPrimary === false) return;
+
         ThemeState.drag.isDragging = true;
         ThemeState.drag.hasMoved = false;
         ThemeState.drag.startX = e.clientX;
         ThemeState.drag.startY = e.clientY;
+        ThemeState.drag.startTime = Date.now();
 
         const offset = $trigger.offset();
-        ThemeState.drag.initialLeft = offset.left;
-        ThemeState.drag.initialTop = offset.top;
+        ThemeState.drag.initialLeft = offset ? offset.left : 0;
+        ThemeState.drag.initialTop = offset ? offset.top : 0;
 
-        if ($trigger[0].setPointerCapture) {
+        if ($trigger[0].setPointerCapture && e.pointerId) {
             try { $trigger[0].setPointerCapture(e.pointerId); } catch (_) {}
         }
     });
@@ -139,8 +155,10 @@ export function bindDragAndClick() {
         if (!ThemeState.drag.isDragging) return;
         const dx = e.clientX - ThemeState.drag.startX;
         const dy = e.clientY - ThemeState.drag.startY;
+        const moveDist = Math.hypot(dx, dy);
 
-        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        if (!ThemeState.drag.hasMoved) {
+            if (moveDist < DRAG_THRESHOLD) return;
             ThemeState.drag.hasMoved = true;
         }
 
@@ -160,30 +178,36 @@ export function bindDragAndClick() {
         if (!ThemeState.drag.isDragging) return;
         ThemeState.drag.isDragging = false;
 
+        const duration = Date.now() - (ThemeState.drag.startTime || 0);
+        const dx = (e.clientX !== undefined ? e.clientX : ThemeState.drag.startX) - ThemeState.drag.startX;
+        const dy = (e.clientY !== undefined ? e.clientY : ThemeState.drag.startY) - ThemeState.drag.startY;
+        const moveDist = Math.hypot(dx, dy);
+
         if ($trigger[0].releasePointerCapture && e.pointerId) {
             try { $trigger[0].releasePointerCapture(e.pointerId); } catch (_) {}
         }
 
-        const currentLeft = parseFloat($trigger.css('left'));
-        const currentTop = parseFloat($trigger.css('top'));
-        if (!isNaN(currentLeft) && !isNaN(currentTop)) {
-            localStorage.setItem('tts_immortal_trigger_left', `${currentLeft}px`);
-            localStorage.setItem('tts_immortal_trigger_top', `${currentTop}px`);
-            localStorage.setItem('tts_common_trigger_left', `${currentLeft}px`);
-            localStorage.setItem('tts_common_trigger_top', `${currentTop}px`);
-        }
-
-        if (!ThemeState.drag.hasMoved) {
-            if (ThemeState.particleEngine) {
-                ThemeState.particleEngine.burstParticles(8, 'jade');
-            }
-            if (ThemeState.engine) {
-                ThemeState.engine.toggle();
+        if (!ThemeState.drag.hasMoved || (duration < 350 && moveDist < 20)) {
+            triggerClick();
+        } else {
+            const currentLeft = parseFloat($trigger.css('left'));
+            const currentTop = parseFloat($trigger.css('top'));
+            if (!isNaN(currentLeft) && !isNaN(currentTop)) {
+                localStorage.setItem('tts_immortal_trigger_left', `${currentLeft}px`);
+                localStorage.setItem('tts_immortal_trigger_top', `${currentTop}px`);
+                localStorage.setItem('tts_common_trigger_left', `${currentLeft}px`);
+                localStorage.setItem('tts_common_trigger_top', `${currentTop}px`);
             }
         }
     };
 
     $trigger.on('pointerup pointercancel', endDrag);
+
+    $trigger.on('click', function () {
+        if (!ThemeState.drag.hasMoved) {
+            triggerClick();
+        }
+    });
 }
 
 export function destroyDOM() {

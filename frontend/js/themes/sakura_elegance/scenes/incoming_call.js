@@ -14,8 +14,9 @@ import { CallQueueManager } from '../../../call_queue_manager.js';
 
 function renderCustomSakuraCall(container, callData, ctx) {
     container.empty();
-    $('#tts-sakura-modal').hide();
+    $('#tts-sakura-modal').stop(true, true).hide();
     $('#sakura-fullscreen-call').remove();
+    $('#tts-sakura-trigger').hide();
 
     const pendingCount = CallQueueManager.getPendingCount();
     const queueSubtitle = pendingCount > 1 ? `✦ 纸鹤传音 (${pendingCount} 封待启) ✦` : '✦ 灵鸟衔枝 · 传音入密 ✦';
@@ -52,6 +53,7 @@ function renderCustomSakuraCall(container, callData, ctx) {
         }
 
         delete window.TTS_IncomingCall;
+        $('#tts-sakura-trigger').show();
         $('#tts-sakura-modal').show();
         if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
@@ -85,8 +87,9 @@ function renderCustomSakuraCall(container, callData, ctx) {
 
 function showCustomInCallUI(container, callData, ctx) {
     container.empty();
-    $('#tts-sakura-modal').hide();
+    $('#tts-sakura-modal').stop(true, true).hide();
     $('#sakura-fullscreen-call').remove();
+    $('#tts-sakura-trigger').hide();
 
     const avatarHtml = renderAvatarHtml(callData.char_name, 'sakura-call-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
 
@@ -99,23 +102,23 @@ function showCustomInCallUI(container, callData, ctx) {
         <div class="sakura-subtitle call-subtitle-area">
             <div class="subtitle-line">
                 <span class="subtitle-speaker" style="display:none;"></span>
-                <span class="subtitle-text">式神感应中...</span>
+                <span class="subtitle-text">式神传音中...</span>
             </div>
         </div>
-        <div class="sakura-actions in-call" style="margin-top: 18px;">
+        <div class="sakura-actions">
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="sakura-btn-action inject" id="sakura-btn-inject" title="将此番传书铭刻入聊天" style="background:rgba(244, 166, 184, 0.2); border-color:rgba(245, 208, 169, 0.5); color:#F5D0A9; width:48px; height:48px;">${STATUS_SVGS.scroll}</button>
-                <span id="sakura-inject-label" style="font-size:11px; color:#F5D0A9; letter-spacing:1px;">铭刻信笺</span>
+                <button class="sakura-btn-action inject" id="sakura-btn-inject" title="铭刻卷轴">📜</button>
+                <span style="font-size:11px; color:#F5D0A9;" id="sakura-inject-label">铭刻</span>
             </div>
             ${CallQueueManager.hasNext() ? `
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="sakura-btn-action next" id="sakura-btn-next" title="启阅下一封纸鹤" style="background:rgba(30, 18, 26, 0.8); border-color:rgba(245, 208, 169, 0.5); color:#E8A598; width:48px; height:48px;">${STATUS_SVGS.import}</button>
-                <span style="font-size:11px; color:#E8A598; letter-spacing:1px;">下一封 (${CallQueueManager.getPendingCount() - 1})</span>
+                <button class="sakura-btn-action next" id="sakura-btn-next" title="下一封">⏭️</button>
+                <span style="font-size:11px; color:#F5D0A9;">下一封</span>
             </div>
             ` : ''}
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="sakura-btn-action hangup" id="sakura-btn-hangup" title="结束共鸣" style="width:48px; height:48px;">${SAKURA_ICONS.hangup}</button>
-                <span style="font-size:11px; color:#E8A598; letter-spacing:1px;">断念</span>
+                <button class="sakura-btn-action hangup" id="sakura-btn-hangup" title="收纳纸鹤">${SAKURA_ICONS.hangup}</button>
+                <span style="font-size:11px; color:#E8A598;">收纳</span>
             </div>
         </div>
     `;
@@ -123,7 +126,6 @@ function showCustomInCallUI(container, callData, ctx) {
     const $content = buildCallScreen('sakura-fullscreen-call', 'sakura-theme-pink', avatarHtml, callData.char_name || '未知式神', bodyHtml);
     $('body').append($content);
 
-    // 手动铭刻入聊天
     let hasInjected = false;
     $content.find('#sakura-btn-inject').click(async function () {
         if (hasInjected) return;
@@ -141,25 +143,24 @@ function showCustomInCallUI(container, callData, ctx) {
                 audioUrl: callData.audio_url
             });
             hasInjected = true;
-            $btn.css({ background: 'rgba(244, 166, 184, 0.35)', borderColor: '#F5D0A9', color: '#FFF0F5' }).html(STATUS_SVGS.check);
-            $lbl.text('已铭刻').css('color', '#F5D0A9');
+            $btn.css({ background: 'rgba(34, 197, 94, 0.3)', borderColor: '#22c55e', color: '#86efac' }).text('✓');
+            $lbl.text('已铭刻').css('color', '#86efac');
         } catch (e) {
-            console.error('[SakuraElegance] 手动注入失败:', e);
+            console.error('[SakuraElegance] 手动铭刻失败:', e);
             $lbl.text('重试铭刻');
         }
     });
 
+    $content.find('#sakura-btn-next').click(function () {
+        player.stop();
+        doCleanup();
+    });
+
     let player = null;
-    let isCleaningUp = false;
 
     const doCleanup = () => {
-        if (isCleaningUp) return;
-        isCleaningUp = true;
-        cleanupGlobalPlayer();
         $content.remove();
-        delete window.TTS_IncomingCall;
-        $('#tts-sakura-modal').show();
-
+        cleanupGlobalPlayer();
         const nextItem = CallQueueManager.next();
         if (nextItem) {
             if (nextItem.type === 'phone_call') {
@@ -170,23 +171,23 @@ function showCustomInCallUI(container, callData, ctx) {
             return;
         }
 
-        if (ctx.engine) {
+        CallQueueManager.clear();
+        delete window.TTS_IncomingCall;
+        $('#tts-sakura-trigger').show();
+        $('#tts-sakura-modal').show();
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx && ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
     };
 
-    $content.find('#sakura-btn-next').click(() => {
+    $content.find('#sakura-btn-hangup').click(function () {
         if (player) player.stop();
         doCleanup();
     });
 
-    $content.find('#sakura-btn-hangup').click(() => {
-        if (player) player.stop();
-        doCleanup();
-    });
-
-    // 正确实例化 AudioPlayer，传入 $container 与 segments 驱动实时字幕
     player = new AudioPlayer({
         $container: $content,
         segments: callData.segments || [],
@@ -211,10 +212,14 @@ function showCustomInCallUI(container, callData, ctx) {
 
 export const incomingCallScene = {
     render($container, ctx) {
-        const callData = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : window.TTS_IncomingCall;
-        if (callData && callData.audio_url) {
+        const callData = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.char_name)) 
+            ? ctx.data 
+            : (window.TTS_IncomingCall || CallQueueManager.getCurrent());
+
+        if (callData) {
             renderCustomSakuraCall($container, callData, ctx);
         } else {
+            $('#tts-sakura-trigger').show();
             $('#tts-sakura-modal').show();
             PhoneCallApp.render($container, createNavbarForApps);
         }

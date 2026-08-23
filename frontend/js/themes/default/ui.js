@@ -37,7 +37,14 @@ export function bindDragEvents() {
     const $trigger = $('#tts-mobile-trigger');
     if (!$trigger.length) return;
 
-    $trigger.on('mousedown touchstart', function (e) {
+    $trigger.css({
+        'touch-action': 'none',
+        'user-select': 'none',
+        '-webkit-user-select': 'none',
+        '-webkit-touch-callout': 'none'
+    });
+
+    $trigger.off('mousedown touchstart').on('mousedown touchstart', function (e) {
         if (e.type === 'touchstart' && e.touches.length > 1) return;
         if (e.cancelable) e.preventDefault();
 
@@ -46,6 +53,7 @@ export function bindDragEvents() {
 
         state.dragState.startX = point.clientX;
         state.dragState.startY = point.clientY;
+        state.dragState.startTime = Date.now();
         state.dragState.shiftX = point.clientX - rect.left;
         state.dragState.shiftY = point.clientY - rect.top;
         state.dragState.winW = $(window).width();
@@ -70,8 +78,9 @@ function onDragMove(e) {
     const el = $('#tts-mobile-trigger')[0];
     if (!el) return;
 
+    const moveDis = Math.hypot(currentX - state.dragState.startX, currentY - state.dragState.startY);
+
     if (!state.dragState.hasMoved) {
-        const moveDis = Math.sqrt(Math.pow(currentX - state.dragState.startX, 2) + Math.pow(currentY - state.dragState.startY, 2));
         if (moveDis < DRAG_THRESHOLD) return;
         state.dragState.hasMoved = true;
         el.style.setProperty('position', 'fixed', 'important');
@@ -90,7 +99,8 @@ function onDragMove(e) {
     el.style.setProperty('top', newTop + 'px', 'important');
 }
 
-function onDragUp() {
+function onDragUp(e) {
+    if (!state.dragState.isDragging) return;
     state.dragState.isDragging = false;
 
     document.removeEventListener('mousemove', onDragMove);
@@ -98,11 +108,23 @@ function onDragUp() {
     document.removeEventListener('mouseup', onDragUp);
     document.removeEventListener('touchend', onDragUp);
 
-    if (!state.dragState.hasMoved) {
-        // 点击 → 切换面板
+    const duration = Date.now() - (state.dragState.startTime || 0);
+    const point = (e && e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
+    const currentX = point ? point.clientX : state.dragState.startX;
+    const currentY = point ? point.clientY : state.dragState.startY;
+    const moveDis = Math.hypot(currentX - state.dragState.startX, currentY - state.dragState.startY);
+
+    const triggerClick = function () {
+        const now = Date.now();
+        if (now - (state.dragState.lastTapTime || 0) < 350) return;
+        state.dragState.lastTapTime = now;
         if (state.engine) {
             state.engine.toggle();
         }
+    };
+
+    if (!state.dragState.hasMoved || (duration < 350 && moveDis < 20)) {
+        triggerClick();
     } else {
         snapToEdge();
     }

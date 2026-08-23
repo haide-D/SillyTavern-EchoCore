@@ -14,6 +14,7 @@ import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audi
 import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar, getAuthHeaders } from './shared/utils.js';
 import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
 import { showHistoryPlaybackUI } from './incoming_call_app.js';
+import { getSpeakerLanguageHint, validateSpeakerLanguageAudio } from './workshop/api.js';
 
 export const id = 'phone_call';
 export const defaultName = '主动电话';
@@ -425,28 +426,7 @@ const injectCSS = () => {
     $('head').append(`<style id="phone-call-app-css">${css}</style>`);
 };
 
-/**
- * 获取角色模型语言感知提示
- */
-function getSpeakerLanguageHint(speakerName) {
-    if (!speakerName) return { recommended: 'zh', hint: '中文' };
-    const models = (window.TTS_State && window.TTS_State.CACHE && window.TTS_State.CACHE.models) || {};
-    const speakerModel = models[speakerName];
-    if (!speakerModel || !speakerModel.languages) {
-        return { recommended: 'zh', hint: '中文' };
-    }
-    const langs = Object.keys(speakerModel.languages);
-    if (langs.includes('Japanese') && !langs.includes('Chinese')) {
-        return { recommended: 'ja', hint: '日文推荐' };
-    }
-    if (langs.includes('English') && !langs.includes('Chinese')) {
-        return { recommended: 'en', hint: '英文推荐' };
-    }
-    if (langs.includes('Japanese')) {
-        return { recommended: 'ja', hint: '中/日双语' };
-    }
-    return { recommended: 'zh', hint: '中文' };
-}
+
 
 /**
  * 渲染主动电话 App 主体
@@ -837,7 +817,14 @@ function renderDialConsole($container) {
         let effectiveLang = selectedLang;
         if (selectedLang === 'auto') {
             const langInfo = getSpeakerLanguageHint(caller);
-            effectiveLang = langInfo.recommended;
+            effectiveLang = langInfo.recommended || 'zh';
+        }
+
+        // 前置音频缺失校验
+        const check = validateSpeakerLanguageAudio(caller, effectiveLang);
+        if (!check.valid) {
+            alert(check.message);
+            return;
         }
 
         // 🌟 核心修复：在点击发起瞬间实时提取酒馆最新的当前分支上下文，避免受旧分支/旧聊天闭包缓存影响
@@ -1160,8 +1147,14 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
         });
 
         if (!buildRes.ok) {
-            const err = await buildRes.text();
-            throw new Error(`连接失败: ${err}`);
+            let errMsg = '连接失败';
+            try {
+                const errJson = await buildRes.json();
+                errMsg = errJson.detail || errMsg;
+            } catch (_) {
+                errMsg = await buildRes.text();
+            }
+            throw new Error(errMsg);
         }
         const buildData = await buildRes.json();
 
@@ -1195,8 +1188,14 @@ async function generateAndLaunchPhoneCall({ caller, target, presetId, reason, to
         });
 
         if (!parseRes.ok) {
-            const err = await parseRes.text();
-            throw new Error(`语音通道建立失败: ${err}`);
+            let errMsg = '语音通道建立失败';
+            try {
+                const errJson = await parseRes.json();
+                errMsg = errJson.detail || errMsg;
+            } catch (_) {
+                errMsg = await parseRes.text();
+            }
+            throw new Error(errMsg);
         }
         const parseData = await parseRes.json();
 

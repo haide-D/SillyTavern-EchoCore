@@ -9,11 +9,12 @@ import { CallQueueManager } from '../../../call_queue_manager.js';
 
 function renderCustomDeathlyHallowsCall(container, callData, ctx) {
     container.empty();
-    $('#tts-dh-modal').hide();
+    $('#tts-dh-modal').stop(true, true).hide();
     $('#dh-true-fullscreen-call').remove();
+    $('#tts-dh-trigger').hide();
 
     const pendingCount = CallQueueManager.getPendingCount();
-    const queueSubtitle = pendingCount > 1 ? `Incoming Transmission (${pendingCount} 待听)` : 'Incoming Transmission';
+    const queueSubtitle = pendingCount > 1 ? `双面镜魔法传讯 (${pendingCount} 待听)` : '✦ 双面镜魔法传讯 ✦';
 
     const avatarHtml = renderAvatarHtml(callData.char_name, 'dh-call-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
 
@@ -47,6 +48,7 @@ function renderCustomDeathlyHallowsCall(container, callData, ctx) {
         }
 
         delete window.TTS_IncomingCall;
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
@@ -80,8 +82,9 @@ function renderCustomDeathlyHallowsCall(container, callData, ctx) {
 
 function showCustomInCallUI(container, callData, ctx) {
     container.empty();
-    $('#tts-dh-modal').hide();
+    $('#tts-dh-modal').stop(true, true).hide();
     $('#dh-true-fullscreen-call').remove();
+    $('#tts-dh-trigger').hide();
 
     const avatarHtml = renderAvatarHtml(callData.char_name, 'dh-call-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
 
@@ -198,6 +201,7 @@ function showCustomInCallUI(container, callData, ctx) {
         CallQueueManager.clear();
         delete window.TTS_IncomingCall;
         cleanupGlobalPlayer();
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
             ctx.data.onReturn();
@@ -210,10 +214,15 @@ function showCustomInCallUI(container, callData, ctx) {
 
 export const incomingCallScene = {
     render($container, ctx) {
-        // 优先获取 ctx.data 传入的指定通话数据（如重温播放），其次取全局 TTS_IncomingCall
-        const callData = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : window.TTS_IncomingCall;
+        // 优先获取 ctx.data 传入的指定通话数据（如重温播放），其次取全局 TTS_IncomingCall 或待听队列
+        const callData = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.char_name)) 
+            ? ctx.data 
+            : (window.TTS_IncomingCall || CallQueueManager.getCurrent());
+
         if (!callData) {
             // 如果没有实时来电且非重温，直接使用具备三子列表与剧本工坊联动的主动电话 App UI
+            $('#tts-dh-trigger').show();
+            $('#tts-dh-modal').show();
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
             PhoneCallApp.render($appContainer, createNavbarForApps);
             $container.empty().append($appContainer);
@@ -231,6 +240,7 @@ export const incomingCallScene = {
     },
     cleanup() {
         $('#dh-true-fullscreen-call').remove();
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (PhoneCallApp.cleanup) PhoneCallApp.cleanup();
         cleanupGlobalPlayer();

@@ -6,6 +6,15 @@
 #immortal-fullscreen-call,
 #immortal-fullscreen-eavesdrop {
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100%;
     inset: 0;
     z-index: 100000;
     display: flex;
@@ -13,7 +22,9 @@
     align-items: center;
     justify-content: center;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
     background: #090c0f;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

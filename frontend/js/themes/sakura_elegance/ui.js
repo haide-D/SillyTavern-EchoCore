@@ -89,19 +89,35 @@ export function bindDragAndClick() {
     const $trigger = $('#tts-sakura-trigger');
     if (!$trigger.length) return;
 
-    $trigger.off('pointerdown pointermove pointerup pointercancel');
+    $trigger.off('pointerdown pointermove pointerup pointercancel click');
+
+    const triggerClick = function () {
+        const now = Date.now();
+        if (now - (ThemeState.drag.lastTapTime || 0) < 350) return;
+        ThemeState.drag.lastTapTime = now;
+
+        if (ThemeState.particleEngine) {
+            ThemeState.particleEngine.burst();
+        }
+        if (ThemeState.engine) {
+            ThemeState.engine.toggle();
+        }
+    };
 
     $trigger.on('pointerdown', function (e) {
+        if (e.isPrimary === false) return;
+
         ThemeState.drag.isDragging = true;
         ThemeState.drag.hasMoved = false;
         ThemeState.drag.startX = e.clientX;
         ThemeState.drag.startY = e.clientY;
+        ThemeState.drag.startTime = Date.now();
 
         const offset = $trigger.offset();
-        ThemeState.drag.initialLeft = offset.left;
-        ThemeState.drag.initialTop = offset.top;
+        ThemeState.drag.initialLeft = offset ? offset.left : 0;
+        ThemeState.drag.initialTop = offset ? offset.top : 0;
 
-        if ($trigger[0].setPointerCapture) {
+        if ($trigger[0].setPointerCapture && e.pointerId) {
             try { $trigger[0].setPointerCapture(e.pointerId); } catch (_) {}
         }
     });
@@ -110,8 +126,10 @@ export function bindDragAndClick() {
         if (!ThemeState.drag.isDragging) return;
         const dx = e.clientX - ThemeState.drag.startX;
         const dy = e.clientY - ThemeState.drag.startY;
+        const moveDist = Math.hypot(dx, dy);
 
-        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        if (!ThemeState.drag.hasMoved) {
+            if (moveDist < DRAG_THRESHOLD) return;
             ThemeState.drag.hasMoved = true;
         }
 
@@ -128,11 +146,18 @@ export function bindDragAndClick() {
         if (!ThemeState.drag.isDragging) return;
         ThemeState.drag.isDragging = false;
 
-        if ($trigger[0].releasePointerCapture) {
+        const duration = Date.now() - (ThemeState.drag.startTime || 0);
+        const dx = (e.clientX !== undefined ? e.clientX : ThemeState.drag.startX) - ThemeState.drag.startX;
+        const dy = (e.clientY !== undefined ? e.clientY : ThemeState.drag.startY) - ThemeState.drag.startY;
+        const moveDist = Math.hypot(dx, dy);
+
+        if ($trigger[0].releasePointerCapture && e.pointerId) {
             try { $trigger[0].releasePointerCapture(e.pointerId); } catch (_) {}
         }
 
-        if (ThemeState.drag.hasMoved) {
+        if (!ThemeState.drag.hasMoved || (duration < 350 && moveDist < 20)) {
+            triggerClick();
+        } else {
             // 自由停放：持久化保存当前拖拽停止的坐标（不再强制吸附单侧）
             const currentLeft = $trigger.css('left');
             const currentTop = $trigger.css('top');
@@ -140,14 +165,12 @@ export function bindDragAndClick() {
             localStorage.setItem('tts_sakura_trigger_left', currentLeft);
             localStorage.setItem('tts_common_trigger_top', currentTop);
             localStorage.setItem('tts_common_trigger_left', currentLeft);
-        } else {
-            // 点击交互：触发樱花爆发并打开/关闭
-            if (ThemeState.particleEngine) {
-                ThemeState.particleEngine.burst();
-            }
-            if (ThemeState.engine) {
-                ThemeState.engine.toggle();
-            }
+        }
+    });
+
+    $trigger.on('click', function () {
+        if (!ThemeState.drag.hasMoved) {
+            triggerClick();
         }
     });
 }

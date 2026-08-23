@@ -340,15 +340,16 @@ if (!window.TTS_ThemeEngine) {
         console.log(`[ThemeEngine] 📢 通知分发: ${type}`);
 
         // 让主题自行处理
-        if (theme.onNotification) {
+        if (theme && theme.onNotification) {
             const handled = theme.onNotification(type, data, engine);
             if (handled !== false) {
-                return; // 主题已处理
+                return true; // 主题已处理
             }
         }
 
         // 默认行为（主题未处理时）
         _defaultNotificationHandler(type, data);
+        return false;
     };
 
     /**
@@ -431,7 +432,6 @@ if (!window.TTS_ThemeEngine) {
         // 优先检查来电
         if (window.TTS_IncomingCall) {
             console.log('[ThemeEngine] 检测到来电，打开来电界面');
-            engine.notify('incoming_call', window.TTS_IncomingCall);
 
             if (!_state.isOpen) {
                 _state.isOpen = true;

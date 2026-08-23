@@ -51,13 +51,14 @@ class AudioPipeline:
         from config import is_minimax_character
 
         is_minimax = is_minimax_character(char_name)
+        prompt_lang = tts_config.get("prompt_lang") or tts_config.get("text_lang")
 
         if is_minimax:
             # MiniMax 云端角色：无需占用本地 GPU 模型权重锁，直接并行/分段合成
             print(f"[AudioPipeline] ☁️ 角色 '{char_name}' 属于 MiniMax 云端模型，免模型锁直接合成")
             for i, segment in enumerate(segments):
                 print(f"[AudioPipeline] 生成片段 {i+1}/{len(segments)}: [{segment.emotion}] {segment.text[:30]}...")
-                ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion)
+                ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion, prompt_lang=prompt_lang)
                 if not ref_audio:
                     ref_audio = {"path": "minimax:female-shaonv", "text": "", "is_minimax": True, "voice_id": "female-shaonv"}
 
@@ -90,9 +91,9 @@ class AudioPipeline:
                 for i, segment in enumerate(segments):
                     print(f"[AudioPipeline] 生成片段 {i+1}/{len(segments)}: [{segment.emotion}] {segment.text[:30]}...")
 
-                    ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion)
+                    ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion, prompt_lang=prompt_lang)
                     if not ref_audio:
-                        print(f"[AudioPipeline] 警告: 未找到角色 '{char_name}' 情绪 '{segment.emotion}' 的参考音频，跳过")
+                        print(f"[AudioPipeline] 警告: 未找到角色 '{char_name}' 情绪 '{segment.emotion}' 的参考音频 (语言={prompt_lang})，跳过")
                         continue
 
                     emotion_changed = previous_emotion is not None and previous_emotion != segment.emotion

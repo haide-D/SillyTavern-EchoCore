@@ -9,11 +9,12 @@ import { CallQueueManager } from '../../../call_queue_manager.js';
 
 function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
     container.empty();
-    $('#tts-dh-modal').hide();
+    $('#tts-dh-modal').stop(true, true).hide();
     $('#dh-true-fullscreen-call').remove();
+    $('#tts-dh-trigger').hide();
 
     const pendingCount = CallQueueManager.getPendingCount();
-    const queueSubtitle = pendingCount > 1 ? `Whispers Detected (${pendingCount} 待听)` : 'Whispers Detected';
+    const queueSubtitle = pendingCount > 1 ? `伸缩耳秘密探听 (${pendingCount} 待听)` : '✦ 伸缩耳秘密探听 ✦';
 
     const speakers = callData.speakers || [];
     const avatarStackHtml = speakers.length > 0
@@ -57,6 +58,7 @@ function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
 
         delete window.TTS_EavesdropReady;
         delete window.TTS_EavesdropData;
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
@@ -88,8 +90,9 @@ function renderCustomDeathlyHallowsEavesdrop(container, callData, ctx) {
 
 function showCustomEavesdropUI(container, callData, ctx) {
     container.empty();
-    $('#tts-dh-modal').hide();
+    $('#tts-dh-modal').stop(true, true).hide();
     $('#dh-true-fullscreen-call').remove();
+    $('#tts-dh-trigger').hide();
 
     const speakers = callData.speakers || [];
     const firstSpeaker = speakers[0] || '';
@@ -222,6 +225,7 @@ function showCustomEavesdropUI(container, callData, ctx) {
         delete window.TTS_EavesdropReady;
         delete window.TTS_EavesdropData;
         cleanupGlobalPlayer();
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
             ctx.data.onReturn();
@@ -234,9 +238,14 @@ function showCustomEavesdropUI(container, callData, ctx) {
 
 export const eavesdropScene = {
     render($container, ctx) {
-        // 优先获取 ctx.data 传入的指定密谈数据（如重温播放），其次取全局 TTS_EavesdropReady/Data
-        const data = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
+        // 优先获取 ctx.data 传入的指定密谈数据（如重温播放），其次取全局 TTS_EavesdropReady/Data 或待听队列
+        const data = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.speakers || ctx.data.record_id)) 
+            ? ctx.data 
+            : (window.TTS_EavesdropReady || window.TTS_EavesdropData || CallQueueManager.getCurrent());
+
         if (!data) {
+            $('#tts-dh-trigger').show();
+            $('#tts-dh-modal').show();
             const $appContainer = $(`<div class="dh-magic-app-container" style="width:100%; height:100%; display:flex; flex-direction:column; background:transparent; color:rgba(220, 200, 150, 0.9);"></div>`);
             EavesdropApp.render($appContainer, createNavbarForApps);
             $container.empty().append($appContainer);
@@ -254,6 +263,7 @@ export const eavesdropScene = {
     },
     cleanup() {
         $('#dh-true-fullscreen-call').remove();
+        $('#tts-dh-trigger').show();
         $('#tts-dh-modal').show();
         if (EavesdropApp.cleanup) EavesdropApp.cleanup();
         cleanupGlobalPlayer();

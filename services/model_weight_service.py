@@ -168,15 +168,18 @@ class ModelWeightService:
         Returns:
             模型配置 {gpt_path, sovits_path, model_folder} 或 None
         """
-        # 获取角色到模型文件夹的映射
+        # 获取角色到模型文件夹的映射 (支持 mapping 或模型名直通)
         mappings = load_json(os.path.join(os.path.dirname(SETTINGS_FILE), "character_mappings.json"))
+        base_dir, _ = get_current_dirs()
         
-        if char_name not in mappings:
-            print(f"[ModelWeightService] 错误: 角色 {char_name} 未绑定模型")
+        if char_name in mappings:
+            model_folder = mappings[char_name]
+        elif os.path.exists(os.path.join(base_dir, char_name)):
+            model_folder = char_name
+        else:
+            print(f"[ModelWeightService] 错误: 角色 {char_name} 未绑定模型且无同名模型文件夹")
             return None
         
-        model_folder = mappings[char_name]
-        base_dir, _ = get_current_dirs()
         model_path = os.path.join(base_dir, model_folder)
         
         if not os.path.exists(model_path):

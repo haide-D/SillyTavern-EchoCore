@@ -206,8 +206,8 @@ export function getCallStatusTexts() {
     // 4. 内置：死亡圣器 (deathly_hallows) - 100% 高精矢量 SVG 结构
     if (themeId === 'deathly_hallows') {
         return {
-            tabCurrent: `${STATUS_SVGS.chat} 当前对话`,
-            tabAll: `${STATUS_SVGS.history} 总历史`,
+            tabCurrent: `${STATUS_SVGS.chat} 镜中回响`,
+            tabAll: `${STATUS_SVGS.history} 冥想盆记忆`,
             tabDial: `${STATUS_SVGS.wand} 魔法传讯`,
             systemHint: `${STATUS_SVGS.sparkles} 双面镜已感应角色人设、魔法世界与当前记忆。`,
             step1Prompt: '正在挥舞魔杖连接飞路网...',
@@ -220,10 +220,10 @@ export function getCallStatusTexts() {
             targetPlaceholder: '如: 巫师伙伴 / 邓布利多 / 哈利...',
             tonePlaceholder: '如: 密谋私语、惊慌示警、傲慢质问、深情低语...',
             emptyIcon: STATUS_SVGS.wand,
-            emptyCurrentTitle: '当前对话暂无魔法传讯',
-            emptyAllTitle: '暂无任何传讯记录',
-            emptySub: '点击上方【魔法传讯】挥舞魔杖直连双面镜',
-            emptyBtnText: `${STATUS_SVGS.history} 查看总历史记录`
+            emptyCurrentTitle: '双面镜中暂无镜影回响',
+            emptyAllTitle: '冥想盆中暂无传讯记忆',
+            emptySub: '挥动魔杖连接双面镜发起魔法传讯',
+            emptyBtnText: `${STATUS_SVGS.history} 翻阅冥想盆记忆`
         };
     }
 
@@ -343,12 +343,12 @@ export function getEavesdropStatusTexts() {
     // 4. 内置：死亡圣器 (deathly_hallows) - 100% 高精矢量 SVG 结构
     if (themeId === 'deathly_hallows') {
         return {
-            tabCurrent: `${STATUS_SVGS.chat} 当前对话`,
-            tabAll: `${STATUS_SVGS.history} 总历史`,
+            tabCurrent: `${STATUS_SVGS.chat} 门后私语`,
+            tabAll: `${STATUS_SVGS.history} 隐秘秘闻`,
             tabLaunch: `${STATUS_SVGS.ear} 伸缩耳探听`,
             systemHint: `${STATUS_SVGS.sparkles} 伸缩耳已潜入周围环境，感应多角色设定与秘闻。`,
             step1Prompt: '正在悄悄投掷伸缩耳...',
-            step2LLM: (speakers) => `伸缩耳正在探听走廊暗语 (${(speakers || []).join(' & ')})...`,
+            step2LLM: (speakers) => `伸缩耳正在探听门后暗语 (${(speakers || []).join(' & ')})...`,
             step3TTS: '魔法回响清晰化，声音即将传来...',
             btnIdle: `${STATUS_SVGS.wand} 开启伸缩耳探听`,
             btnLoading: (text) => `${STATUS_SVGS.spinner} ${text}`,
@@ -356,10 +356,10 @@ export function getEavesdropStatusTexts() {
             reasonDefault: '深夜在有求必应屋门外的秘密私语',
             tonePlaceholder: '如: 压低嗓音、警惕张望、争执试探、暗中密谋...',
             emptyIcon: STATUS_SVGS.ear,
-            emptyCurrentTitle: '当前对话暂无探听记录',
-            emptyAllTitle: '暂无任何密谈历史',
-            emptySub: '点击上方【主动探听】投掷伸缩耳获取回响',
-            emptyBtnText: `${STATUS_SVGS.history} 查看总密谈记录`
+            emptyCurrentTitle: '伸缩耳暂未捕捉到私语',
+            emptyAllTitle: '冥想盆中暂无窃听秘闻',
+            emptySub: '投掷伸缩耳探听门后的隐秘私语',
+            emptyBtnText: `${STATUS_SVGS.history} 查阅隐秘秘闻`
         };
     }
 

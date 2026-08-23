@@ -14,8 +14,9 @@ import { CallQueueManager } from '../../../call_queue_manager.js';
 
 function renderCustomCyberCall(container, callData, ctx) {
     container.empty();
-    $('#tts-cyber-modal').hide();
+    $('#tts-cyber-modal').stop(true, true).hide();
     $('#cyber-fullscreen-call').remove();
+    $('#tts-cyber-trigger').hide();
 
     const pendingCount = CallQueueManager.getPendingCount();
     const queueSubtitle = pendingCount > 1 ? `[PENDING COMM: ${pendingCount} INCOMING]` : '✦ NEURO-LINK // INCOMING CALL ✦';
@@ -52,6 +53,7 @@ function renderCustomCyberCall(container, callData, ctx) {
         }
 
         delete window.TTS_IncomingCall;
+        $('#tts-cyber-trigger').show();
         $('#tts-cyber-modal').show();
         if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
@@ -66,13 +68,13 @@ function renderCustomCyberCall(container, callData, ctx) {
                 await ChatInjector.appendToLastAIMessage({
                     type: 'phone_call',
                     segments: callData.segments || [],
-                    callerName: callData.char_name || callData.selected_speaker || callData.caller || '脑机直连',
+                    callerName: callData.char_name || callData.selected_speaker || callData.caller || '夜之城通讯',
                     target: callData.target_user || callData.target || '你',
-                    callReason: callData.call_reason || callData.reason || '神经通讯',
+                    callReason: callData.call_reason || callData.reason || '神经直连来电',
                     callId: callData.call_id,
                     audioUrl: callData.audio_url
                 });
-                console.log('[CyberpunkEdgerunners] ✅ 脑机通讯已自动注入');
+                console.log('[CyberpunkEdgerunners] ✅ 神经通话已自动注入聊天');
             } catch (error) {
                 console.error('[CyberpunkEdgerunners] 自动注入失败:', error);
             }
@@ -85,8 +87,9 @@ function renderCustomCyberCall(container, callData, ctx) {
 
 function showCustomInCallUI(container, callData, ctx) {
     container.empty();
-    $('#tts-cyber-modal').hide();
+    $('#tts-cyber-modal').stop(true, true).hide();
     $('#cyber-fullscreen-call').remove();
+    $('#tts-cyber-trigger').hide();
 
     const avatarHtml = renderAvatarHtml(callData.char_name, 'cyber-call-avatar-img', 'width:100%; height:100%; object-fit:cover; border-radius:50%;');
 
@@ -99,23 +102,23 @@ function showCustomInCallUI(container, callData, ctx) {
         <div class="cyber-subtitle call-subtitle-area">
             <div class="subtitle-line">
                 <span class="subtitle-speaker" style="display:none;"></span>
-                <span class="subtitle-text">神经数据流解码中...</span>
+                <span class="subtitle-text">神经数据流解密中...</span>
             </div>
         </div>
-        <div class="cyber-actions in-call" style="margin-top: 18px;">
+        <div class="cyber-actions" style="margin-top: 24px;">
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="cyber-btn-action inject" id="cyber-btn-inject" title="刻录此段神经通讯入脑" style="background:rgba(0, 240, 255, 0.2); border-color:#00F0FF; color:#00F0FF; width:48px; height:48px;">${STATUS_SVGS.import}</button>
-                <span id="cyber-inject-label" style="font-size:10px; color:#00F0FF; font-family:monospace; font-weight:700;">INJECT</span>
+                <button class="cyber-btn-action inject" id="cyber-btn-inject" title="注入本地网络" style="border-color:#38BDF8; color:#38BDF8;">💾</button>
+                <span style="font-size:10px; color:#38BDF8; font-family:monospace;" id="cyber-inject-label">INJECT</span>
             </div>
             ${CallQueueManager.hasNext() ? `
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="cyber-btn-action next" id="cyber-btn-next" title="接入下一条频段" style="background:rgba(14, 22, 36, 0.9); border-color:#FFE600; color:#FFE600; width:48px; height:48px;">${STATUS_SVGS.callOut}</button>
-                <span style="font-size:10px; color:#FFE600; font-family:monospace; font-weight:700;">NEXT (${CallQueueManager.getPendingCount() - 1})</span>
+                <button class="cyber-btn-action next" id="cyber-btn-next" title="下一条频段" style="border-color:#F59E0B; color:#F59E0B;">⏭️</button>
+                <span style="font-size:10px; color:#F59E0B; font-family:monospace;">NEXT</span>
             </div>
             ` : ''}
             <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <button class="cyber-btn-action hangup" id="cyber-btn-hangup" title="断开神经直连" style="width:48px; height:48px;">${CYBER_ICONS.hangup}</button>
-                <span style="font-size:10px; color:#FF003C; font-family:monospace; font-weight:700;">DISCONNECT</span>
+                <button class="cyber-btn-action hangup" id="cyber-btn-hangup" title="断开连接">${CYBER_ICONS.hangup}</button>
+                <span style="font-size:10px; color:#FF003C; font-family:monospace;">DISCONNECT</span>
             </div>
         </div>
     `;
@@ -123,39 +126,34 @@ function showCustomInCallUI(container, callData, ctx) {
     const $content = buildCallScreen('cyber-fullscreen-call', 'cyber-theme-neon', avatarHtml, callData.char_name || '未知神经频段', bodyHtml);
     $('body').append($content);
 
-    // 手动铭刻入聊天
     let hasInjected = false;
     $content.find('#cyber-btn-inject').click(async function () {
         if (hasInjected) return;
         const $btn = $(this);
         const $lbl = $('#cyber-inject-label');
-        $lbl.text('INJECTING...');
+        $lbl.text('UPLOADING...');
         try {
             await ChatInjector.appendToLastAIMessage({
                 type: 'phone_call',
                 segments: callData.segments || [],
-                callerName: callData.char_name || callData.selected_speaker || callData.caller || '脑机直连',
+                callerName: callData.char_name || callData.selected_speaker || callData.caller || '夜之城通讯',
                 target: callData.target_user || callData.target || '你',
-                callReason: callData.call_reason || callData.reason || '神经通讯',
+                callReason: callData.call_reason || callData.reason || '神经直连来电',
                 callId: callData.call_id,
                 audioUrl: callData.audio_url
             });
             hasInjected = true;
-            $btn.css({ 'border-color': '#00F0FF', 'color': '#00F0FF' });
-            $lbl.text('INJECTED');
-            if (window.toastr) window.toastr.success('✦ 神经通讯已成功刻录入聊天');
-        } catch (error) {
-            console.error('[CyberpunkEdgerunners] 注入失败:', error);
-            $lbl.text('ERROR');
-            if (window.toastr) window.toastr.error('刻录失败，请重试');
+            $btn.css({ background: 'rgba(34, 197, 94, 0.3)', borderColor: '#22C55E', color: '#22C55E' }).text('✓');
+            $lbl.text('INJECTED').css('color', '#22C55E');
+        } catch (e) {
+            console.error('[CyberpunkEdgerunners] 手动注入失败:', e);
+            $lbl.text('RETRY');
         }
     });
 
-    // 挂断
-    const handleHangup = () => {
-        cleanupGlobalPlayer();
+    const doCleanup = () => {
         $content.remove();
-
+        cleanupGlobalPlayer();
         const nextItem = CallQueueManager.next();
         if (nextItem) {
             if (nextItem.type === 'phone_call') {
@@ -166,32 +164,46 @@ function showCustomInCallUI(container, callData, ctx) {
             return;
         }
 
+        CallQueueManager.clear();
         delete window.TTS_IncomingCall;
+        $('#tts-cyber-trigger').show();
         $('#tts-cyber-modal').show();
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx && ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
     };
 
-    $content.find('#cyber-btn-hangup').click(handleHangup);
-    $content.find('#cyber-btn-next').click(handleHangup);
+    $content.find('#cyber-btn-next').click(function () {
+        player.stop();
+        doCleanup();
+    });
 
-    // 播放音频并驱动分段字幕
+    $content.find('#cyber-btn-hangup').click(function () {
+        if (player) player.stop();
+        doCleanup();
+    });
+
+    let player = null;
     if (callData.audio_url) {
-        const player = new AudioPlayer({
+        player = new AudioPlayer({
             $container: $content,
             segments: callData.segments || [],
             showSpeaker: false,
             onEnd: () => {
-                console.log('[CyberpunkEdgerunners] 脑机通讯播毕');
+                setTimeout(doCleanup, 1000);
             },
             onError: (err) => {
                 console.error('[CyberpunkEdgerunners] 音频播放错误:', err);
+                setTimeout(doCleanup, 1200);
             }
         });
         setGlobalPlayer(player);
         player.play(callData.audio_url);
+    } else {
+        doCleanup();
     }
 }
 
@@ -199,10 +211,13 @@ export const incomingCallScene = {
     render($container, ctx) {
         const callData = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.char_name || ctx.data.caller)) 
             ? ctx.data 
-            : window.TTS_IncomingCall;
-        if (callData && (callData.audio_url || callData.char_name || callData.caller)) {
+            : (window.TTS_IncomingCall || CallQueueManager.getCurrent());
+
+        if (callData) {
             renderCustomCyberCall($container, callData, ctx);
         } else {
+            $('#tts-cyber-trigger').show();
+            $('#tts-cyber-modal').show();
             $container.empty();
             const createNav = (typeof ctx === 'function') ? ctx : (ctx.createNavbar || createNavbarForApps);
             PhoneCallApp.render($container, createNav);

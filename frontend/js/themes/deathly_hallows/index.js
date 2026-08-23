@@ -226,7 +226,9 @@ const DeathlyHallowsTheme = {
             case 'incoming_call':
                 if (ThemeState.particleEngine) ThemeState.particleEngine.switchState('call');
                 if (window.toastr) {
-                    window.toastr.info(`📞 ${data.char_name || '未知'} 来电中，点击法阵接听`);
+                    const pendingCount = window.TTS_CallQueueManager ? window.TTS_CallQueueManager.getPendingCount() : 0;
+                    const queueText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
+                    window.toastr.info(`✦ 双面镜泛起微光: ${data.char_name || '神秘巫师'} 传来魔法传讯${queueText}`);
                 }
                 window.TTS_IncomingCall = data; // 确保引擎能够识别到当前处于来电中
                 return true;
@@ -234,7 +236,10 @@ const DeathlyHallowsTheme = {
             case 'eavesdrop_ready':
                 if (ThemeState.particleEngine) ThemeState.particleEngine.switchState('whisper');
                 if (window.toastr) {
-                    window.toastr.info(`🎧 远方传来低语: ${(data.speakers || []).join(' 和 ')}`);
+                    const pendingCount = window.TTS_CallQueueManager ? window.TTS_CallQueueManager.getPendingCount() : 0;
+                    const queueText = pendingCount > 1 ? ` (待听 ${pendingCount} 条)` : '';
+                    const spkStr = (data.speakers && data.speakers.length) ? data.speakers.join(' & ') : '未知密谈';
+                    window.toastr.info(`✦ 伸缩耳捕捉到秘密私语: ${spkStr}${queueText}`);
                 }
                 window.TTS_EavesdropReady = data;
                 return true;

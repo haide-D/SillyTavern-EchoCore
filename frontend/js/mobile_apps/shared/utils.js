@@ -3,6 +3,8 @@
  * 提供时间格式化、URL 解析等公共功能
  */
 
+const MODULE_NAME = 'st_direct_tts';
+
 /**
  * 格式化时间为 m:ss 格式
  * @param {number} seconds - 秒数
@@ -132,8 +134,6 @@ export function getAuthHeaders(extra = {}) {
     }
     return headers;
 }
-
-const MODULE_NAME = 'st_direct_tts';
 
 /**
  * 获取所有 Speaker 自定义头像映射

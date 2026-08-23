@@ -80,8 +80,14 @@ export async function executeDirectedAction(category, preset, options = {}) {
             });
 
             if (!buildRes.ok) {
-                const err = await buildRes.text();
-                throw new Error(`构建提示词失败: ${err}`);
+                let errDetail = '构建提示词失败';
+                try {
+                    const errJson = await buildRes.json();
+                    errDetail = errJson.detail || errDetail;
+                } catch (_) {
+                    errDetail = await buildRes.text();
+                }
+                throw new Error(errDetail);
             }
             const buildData = await buildRes.json();
 
@@ -117,8 +123,14 @@ export async function executeDirectedAction(category, preset, options = {}) {
             });
 
             if (!parseRes.ok) {
-                const err = await parseRes.text();
-                throw new Error(`TTS 语音生成失败: ${err}`);
+                let errDetail = 'TTS 语音生成失败';
+                try {
+                    const errJson = await parseRes.json();
+                    errDetail = errJson.detail || errDetail;
+                } catch (_) {
+                    errDetail = await parseRes.text();
+                }
+                throw new Error(errDetail);
             }
             const parseData = await parseRes.json();
 
