@@ -1,5 +1,6 @@
 // frontend/js/settings_ui.js
-import { resolveBackendUrls } from './utils.js';
+import { resolveBackendUrls, getAllMiniMaxVoices } from './utils.js';
+import { TTS_API } from './api.js';
 
 const MODULE_NAME = 'st_direct_tts';
 // 动态基于当前模块定位 settings.html，自动兼容任何文件夹名称 (st-direct-tts 或 SillyTavern-GPT-SoVITS 等)
@@ -403,14 +404,29 @@ export async function initSettingsUI() {
             $list.html(html);
         };
 
-        const loadMinimaxVoices = async () => {
+        const loadMinimaxVoices = async (isManualRefresh = false) => {
             const $count = $('#tts-minimax-voice-count');
             const $list = $('#tts-minimax-voices-list');
-            $count.text('(加载中...)');
+            
+            // 阶段 1: Cache-First 0毫秒秒开渲染 (优先提取内置官方预设与本地自定义音色)
+            const { presetVoices, customVoices } = getAllMiniMaxVoices();
+            const localCombined = [...presetVoices, ...customVoices];
+            
+            if (cachedMinimaxVoices.length === 0 || localCombined.length > 0) {
+                cachedMinimaxVoices = localCombined;
+                renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
+            }
+
+            if (isManualRefresh) {
+                $count.text('(同步中...)');
+            }
+
+            // 阶段 2: 异步向后端同步最新的云端+自定义音色 (4秒超时保护)
             try {
-                if (window.TTS_API && typeof window.TTS_API.getMinimaxVoices === 'function') {
-                    const data = await window.TTS_API.getMinimaxVoices();
-                    if (data && data.voices) {
+                const api = window.TTS_API || TTS_API;
+                if (api && typeof api.getMinimaxVoices === 'function') {
+                    const data = await api.getMinimaxVoices();
+                    if (data && Array.isArray(data.voices) && data.voices.length > 0) {
                         cachedMinimaxVoices = data.voices;
                         if (window.TTS_State && window.TTS_State.CACHE) {
                             window.TTS_State.CACHE.minimax_voices = data.voices;
@@ -422,18 +438,22 @@ export async function initSettingsUI() {
                     }
                 }
             } catch (err) {
-                console.warn('[ST-Direct-TTS] 加载 MiniMax 声线列表失败:', err);
-                $list.html('<div style="text-align: center; color: #f87171; font-size: 11px; padding: 10px;">加载声线失败，请确认后端连接正常</div>');
-                $count.text('(加载失败)');
+                console.warn('[ST-Direct-TTS] 异步同步 MiniMax 声线列表失败(已优雅降级至本地预设):', err);
+                if (cachedMinimaxVoices.length === 0) {
+                    $list.html('<div style="text-align: center; color: #f87171; font-size: 11px; padding: 10px;">加载声线失败，请确认后端连接正常</div>');
+                    $count.text('(加载失败)');
+                } else if (isManualRefresh) {
+                    $count.text(`(共 ${cachedMinimaxVoices.length} 个)`);
+                }
             }
         };
 
-        // 初始加载
+        // 初始加载 (立即使用 Cache-First 呈现，无需等待网络)
         loadMinimaxVoices();
 
-        // 刷新按钮
+        // 刷新按钮 (手动同步)
         $('#tts-minimax-refresh-voices-btn').on('click', () => {
-            loadMinimaxVoices();
+            loadMinimaxVoices(true);
         });
 
         // Tab 分类切换
@@ -512,45 +532,65 @@ export async function initSettingsUI() {
 
             $status.text('⏳ 保存中...').css('color', '#aaa');
 
-            try {
-                if (window.TTS_API && typeof window.TTS_API.addMinimaxVoice === 'function') {
-                    // 如果处于编辑模式且修改了原 ID，先删除原 ID
-                    if (editingVoiceId && editingVoiceId !== voiceId) {
-                        try {
-                            await window.TTS_API.deleteMinimaxVoice(editingVoiceId);
-                        } catch (e) {
-                            console.warn('[ST-Direct-TTS] 删除旧声线 ID 失败:', e);
-                        }
-                    }
+            const api = window.TTS_API || TTS_API;
 
-                    const res = await window.TTS_API.addMinimaxVoice({
+            // 本地镜像先保存 (保障无后端/离线环境依然可用)
+            try {
+                const saved = localStorage.getItem('tts_custom_minimax_voices');
+                let list = saved ? JSON.parse(saved) : [];
+                if (!Array.isArray(list)) list = [];
+                list = list.filter(v => v.id !== voiceId && v.id !== editingVoiceId);
+                list.push({ id: voiceId, name: name || voiceId, gender: gender || 'female', category: 'custom', description: '用户自定义克隆音色' });
+                localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
+            } catch (e) {}
+
+            try {
+                // 如果处于编辑模式且修改了原 ID，先删除原 ID
+                if (editingVoiceId && editingVoiceId !== voiceId) {
+                    try {
+                        if (api && typeof api.deleteMinimaxVoice === 'function') {
+                            await api.deleteMinimaxVoice(editingVoiceId);
+                        }
+                    } catch (e) {
+                        console.warn('[ST-Direct-TTS] 删除旧声线 ID 失败:', e);
+                    }
+                }
+
+                let res = null;
+                if (api && typeof api.addMinimaxVoice === 'function') {
+                    res = await api.addMinimaxVoice({
                         id: voiceId,
                         name: name || voiceId,
                         gender: gender || 'female',
                         category: 'custom'
                     });
-                    
-                    $status.text('✅ 已保存！').css('color', '#55ff55');
-                    resetEntryForm();
-                    $('#tts-minimax-add-drawer').removeClass('expanded');
-                    $('#tts-minimax-toggle-add-text').text('➕ 录入声线');
-
-                    if (res && res.voices) {
-                        cachedMinimaxVoices = res.voices;
-                        if (window.TTS_State && window.TTS_State.CACHE) {
-                            window.TTS_State.CACHE.minimax_voices = res.voices;
-                        }
-                        if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
-                            window.TTS_UI.renderModelOptions();
-                        }
-                        renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
-                    } else {
-                        loadMinimaxVoices();
-                    }
-                    setTimeout(() => $status.text(''), 3000);
                 }
+                
+                $status.text('✅ 已保存！').css('color', '#55ff55');
+                resetEntryForm();
+                $('#tts-minimax-add-drawer').removeClass('expanded');
+                $('#tts-minimax-toggle-add-text').text('➕ 录入声线');
+
+                if (res && Array.isArray(res.voices)) {
+                    cachedMinimaxVoices = res.voices;
+                    if (window.TTS_State && window.TTS_State.CACHE) {
+                        window.TTS_State.CACHE.minimax_voices = res.voices;
+                    }
+                    if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                        window.TTS_UI.renderModelOptions();
+                    }
+                    renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
+                } else {
+                    loadMinimaxVoices();
+                }
+                setTimeout(() => $status.text(''), 3000);
             } catch (err) {
-                $status.text(`❌ ${err.message}`).css('color', '#ff5555');
+                $status.text(`⚠️ 后端未响应，已保存至本地: ${err.message}`).css('color', '#fde047');
+                resetEntryForm();
+                $('#tts-minimax-add-drawer').removeClass('expanded');
+                $('#tts-minimax-toggle-add-text').text('➕ 录入声线');
+                loadMinimaxVoices();
+                setTimeout(() => $status.text(''), 4000);
             }
         });
 
@@ -568,9 +608,11 @@ export async function initSettingsUI() {
                 currentPreviewAudio = null;
             }
 
+            const api = window.TTS_API || TTS_API;
+
             try {
-                if (window.TTS_API && typeof window.TTS_API.previewMinimaxVoice === 'function') {
-                    const blob = await window.TTS_API.previewMinimaxVoice(voiceId);
+                if (api && typeof api.previewMinimaxVoice === 'function') {
+                    const blob = await api.previewMinimaxVoice(voiceId);
                     const audioUrl = URL.createObjectURL(blob);
                     currentPreviewAudio = new Audio(audioUrl);
                     $btn.text('🔊 播放中');
@@ -581,6 +623,8 @@ export async function initSettingsUI() {
                         $btn.text(originText).prop('disabled', false);
                     };
                     await currentPreviewAudio.play();
+                } else {
+                    throw new Error("TTS API 未初始化");
                 }
             } catch (err) {
                 alert(`试听失败: ${err.message}`);
@@ -628,10 +672,21 @@ export async function initSettingsUI() {
 
             if (!confirm(`确定要从自定义音色库删除声线「${voiceName}」吗？`)) return;
 
+            const api = window.TTS_API || TTS_API;
+
+            // 先清理本地 localStorage 镜像
             try {
-                if (window.TTS_API && typeof window.TTS_API.deleteMinimaxVoice === 'function') {
-                    const res = await window.TTS_API.deleteMinimaxVoice(voiceId);
-                    if (res && res.voices) {
+                const saved = localStorage.getItem('tts_custom_minimax_voices');
+                if (saved) {
+                    const list = (JSON.parse(saved) || []).filter(v => v.id !== voiceId && v.id !== `minimax:${voiceId}`);
+                    localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
+                }
+            } catch (e) {}
+
+            try {
+                if (api && typeof api.deleteMinimaxVoice === 'function') {
+                    const res = await api.deleteMinimaxVoice(voiceId);
+                    if (res && Array.isArray(res.voices)) {
                         cachedMinimaxVoices = res.voices;
                         if (window.TTS_State && window.TTS_State.CACHE) {
                             window.TTS_State.CACHE.minimax_voices = res.voices;
@@ -639,20 +694,16 @@ export async function initSettingsUI() {
                         if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
                             window.TTS_UI.renderModelOptions();
                         }
-                        try {
-                            const saved = localStorage.getItem('tts_custom_minimax_voices');
-                            if (saved) {
-                                const list = (JSON.parse(saved) || []).filter(v => v.id !== voiceId && v.id !== `minimax:${voiceId}`);
-                                localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
-                            }
-                        } catch (e) {}
                         renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
                     } else {
                         loadMinimaxVoices();
                     }
+                } else {
+                    loadMinimaxVoices();
                 }
             } catch (err) {
-                alert(`删除失败: ${err.message}`);
+                alert(`后端删除同步异常 (已在本地移除): ${err.message}`);
+                loadMinimaxVoices();
             }
         });
 

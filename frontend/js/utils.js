@@ -765,20 +765,20 @@ export function resolveBackendUrls(remoteConfig = {}) {
  */
 export function getAllMiniMaxVoices() {
     const defaultPresets = [
-        { id: "female-shaonv", name: "少女音", description: "清澈灵动、青春活力" },
-        { id: "female-yujie", name: "御姐音", description: "成熟知性、冷静优雅" },
-        { id: "female-tianmei", name: "甜美音", description: "软萌温柔、甜美治愈" },
-        { id: "female-chengshu", name: "成熟女性", description: "沉稳端庄、富有亲和力" },
-        { id: "presenter_female", name: "女主持人", description: "标准播音腔、字正腔圆" },
-        { id: "audiobook_female_1", name: "女播音员 1", description: "温和叙事、适合故事朗读" },
-        { id: "audiobook_female_2", name: "女播音员 2", description: "沉稳大气、情绪充沛" },
-        { id: "male-qn-qingse", name: "青涩青年", description: "阳光少年、自然清新" },
-        { id: "male-qn-jingying", name: "精英青年", description: "沉稳干练、自信温润" },
-        { id: "male-qn-badao", name: "霸道青年", description: "磁性低沉、富有掌控感" },
-        { id: "male-qn-daxuesheng", name: "男大学生", description: "清爽随和、日常口语化" },
-        { id: "presenter_male", name: "男主持人", description: "浑厚庄重、新闻级播音" },
-        { id: "audiobook_male_1", name: "男播音员 1", description: "故事感强、磁性浑厚" },
-        { id: "audiobook_male_2", name: "男播音员 2", description: "深度纪录片质感" }
+        { id: "female-shaonv", name: "少女音", gender: "female", category: "preset", description: "清澈灵动、青春活力" },
+        { id: "female-yujie", name: "御姐音", gender: "female", category: "preset", description: "成熟知性、冷静优雅" },
+        { id: "female-tianmei", name: "甜美音", gender: "female", category: "preset", description: "软萌温柔、甜美治愈" },
+        { id: "female-chengshu", name: "成熟女性", gender: "female", category: "preset", description: "沉稳端庄、富有亲和力" },
+        { id: "presenter_female", name: "女主持人", gender: "female", category: "preset", description: "标准播音腔、字正腔圆" },
+        { id: "audiobook_female_1", name: "女播音员 1", gender: "female", category: "preset", description: "温和叙事、适合小说朗读" },
+        { id: "audiobook_female_2", name: "女播音员 2", gender: "female", category: "preset", description: "沉稳大气、情绪充沛" },
+        { id: "male-qn-qingse", name: "青涩青年", gender: "male", category: "preset", description: "阳光少年、自然清新" },
+        { id: "male-qn-jingying", name: "精英青年", gender: "male", category: "preset", description: "沉稳干练、自信温润" },
+        { id: "male-qn-badao", name: "霸道青年", gender: "male", category: "preset", description: "磁性低沉、富有掌控感" },
+        { id: "male-qn-daxuesheng", name: "男大学生", gender: "male", category: "preset", description: "清爽随和、日常口语化" },
+        { id: "presenter_male", name: "男主持人", gender: "male", category: "preset", description: "浑厚庄重、新闻级播音" },
+        { id: "audiobook_male_1", name: "男播音员 1", gender: "male", category: "preset", description: "故事感强、磁性浑厚" },
+        { id: "audiobook_male_2", name: "男播音员 2", gender: "male", category: "preset", description: "深度纪录片质感" }
     ];
 
     const cacheVoices = (window.TTS_State && window.TTS_State.CACHE && Array.isArray(window.TTS_State.CACHE.minimax_voices))

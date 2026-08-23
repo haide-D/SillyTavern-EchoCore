@@ -74,50 +74,98 @@ export const TTS_API = {
         });
     },
 
-    async getMinimaxVoices() {
-        const res = await fetch(this._url('/api/tts/minimax/voices'), {
-            headers: this._headers()
-        });
-        if (!res.ok) throw new Error('获取 MiniMax 音色列表失败');
-        return await res.json();
+    async getMinimaxVoices(timeoutMs = 4000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/minimax/voices'), {
+                signal: controller.signal,
+                headers: this._headers()
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error(`获取 MiniMax 音色列表失败 (${res.status})`);
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("获取 MiniMax 音色列表超时 (4秒)");
+            }
+            throw error;
+        }
     },
 
-    async addMinimaxVoice(voice) {
-        const res = await fetch(this._url('/api/tts/minimax/voices'), {
-            method: 'POST',
-            headers: this._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify(voice)
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || '添加声线失败');
+    async addMinimaxVoice(voice, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/minimax/voices'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify(voice)
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `添加声线失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("保存声线请求超时 (8秒)");
+            }
+            throw error;
         }
-        return await res.json();
     },
 
-    async deleteMinimaxVoice(voiceId) {
-        const res = await fetch(this._url(`/api/tts/minimax/voices/${encodeURIComponent(voiceId)}`), {
-            method: 'DELETE',
-            headers: this._headers()
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || '删除声线失败');
+    async deleteMinimaxVoice(voiceId, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url(`/api/tts/minimax/voices/${encodeURIComponent(voiceId)}`), {
+                signal: controller.signal,
+                method: 'DELETE',
+                headers: this._headers()
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `删除声线失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("删除声线请求超时 (8秒)");
+            }
+            throw error;
         }
-        return await res.json();
     },
 
-    async previewMinimaxVoice(voiceId, text = "主人，您好！这是我的MiniMax语音合成试听效果。") {
-        const res = await fetch(this._url('/api/tts/minimax/preview'), {
-            method: 'POST',
-            headers: this._headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ voice_id: voiceId, text: text })
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || '试听生成失败');
+    async previewMinimaxVoice(voiceId, text = "主人，您好！这是我的MiniMax语音合成试听效果。", timeoutMs = 15000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/minimax/preview'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ voice_id: voiceId, text: text })
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `试听生成失败 (${res.status})`);
+            }
+            return await res.blob();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("试听生成请求超时 (15秒)");
+            }
+            throw error;
         }
-        return await res.blob();
     },
     //TODO 修改为V2端口
     async checkCache(params) {
