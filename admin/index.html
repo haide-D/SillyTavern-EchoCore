@@ -616,6 +616,15 @@
                         </div>
 
                         <div class="form-group">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                <label>🎭 MiniMax 角色可用情绪列表 (自定义)</label>
+                                <button type="button" id="btn-reset-minimax-emotions" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🔄 恢复默认情绪</button>
+                            </div>
+                            <input type="text" id="setting-minimax-custom-emotions" class="input" placeholder="英文逗号分隔，如: default, neutral, happy, sad, angry, whisper...">
+                            <small>大模型生成主动电话与私下密谈剧本时将严格使用此列表，支持用户自由增减情绪标签</small>
+                        </div>
+
+                        <div class="form-group">
                             <label>基础声学参数调优</label>
                             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
                                 <div>

@@ -30,7 +30,25 @@ class EmotionService:
 
         # ========== MiniMax 角色情绪处理 ==========
         if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
-            # MiniMax 云端音色原生支持全量情绪与声学调优
+            # 优先从系统配置中读取用户自定义配置的 MiniMax 情绪列表
+            try:
+                settings = load_json(SETTINGS_FILE)
+                minimax_cfg = settings.get("minimax_tts", {})
+                custom_emotions = minimax_cfg.get("custom_emotions")
+                
+                if custom_emotions:
+                    if isinstance(custom_emotions, str) and custom_emotions.strip():
+                        em_list = [e.strip() for e in custom_emotions.replace('，', ',').split(',') if e.strip()]
+                        if em_list:
+                            return em_list
+                    elif isinstance(custom_emotions, list) and len(custom_emotions) > 0:
+                        em_list = [str(e).strip() for e in custom_emotions if str(e).strip()]
+                        if em_list:
+                            return em_list
+            except Exception as e:
+                print(f"[EmotionService] ⚠️ 读取 MiniMax 自定义情绪配置异常: {e}")
+
+            # MiniMax 云端音色原生默认支持的全量情绪
             return [
                 "default", "neutral", "happy", "sad", "angry", 
                 "fear", "whisper", "surprise", "disgust", 

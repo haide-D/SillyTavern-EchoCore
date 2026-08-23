@@ -829,7 +829,6 @@ function renderDialConsole($container) {
     // 点击提交发起呼出
     $container.find('#pc-form-submit-btn').on('click', async function () {
         const caller = $container.find('#pc-form-caller').val();
-        const target = $container.find('#pc-form-target').val().trim() || enriched.userName;
         const presetId = $container.find('#pc-form-preset').val();
         const reason = $container.find('#pc-form-reason').val().trim();
         const tone = $container.find('#pc-form-tone').val().trim();
@@ -841,6 +840,10 @@ function renderDialConsole($container) {
             effectiveLang = langInfo.recommended;
         }
 
+        // 🌟 核心修复：在点击发起瞬间实时提取酒馆最新的当前分支上下文，避免受旧分支/旧聊天闭包缓存影响
+        const currentEnriched = WorldInfoExtractor.getEnrichedContext({ maxMessages: 12, charName: caller });
+        const target = $container.find('#pc-form-target').val().trim() || currentEnriched.userName || enriched.userName;
+
         await generateAndLaunchPhoneCall({
             caller,
             target,
@@ -848,7 +851,7 @@ function renderDialConsole($container) {
             reason,
             tone,
             language: effectiveLang,
-            enriched
+            enriched: currentEnriched
         });
     });
 }

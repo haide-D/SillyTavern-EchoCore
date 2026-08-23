@@ -111,6 +111,16 @@
                     <small>默认音色 / Voice ID:</small>
                     <input type="text" id="tts-minimax-voice-id" class="text_pole" placeholder="例如: female-shaonv 或自定义克隆ID" />
                 </div>
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <small>🎭 MiniMax 角色可用情绪列表 (自定义):</small>
+                        <button type="button" id="tts-minimax-reset-emotions-btn" class="st-tts-btn st-tts-btn-xs" style="padding: 1px 6px; font-size: 10.5px;" title="恢复预设全量情绪列表">🔄 恢复默认</button>
+                    </div>
+                    <input type="text" id="tts-minimax-custom-emotions" class="text_pole" placeholder="英文逗号分隔，如: default, neutral, happy, sad, angry, whisper..." />
+                    <small style="color: #888; font-size: 10.5px; display: block; margin-top: 2px; line-height: 1.3;">
+                        大模型在生成主动电话/密谈时将使用此列表；您可自由增删填入情绪标签。
+                    </small>
+                </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
                     <button type="button" id="tts-minimax-test-btn" class="st-tts-btn st-tts-btn-sm" style="cursor: pointer;">
                         <span>⚡ 测试 MiniMax 连接</span>

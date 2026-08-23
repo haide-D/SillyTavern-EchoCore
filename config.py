@@ -292,11 +292,15 @@ def init_settings():
         "audio_format": "mp3",
         "sample_rate": 32000,
         "bitrate": 128000,
-        "custom_voices": []
+        "custom_voices": [],
+        "custom_emotions": "default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax"
     }
     if "minimax_tts" not in settings or not isinstance(settings["minimax_tts"], dict):
         settings["minimax_tts"] = minimax_tts_defaults
         dirty = True
+    else:
+        if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
+            dirty = True
     # security 访问控制与密码保护默认配置
     security_defaults = {
         "enabled": False,

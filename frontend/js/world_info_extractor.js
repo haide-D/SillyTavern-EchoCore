@@ -146,12 +146,19 @@ export class WorldInfoExtractor {
             if (ctx.chat && Array.isArray(ctx.chat)) {
                 // 截取最近消息并保留指纹
                 const recent = ctx.chat.slice(-maxMessages);
-                context = recent.map(msg => ({
-                    name: msg.name || (msg.is_user ? userName : charName),
-                    is_user: !!msg.is_user,
-                    mes: msg.mes || "",
-                    fingerprint: msg.fingerprint || msg.extra?.fingerprint || ""
-                }));
+                context = recent.map(msg => {
+                    let text = msg.mes || "";
+                    // 自动清洗插件自身注入的电话卡片与大模型思考标签，避免上下文递归污染
+                    text = text.replace(/<st-tts-call[\s\S]*?<\/st-tts-call>/gi, '');
+                    text = text.replace(/<think[\s\S]*?<\/think>/gi, '');
+                    text = text.replace(/<think_nya~[\s\S]*?<\/think_nya~>/gi, '');
+                    return {
+                        name: msg.name || (msg.is_user ? userName : charName),
+                        is_user: !!msg.is_user,
+                        mes: text.trim(),
+                        fingerprint: msg.fingerprint || msg.extra?.fingerprint || ""
+                    };
+                });
 
                 const speakerSet = new Set();
                 ctx.chat.forEach(msg => {

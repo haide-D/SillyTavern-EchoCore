@@ -175,33 +175,84 @@ class LLMService:
                 raise Exception(f"代理请求失败: {str(e)}")
 
     @staticmethod
-    def parse_response(data: Dict) -> str:
+    def parse_response(data: Any) -> str:
         """
-        解析多种格式的 LLM 响应
+        解析多种格式的 LLM 响应 (向下兼容 OpenAI、Claude、Gemini、Ollama 及各类二次包装中转网关)
         """
+        if not data:
+            raise ValueError("LLM 响应为空")
+
+        if isinstance(data, str):
+            trimmed = data.strip()
+            if trimmed:
+                return trimmed
+
+        # 智能解包外层包装 (兼容 {"success": True, "data": {...}} 或 {"result": {...}} 等网关格式)
+        target = data
+        if isinstance(target, dict):
+            if isinstance(target.get("data"), dict):
+                inner = target["data"]
+                if any(k in inner for k in ("choices", "content", "output", "response", "candidates", "message")):
+                    target = inner
+            elif isinstance(target.get("result"), dict):
+                inner = target["result"]
+                if any(k in inner for k in ("choices", "content", "output", "response", "candidates", "message")):
+                    target = inner
+
         content = None
 
-        if data.get("choices") and len(data["choices"]) > 0:
-            message = data["choices"][0].get("message", {})
-            if message.get("content"):
-                content = message["content"].strip()
-            elif message.get("reasoning_content"):
-                content = message["reasoning_content"].strip()
-            elif data["choices"][0].get("text"):
-                content = data["choices"][0]["text"].strip()
+        if isinstance(target, dict):
+            # 1. 标准 OpenAI 格式: choices[0].message.content
+            choices = target.get("choices")
+            if isinstance(choices, list) and len(choices) > 0 and isinstance(choices[0], dict):
+                message = choices[0].get("message", {})
+                if isinstance(message, dict):
+                    if message.get("content"):
+                        content = str(message["content"]).strip()
+                    elif message.get("reasoning_content"):
+                        content = str(message["reasoning_content"]).strip()
+                if not content and choices[0].get("text"):
+                    content = str(choices[0]["text"]).strip()
 
-        if not content and data.get("content"):
-            content = data["content"].strip()
+            # 2. Gemini 原生格式: candidates[0].content.parts[0].text
+            if not content:
+                candidates = target.get("candidates")
+                if isinstance(candidates, list) and len(candidates) > 0 and isinstance(candidates[0], dict):
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if isinstance(parts, list) and len(parts) > 0 and isinstance(parts[0], dict):
+                        if parts[0].get("text"):
+                            content = str(parts[0]["text"]).strip()
 
-        if not content and data.get("output"):
-            content = data["output"].strip()
+            # 3. Claude 原生格式 或 直接 content 字段
+            if not content and target.get("content"):
+                raw_content = target["content"]
+                if isinstance(raw_content, list):
+                    texts = [str(item.get("text", "")) for item in raw_content if isinstance(item, dict) and item.get("text")]
+                    if texts:
+                        content = "\n".join(texts).strip()
+                elif isinstance(raw_content, str):
+                    content = raw_content.strip()
 
-        if not content and data.get("response"):
-            content = data["response"].strip()
+            # 4. Ollama chat: message.content
+            if not content and isinstance(target.get("message"), dict) and target["message"].get("content"):
+                content = str(target["message"]["content"]).strip()
 
-        if not content and data.get("result"):
-            result = data["result"]
-            content = result.strip() if isinstance(result, str) else str(result)
+            # 5. 通用 output 字段
+            if not content and target.get("output"):
+                raw_output = target["output"]
+                if isinstance(raw_output, str):
+                    content = raw_output.strip()
+                elif isinstance(raw_output, dict) and raw_output.get("text"):
+                    content = str(raw_output["text"]).strip()
+
+            # 6. 通用 response 字段 (Ollama generate 模式)
+            if not content and isinstance(target.get("response"), str):
+                content = target["response"].strip()
+
+            # 7. 通用 result 字段
+            if not content and target.get("result"):
+                raw_result = target["result"]
+                content = raw_result.strip() if isinstance(raw_result, str) else str(raw_result)
 
         if not content:
             raise ValueError(f"无法解析 LLM 响应 (响应格式不兼容): {str(data)[:200]}")

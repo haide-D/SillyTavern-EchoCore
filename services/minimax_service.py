@@ -194,7 +194,8 @@ class MiniMaxTTSService:
             "audio_format": "mp3",
             "sample_rate": 32000,
             "bitrate": 128000,
-            "custom_voices": []
+            "custom_voices": [],
+            "custom_emotions": "default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax"
         }
         for k, v in defaults.items():
             if k not in cfg:
@@ -222,7 +223,7 @@ class MiniMaxTTSService:
     @staticmethod
     def map_emotion(emotion_tag: Optional[str]) -> Dict[str, Any]:
         """
-        将 ST 情绪标签映射至 MiniMax 情感代码与基础声学微调
+        将 ST 情绪标签映射至 MiniMax 情感代码与基础声学微调 (支持用户自定义情绪自适应)
         """
         if not emotion_tag:
             return DEFAULT_EMOTION_MAP["default"]
@@ -231,11 +232,27 @@ class MiniMaxTTSService:
         if tag in DEFAULT_EMOTION_MAP:
             return DEFAULT_EMOTION_MAP[tag]
         
-        # 模糊匹配
+        # 模糊子串匹配
         for k, v in DEFAULT_EMOTION_MAP.items():
-            if k in tag:
+            if k in tag or tag in k:
                 return v
-        return DEFAULT_EMOTION_MAP["default"]
+        
+        # 针对常见英文/中文自定义情绪的自适应语义推断
+        if any(w in tag for w in ("笑", "喜", "乐", "欢", "兴奋", "excited", "joy", "cheerful")):
+            return {"emotion": "happy", "speed": 1.05, "pitch": 1, "vol": 1.05}
+        elif any(w in tag for w in ("悲", "哭", "痛", "哀", "低落", "沮丧", "depressed", "grief")):
+            return {"emotion": "sad", "speed": 0.92, "pitch": -1, "vol": 0.9}
+        elif any(w in tag for w in ("怒", "气", "恨", "暴", "严厉", "furious", "rage")):
+            return {"emotion": "angry", "speed": 1.1, "pitch": 1, "vol": 1.2}
+        elif any(w in tag for w in ("怕", "慌", "惊", "惧", "颤", "panic", "scared")):
+            return {"emotion": "fearful", "speed": 1.08, "pitch": 1, "vol": 0.95}
+        elif any(w in tag for w in ("冷", "淡", "静", "漠", "理智", "calm", "cold")):
+            return {"emotion": "neutral", "speed": 0.95, "pitch": 0, "vol": 1.0}
+        elif any(w in tag for w in ("羞", "媚", "柔", "娇", "害羞", "shy", "gentle")):
+            return {"emotion": "happy", "speed": 0.95, "pitch": 1, "vol": 0.95}
+
+        # 默认回退到标准中立情感
+        return {"emotion": "neutral", "speed": 1.0, "pitch": 0, "vol": 1.0}
 
     @staticmethod
     def get_cache_dir() -> str:

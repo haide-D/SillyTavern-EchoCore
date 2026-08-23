@@ -238,6 +238,7 @@ export async function loadSettings() {
         const mmApiUrlEl = document.getElementById('setting-minimax-api-url');
         const mmModelEl = document.getElementById('setting-minimax-model');
         const mmDefaultVoiceEl = document.getElementById('setting-minimax-default-voice');
+        const mmCustomEmotionsEl = document.getElementById('setting-minimax-custom-emotions');
         const mmSpeedEl = document.getElementById('setting-minimax-speed');
         const mmPitchEl = document.getElementById('setting-minimax-pitch');
         const mmVolEl = document.getElementById('setting-minimax-vol');
@@ -248,6 +249,7 @@ export async function loadSettings() {
         if (mmApiUrlEl) mmApiUrlEl.value = mm.api_url || 'https://api.minimax.chat/v1/t2a_v2';
         if (mmModelEl) mmModelEl.value = mm.model || 'speech-01-turbo';
         if (mmDefaultVoiceEl) mmDefaultVoiceEl.value = mm.default_voice_id || 'female-shaonv';
+        if (mmCustomEmotionsEl) mmCustomEmotionsEl.value = mm.custom_emotions || 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax';
         if (mmSpeedEl) mmSpeedEl.value = mm.speed !== undefined ? mm.speed : 1.0;
         if (mmPitchEl) mmPitchEl.value = mm.pitch !== undefined ? mm.pitch : 0;
         if (mmVolEl) mmVolEl.value = mm.vol !== undefined ? mm.vol : 1.0;
@@ -288,6 +290,7 @@ export async function saveSettings() {
     const mmApiUrlEl = document.getElementById('setting-minimax-api-url');
     const mmModelEl = document.getElementById('setting-minimax-model');
     const mmDefaultVoiceEl = document.getElementById('setting-minimax-default-voice');
+    const mmCustomEmotionsEl = document.getElementById('setting-minimax-custom-emotions');
     const mmSpeedEl = document.getElementById('setting-minimax-speed');
     const mmPitchEl = document.getElementById('setting-minimax-pitch');
     const mmVolEl = document.getElementById('setting-minimax-vol');
@@ -342,6 +345,7 @@ export async function saveSettings() {
             api_url: mmApiUrlEl ? mmApiUrlEl.value.trim() : 'https://api.minimax.chat/v1/t2a_v2',
             model: mmModelEl ? mmModelEl.value : 'speech-01-turbo',
             default_voice_id: mmDefaultVoiceEl ? mmDefaultVoiceEl.value : 'female-shaonv',
+            custom_emotions: mmCustomEmotionsEl ? mmCustomEmotionsEl.value.trim() : 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax',
             speed: mmSpeedEl ? parseFloat(mmSpeedEl.value) || 1.0 : 1.0,
             pitch: mmPitchEl ? parseInt(mmPitchEl.value) || 0 : 0,
             vol: mmVolEl ? parseFloat(mmVolEl.value) || 1.0 : 1.0
@@ -826,9 +830,20 @@ export function bindTextReplacementControls() {
 }
 
 /**
- * 绑定 MiniMax 云端连接测试按钮
+ * 绑定 MiniMax 云端连接测试与设置辅助按钮
  */
 export function bindTestMiniMaxButton() {
+    const resetEmotionsBtn = document.getElementById('btn-reset-minimax-emotions');
+    if (resetEmotionsBtn) {
+        resetEmotionsBtn.addEventListener('click', () => {
+            const el = document.getElementById('setting-minimax-custom-emotions');
+            if (el) {
+                el.value = 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax';
+                showNotification('已重置为 MiniMax 官方推荐的全套可用情绪列表', 'info');
+            }
+        });
+    }
+
     const btn = document.getElementById('test-minimax-connection-btn');
     if (!btn) return;
 

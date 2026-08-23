@@ -118,6 +118,7 @@ export async function initSettingsUI() {
             $('#tts-minimax-group-id').val(config.provider_settings.minimax.group_id || '');
             $('#tts-minimax-model').val(config.provider_settings.minimax.model || 'speech-01-turbo');
             $('#tts-minimax-voice-id').val(config.provider_settings.minimax.voice_id || 'female-shaonv');
+            $('#tts-minimax-custom-emotions').val(config.provider_settings.minimax.custom_emotions || 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax');
         }
         if (config.provider_settings?.doubao) {
             $('#tts-doubao-api-key').val(config.provider_settings.doubao.api_key || '');
@@ -128,7 +129,7 @@ export async function initSettingsUI() {
             const urls = getCurrentManagerUrls(config);
             $('#tts-ext-open-admin-btn').attr('href', urls.adminUrl);
             if (window.TTS_API) {
-                window.TTS_API.init(urls.httpUrl, config.remote_token || '');
+                window.TTS_API.reconfigure(urls.httpUrl, urls.wsUrl, config.remote_token || '');
             }
         };
         updateAdminLink();
@@ -221,7 +222,8 @@ export async function initSettingsUI() {
                         api_key: mm.api_key || '',
                         group_id: mm.group_id || '',
                         model: mm.model || 'speech-01-turbo',
-                        default_voice_id: mm.voice_id || 'female-shaonv'
+                        default_voice_id: mm.voice_id || 'female-shaonv',
+                        custom_emotions: mm.custom_emotions || 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax'
                     }
                 }).catch(() => {});
             }
@@ -248,6 +250,20 @@ export async function initSettingsUI() {
         $('#tts-minimax-voice-id').on('input', (e) => {
             if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
             config.provider_settings.minimax.voice_id = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncMinimaxBackend();
+        });
+        $('#tts-minimax-custom-emotions').on('input', (e) => {
+            if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
+            config.provider_settings.minimax.custom_emotions = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncMinimaxBackend();
+        });
+        $('#tts-minimax-reset-emotions-btn').on('click', () => {
+            const defEmotions = 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax';
+            $('#tts-minimax-custom-emotions').val(defEmotions);
+            if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
+            config.provider_settings.minimax.custom_emotions = defEmotions;
             context.saveSettingsDebounced();
             syncMinimaxBackend();
         });

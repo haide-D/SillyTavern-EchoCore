@@ -165,59 +165,109 @@ async function callLLM(config) {
 }
 
 function parseResponse(data) {
+    if (!data) {
+        throw new Error('LLM 响应为空');
+    }
+
+    // 如果响应直接是字符串
+    if (typeof data === 'string') {
+        const trimmed = data.trim();
+        if (trimmed) return trimmed;
+    }
+
+    // 智能解包外层包装 (兼容 { success: true, data: { choices: [...] } } 或 { result: { choices: [...] } } 等中转网关)
+    let target = data;
+    if (target && typeof target === 'object') {
+        if (target.data && typeof target.data === 'object' && !Array.isArray(target.data)) {
+            if (target.data.choices || target.data.content || target.data.output || target.data.response || target.data.candidates || target.data.message) {
+                target = target.data;
+            }
+        } else if (target.result && typeof target.result === 'object' && !Array.isArray(target.result)) {
+            if (target.result.choices || target.result.content || target.result.output || target.result.response || target.result.candidates || target.result.message) {
+                target = target.result;
+            }
+        }
+    }
+
     // 添加详细的调试日志
     console.log('[LLM_Client] 🔍 开始解析LLM响应');
-    console.log('[LLM_Client] 响应数据类型:', typeof data);
-    console.log('[LLM_Client] 响应是否为对象:', data !== null && typeof data === 'object');
-
-    if (data !== null && typeof data === 'object') {
-        console.log('[LLM_Client] 响应对象的键:', Object.keys(data));
-        console.log('[LLM_Client] 完整响应数据:', JSON.stringify(data, null, 2));
-    } else {
-        console.log('[LLM_Client] 响应数据 (非对象):', data);
+    console.log('[LLM_Client] 响应数据类型:', typeof target);
+    if (target !== null && typeof target === 'object') {
+        console.log('[LLM_Client] 响应对象的键:', Object.keys(target));
     }
 
     let content = null;
 
-    if (data.choices?.[0]?.message?.content) {
-        content = data.choices[0].message.content.trim();
-        console.log('[LLM_Client] ✅ 使用 data.choices[0].message.content');
+    // 1. 标准 OpenAI 格式: choices[0].message.content
+    if (target.choices?.[0]?.message?.content) {
+        content = target.choices[0].message.content.trim();
+        console.log('[LLM_Client] ✅ 使用 target.choices[0].message.content');
     }
-    else if (data.choices?.[0]?.message?.reasoning_content) {
-        content = data.choices[0].message.reasoning_content.trim();
-        console.log('[LLM_Client] ✅ 使用 data.choices[0].message.reasoning_content');
+    // 2. DeepSeek reasoning 或特殊推理字段
+    else if (target.choices?.[0]?.message?.reasoning_content) {
+        content = target.choices[0].message.reasoning_content.trim();
+        console.log('[LLM_Client] ✅ 使用 target.choices[0].message.reasoning_content');
     }
-    else if (data.choices?.[0]?.text) {
-        content = data.choices[0].text.trim();
-        console.log('[LLM_Client] ✅ 使用 data.choices[0].text');
+    // 3. 旧版 Completion 格式: choices[0].text
+    else if (target.choices?.[0]?.text) {
+        content = target.choices[0].text.trim();
+        console.log('[LLM_Client] ✅ 使用 target.choices[0].text');
     }
-    else if (data.content) {
-        content = data.content.trim();
-        console.log('[LLM_Client] ✅ 使用 data.content');
+    // 4. Gemini 原生格式: candidates[0].content.parts[0].text
+    else if (target.candidates?.[0]?.content?.parts?.[0]?.text) {
+        content = target.candidates[0].content.parts[0].text.trim();
+        console.log('[LLM_Client] ✅ 使用 target.candidates[0].content.parts[0].text');
     }
-    else if (data.output) {
-        content = data.output.trim();
-        console.log('[LLM_Client] ✅ 使用 data.output');
+    // 5. Claude 原生数组格式 或 直接 content 字段
+    else if (target.content) {
+        if (Array.isArray(target.content)) {
+            content = target.content
+                .filter(item => item && (item.text || item.type === 'text'))
+                .map(item => item.text || '')
+                .join('\n')
+                .trim();
+        } else if (typeof target.content === 'string') {
+            content = target.content.trim();
+        }
+        if (content) console.log('[LLM_Client] ✅ 使用 target.content');
     }
-    else if (data.response) {
-        content = data.response.trim();
-        console.log('[LLM_Client] ✅ 使用 data.response');
+    // 6. Ollama 原生 chat 格式: message.content
+    else if (target.message?.content) {
+        content = target.message.content.trim();
+        console.log('[LLM_Client] ✅ 使用 target.message.content');
     }
-    else if (data.result) {
-        content = typeof data.result === 'string' ? data.result.trim() : JSON.stringify(data.result);
-        console.log('[LLM_Client] ✅ 使用 data.result');
+    // 7. 通用 output 字段
+    else if (target.output) {
+        if (typeof target.output === 'string') {
+            content = target.output.trim();
+        } else if (target.output.text) {
+            content = target.output.text.trim();
+        }
+        if (content) console.log('[LLM_Client] ✅ 使用 target.output');
+    }
+    // 8. 通用 response 字段 (如 Ollama generate 模式)
+    else if (target.response && typeof target.response === 'string') {
+        content = target.response.trim();
+        console.log('[LLM_Client] ✅ 使用 target.response');
+    }
+    // 9. 通用 result 字段
+    else if (target.result) {
+        content = typeof target.result === 'string' ? target.result.trim() : JSON.stringify(target.result);
+        console.log('[LLM_Client] ✅ 使用 target.result');
     }
 
     if (!content) {
         console.error('[LLM_Client] ❌ 无法从响应中提取内容');
         console.error('[LLM_Client] 已尝试的路径:');
-        console.error('  - data.choices[0].message.content');
-        console.error('  - data.choices[0].message.reasoning_content');
-        console.error('  - data.choices[0].text');
-        console.error('  - data.content');
-        console.error('  - data.output');
-        console.error('  - data.response');
-        console.error('  - data.result');
+        console.error('  - target.choices[0].message.content');
+        console.error('  - target.choices[0].message.reasoning_content');
+        console.error('  - target.choices[0].text');
+        console.error('  - target.candidates[0].content.parts[0].text');
+        console.error('  - target.content');
+        console.error('  - target.message.content');
+        console.error('  - target.output');
+        console.error('  - target.response');
+        console.error('  - target.result');
 
         // 创建错误对象并附加原始响应数据
         const error = new Error('无法解析LLM响应 (响应格式不兼容)');
