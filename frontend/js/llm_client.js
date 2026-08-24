@@ -204,10 +204,7 @@ async function callLLM(config) {
                 }
                 console.error(`[LLM_Client] ❌ 后端 LLM 代理返回 HTTP ${response.status}:`, errorDetail);
                 
-                // 若为 401/403 明确鉴权失败或 400 明确参数错误，直接抛出不进行无意义重试
-                if (response.status === 401 || response.status === 403 || (response.status === 400 && !errorDetail.includes('超时'))) {
-                    throw new Error(`(HTTP ${response.status}): ${errorDetail}`);
-                }
+                // 超时 (504)、鉴权 (401/403)、参数错误 (400) 或限流处理完毕的错误，直接抛出不进行无意义二次盲等
                 throw new Error(`(HTTP ${response.status}): ${errorDetail.substring(0, 300)}`);
             }
 
@@ -218,14 +215,14 @@ async function callLLM(config) {
             lastError = error;
             const errMsg = error.message || '';
 
-            // 如果是明确的鉴权或不可恢复错误，直接跳出
-            if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API Key') || errMsg.includes('鉴权失败')) {
+            // 如果是超时、鉴权或已处理的 HTTP 错误，直接跳出终止，绝不让用户再次盲等 6 分钟
+            if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('504') || errMsg.includes('API Key') || errMsg.includes('鉴权失败') || errMsg.includes('超时') || errMsg.includes('Timeout')) {
                 throw error;
             }
 
             console.warn(`[LLM_Client] ⚠️ 后端代理调用异常 (第 ${attempt} 次): ${errMsg}`);
 
-            // 如果未用尽重试次数，短暂停顿后重试
+            // 如果未用尽重试次数，短暂停顿后重试 (仅网络连接故障)
             if (attempt < MAX_RETRIES && isNetworkError(error)) {
                 await delay(1000 * attempt);
             }

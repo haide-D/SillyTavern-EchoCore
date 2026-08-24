@@ -646,6 +646,8 @@ async def proxy_llm_chat(data: dict):
             status_code = 401
         elif "403" in err_str:
             status_code = 403
+        elif "429" in err_str or "限流" in err_str:
+            status_code = 429
         else:
             status_code = 400
         raise HTTPException(status_code=status_code, detail=err_str)

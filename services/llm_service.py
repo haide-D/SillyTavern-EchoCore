@@ -2,7 +2,9 @@ import asyncio
 import httpx
 from typing import Dict, List, Optional, Any
 
-DEFAULT_MAX_RETRIES = 5
+# 全局 LLM 请求配置: 6 分钟超时 (360s)，连接超时 30s
+DEFAULT_TIMEOUT = httpx.Timeout(360.0, connect=30.0)
+RETRYABLE_STATUS_CODES = {429, 503, 529}
 
 
 class LLMService:
@@ -92,7 +94,7 @@ class LLMService:
     @staticmethod
     async def call(config: Dict, prompt: str, max_retries: Optional[int] = None) -> str:
         """
-        调用 LLM API 并返回响应文本 (支持自动重试机制与阶梯退避，严格控制单次与累计耗时防止反代524超时)
+        调用 LLM API 并返回响应文本 (6分钟全局超时；仅当遇到 429/503/529 等限流状态码时才重试，超时直接终止不重试)
         """
         api_url = config.get("api_url")
         api_key = config.get("api_key", "")
@@ -127,13 +129,14 @@ class LLMService:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        print(f"[LLMService] [REQUEST] 发起请求 -> URL: {api_url}, 模型: {model}, 最大重试次数: {retries}")
+        print(f"[LLMService] [REQUEST] 发起请求 -> URL: {api_url}, 模型: {model}, 限流重试上限: {retries}")
 
         last_error = ""
         for attempt in range(1, retries + 1):
+            should_retry = False
             try:
-                # 单次超时设置为 45.0s，避免请求在云端/隧道网关处累积超过 100s 触发 524
-                async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
+                # 6 分钟单次超时 (360s)，给超大 RP 上下文和慢速生成充分的时间
+                async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, follow_redirects=True) as client:
                     resp = await client.post(api_url, headers=headers, json=request_body)
                     if resp.status_code == 200:
                         data = resp.json()
@@ -143,27 +146,33 @@ class LLMService:
                         return parsed
 
                     error_text = resp.text[:400]
-                    # 鉴权错误通常不可通过重试恢复，直接快速报错
-                    if resp.status_code in (401, 403):
-                        raise Exception(f"HTTP {resp.status_code} (鉴权失败/API Key无效): {error_text}")
+                    # 仅限流/暂时不可用状态码允许重试，其余错误直接抛出
+                    if resp.status_code in RETRYABLE_STATUS_CODES:
+                        should_retry = True
+                        last_error = f"HTTP {resp.status_code} (上游限流/繁忙): {error_text}"
+                    else:
+                        raise Exception(f"HTTP {resp.status_code}: {error_text}")
 
-                    last_error = f"HTTP {resp.status_code}: {error_text}"
-
-            except httpx.RequestError as e:
-                last_error = f"网络连接异常 ({type(e).__name__}): {str(e)}"
             except httpx.TimeoutException as e:
-                last_error = f"远程 LLM 请求超时(>45s): {str(e)}"
+                # 超时不重试，直接抛出异常
+                print(f"[LLMService] [TIMEOUT] 远程 LLM 请求超时 (>360s): {str(e)}")
+                raise Exception(f"远程 LLM 请求超时 (>360s): 模型生成耗时超过 6 分钟，已终止请求 ({type(e).__name__})")
+            except httpx.RequestError as e:
+                # 网络连接类异常直接抛出
+                raise Exception(f"网络连接异常 ({type(e).__name__}): {str(e)}")
             except Exception as e:
-                if "鉴权失败" in str(e) or "API Key无效" in str(e):
+                if not should_retry:
                     raise
                 last_error = str(e)
 
-            if attempt < retries:
-                delay = min(1.0 * attempt, 3.0)
-                print(f"[LLMService] [WARN] 第 {attempt}/{retries} 次调用失败 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
+            if should_retry and attempt < retries:
+                delay = 2.0 * attempt
+                print(f"[LLMService] [WARN] 第 {attempt}/{retries} 次调用触发限流 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
                 await asyncio.sleep(delay)
+            else:
+                break
 
-        raise Exception(f"LLM API 调用失败: 已自动重试 {retries} 次均失败 (最后错误: {last_error})")
+        raise Exception(f"LLM API 调用失败: 已尝试 {retries} 次 (最后错误: {last_error})")
 
     @staticmethod
     async def chat_completion(
@@ -177,7 +186,7 @@ class LLMService:
         max_retries: int = 2
     ) -> Dict[str, Any]:
         """
-        通用 Chat Completion 服务端代理转发 (严格限制单次 45s 超时与最多 2 次重试，确保 70s 内返回明确错误，防止触发 Cloudflare 100s 524 熔断)
+        通用 Chat Completion 服务端代理转发 (6分钟超时；仅429/503/529限流时重试，超时直接终止不重试)
         """
         if not api_url:
             raise ValueError("缺少必要的 LLM 配置: api_url")
@@ -203,18 +212,18 @@ class LLMService:
             headers["Authorization"] = f"Bearer {api_key}"
 
         try:
-            # 严格限制后端重试次数为最多 2 次，避免总耗时超过反代/Cloudflare 100s 限制
-            retries = min(max(1, int(max_retries or 2)), 2)
+            retries = min(max(1, int(max_retries or 2)), 3)
         except (ValueError, TypeError):
             retries = 2
 
-        print(f"[LLMService] [REQUEST] 代理转发 -> URL: {api_url}, 模型: {model}, 最大重试次数: {retries}")
+        print(f"[LLMService] [REQUEST] 代理转发 -> URL: {api_url}, 模型: {model}, 限流重试上限: {retries}")
 
         last_error = ""
         for attempt in range(1, retries + 1):
+            should_retry = False
             try:
-                # 单次 45 秒超时，两次最多 90 秒 + 1 秒间隔，确保在 Cloudflare 100s 限制前由 FastAPI 主动抛出并返回 CORS 错误响应
-                async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
+                # 6 分钟单次超时 (360s)，超时直接抛出不进行二次盲等重试
+                async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT, follow_redirects=True) as client:
                     resp = await client.post(api_url, headers=headers, json=request_body)
                     if resp.status_code == 200:
                         if attempt > 1:
@@ -222,24 +231,30 @@ class LLMService:
                         return resp.json()
 
                     error_text = resp.text[:400]
-                    if resp.status_code in (401, 403):
-                        raise Exception(f"HTTP {resp.status_code} (鉴权失败/API Key无效): {error_text}")
+                    # 仅限流/暂时不可用状态码允许重试
+                    if resp.status_code in RETRYABLE_STATUS_CODES:
+                        should_retry = True
+                        last_error = f"HTTP {resp.status_code} (上游限流/繁忙): {error_text}"
+                    else:
+                        raise Exception(f"HTTP {resp.status_code}: {error_text}")
 
-                    last_error = f"HTTP {resp.status_code}: {error_text}"
-
-            except httpx.RequestError as e:
-                last_error = f"代理请求网络异常 ({type(e).__name__}): {str(e)}"
             except httpx.TimeoutException as e:
-                last_error = f"远程 LLM 响应超时 (>45s): 上游模型服务响应过慢或处于排队中"
+                # 超时不重试，直接抛出
+                print(f"[LLMService] [TIMEOUT] 远程 LLM 代理转发超时 (>360s): {str(e)}")
+                raise Exception(f"远程 LLM 响应超时 (>360s): 上游模型生成耗时超过 6 分钟，已终止请求 ({type(e).__name__})")
+            except httpx.RequestError as e:
+                raise Exception(f"代理请求网络异常 ({type(e).__name__}): {str(e)}")
             except Exception as e:
-                if "鉴权失败" in str(e) or "API Key无效" in str(e):
+                if not should_retry:
                     raise
                 last_error = str(e)
 
-            if attempt < retries:
-                delay = 1.0
-                print(f"[LLMService] [WARN] 代理转发第 {attempt}/{retries} 次失败 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
+            if should_retry and attempt < retries:
+                delay = 2.0 * attempt
+                print(f"[LLMService] [WARN] 代理转发第 {attempt}/{retries} 次触发限流 ({last_error})，将在 {delay:.1f}s 后进行第 {attempt + 1} 次重试...")
                 await asyncio.sleep(delay)
+            else:
+                break
 
         raise Exception(f"LLM 代理请求失败: 已尝试 {retries} 次 (最后错误: {last_error})")
 
