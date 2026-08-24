@@ -334,7 +334,8 @@ class EavesdropService:
         timestamp = int(time.time())
         filename = f"eavesdrop_{timestamp}.wav"
         
-        cache_dir = os.path.join(os.path.dirname(SETTINGS_FILE), "Cache", "eavesdrop")
+        _, cache_root = get_current_dirs()
+        cache_dir = os.path.join(cache_root, "eavesdrop")
         os.makedirs(cache_dir, exist_ok=True)
         
         audio_path = os.path.join(cache_dir, filename)

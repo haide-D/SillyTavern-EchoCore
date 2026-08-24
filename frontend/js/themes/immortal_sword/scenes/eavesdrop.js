@@ -197,7 +197,9 @@ function showActiveImmortalEavesdropUI(container, data, ctx) {
             return;
         }
 
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
@@ -252,11 +254,23 @@ function showActiveImmortalEavesdropUI(container, data, ctx) {
 
 export const eavesdropScene = {
     render($container, ctx) {
-        const eavesdropData = (ctx && ctx.data && ctx.data.audio_url) 
+        const eavesdropData = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.speakers || ctx.data.record_id)) 
             ? ctx.data 
-            : (window.TTS_EavesdropData || window.TTS_EavesdropReady);
+            : (window.TTS_EavesdropData || window.TTS_EavesdropReady || CallQueueManager.getCurrent());
 
-        if (eavesdropData && eavesdropData.audio_url) {
+        if (!eavesdropData) {
+            $('#tts-immortal-modal').show();
+            EavesdropApp.render($container, createNavbarForApps);
+            return;
+        }
+
+        // 如果是重温播放 (isReplay)，直接打开全屏神识探听播放界面
+        if (ctx && ctx.data && ctx.data.isReplay) {
+            showActiveImmortalEavesdropUI($container, eavesdropData, ctx);
+            return;
+        }
+
+        if (eavesdropData.audio_url) {
             // 路径 1: 全屏沉浸式神识探查 (双阶段完整流转)
             renderCustomImmortalEavesdrop($container, eavesdropData, ctx);
         } else {

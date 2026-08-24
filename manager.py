@@ -139,16 +139,32 @@ os.makedirs(eavesdrop_audio_dir, exist_ok=True)
 @app.get("/api/audio/eavesdrop/{filename}")
 async def serve_eavesdrop_audio(filename: str):
     """
-    提供对话追踪音频文件
+    提供对话追踪音频文件 (支持多路径回退探测，兼容历史已生成音频)
     """
     # URL 解码
     filename = unquote(filename)
     
-    # 构建文件路径
-    file_path = os.path.join(eavesdrop_audio_dir, filename)
+    # 动态获取最新 cache_dir
+    from config import get_current_dirs, DATA_DIR, PLUGIN_ROOT
+    _, dynamic_cache_dir = get_current_dirs()
+
+    # 候选路径探测列表
+    candidate_paths = [
+        os.path.join(dynamic_cache_dir, "eavesdrop", filename),
+        os.path.join(eavesdrop_audio_dir, filename),
+        os.path.join(DATA_DIR, "Cache", "eavesdrop", filename),
+        os.path.join(PLUGIN_ROOT, "Cache", "eavesdrop", filename),
+        os.path.join(PLUGIN_ROOT, "data", "Cache", "eavesdrop", filename),
+    ]
     
+    file_path = None
+    for candidate in candidate_paths:
+        if os.path.exists(candidate) and os.path.isfile(candidate):
+            file_path = candidate
+            break
+
     # 检查文件是否存在
-    if not os.path.exists(file_path):
+    if not file_path:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail=f"音频文件不存在: {filename}")
     

@@ -191,7 +191,9 @@ function showCustomEavesdropUI(container, data, ctx) {
         delete window.TTS_EavesdropReady;
         delete window.TTS_EavesdropData;
         $('#tts-cyber-modal').show();
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
@@ -208,9 +210,11 @@ function showCustomEavesdropUI(container, data, ctx) {
             showSpeaker: true,
             onEnd: () => {
                 console.log('[CyberpunkEdgerunners] 深网监听音频播毕');
+                setTimeout(handleHangup, 1000);
             },
             onError: (err) => {
                 console.error('[CyberpunkEdgerunners] 播放错误:', err);
+                setTimeout(handleHangup, 1200);
             }
         });
 
@@ -230,6 +234,8 @@ function showCustomEavesdropUI(container, data, ctx) {
 
         setGlobalPlayer(player);
         player.play(data.audio_url);
+    } else {
+        handleHangup();
     }
 }
 
@@ -237,8 +243,22 @@ export const eavesdropScene = {
     render($container, ctx) {
         const data = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.speakers || ctx.data.char_name)) 
             ? ctx.data 
-            : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
-        if (data && (data.audio_url || data.speakers || data.char_name)) {
+            : (window.TTS_EavesdropReady || window.TTS_EavesdropData || CallQueueManager.getCurrent());
+
+        if (!data) {
+            $container.empty();
+            const createNav = (typeof ctx === 'function') ? ctx : (ctx.createNavbar || createNavbarForApps);
+            EavesdropApp.render($container, createNav);
+            return;
+        }
+
+        // 如果是重温播放 (isReplay)，直接打开深网破冰播放界面
+        if (ctx && ctx.data && ctx.data.isReplay) {
+            showCustomEavesdropUI($container, data, ctx);
+            return;
+        }
+
+        if (data.audio_url || data.speakers || data.char_name) {
             renderCustomCyberEavesdrop($container, data, ctx);
         } else {
             $container.empty();

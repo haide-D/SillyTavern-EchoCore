@@ -194,7 +194,9 @@ function showCustomEavesdropUI(container, data, ctx) {
             return;
         }
 
-        if (ctx.engine) {
+        if (ctx && ctx.data && typeof ctx.data.onReturn === 'function') {
+            ctx.data.onReturn();
+        } else if (ctx.engine) {
             ctx.engine.notify('call_ended', {});
             ctx.engine.showScene('home');
         }
@@ -249,8 +251,23 @@ function showCustomEavesdropUI(container, data, ctx) {
 
 export const eavesdropScene = {
     render($container, ctx) {
-        const data = (ctx && ctx.data && ctx.data.audio_url) ? ctx.data : (window.TTS_EavesdropReady || window.TTS_EavesdropData);
-        if (data && data.audio_url) {
+        const data = (ctx && ctx.data && (ctx.data.audio_url || ctx.data.speakers || ctx.data.record_id)) 
+            ? ctx.data 
+            : (window.TTS_EavesdropReady || window.TTS_EavesdropData || CallQueueManager.getCurrent());
+
+        if (!data) {
+            $('#tts-sakura-modal').show();
+            EavesdropApp.render($container, createNavbarForApps);
+            return;
+        }
+
+        // 如果是重温播放 (isReplay)，直接打开专属全屏播放与字幕界面
+        if (ctx && ctx.data && ctx.data.isReplay) {
+            showCustomEavesdropUI($container, data, ctx);
+            return;
+        }
+
+        if (data.audio_url) {
             renderCustomSakuraEavesdrop($container, data, ctx);
         } else {
             $('#tts-sakura-modal').show();
@@ -260,5 +277,6 @@ export const eavesdropScene = {
 
     cleanup() {
         $('#sakura-fullscreen-eavesdrop').remove();
+        cleanupGlobalPlayer();
     }
 };

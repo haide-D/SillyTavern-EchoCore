@@ -149,6 +149,9 @@ export class AudioPlayer {
             this.emit('play');
         }).catch(err => {
             console.error('[AudioPlayer] 播放失败:', err);
+            if (window.toastr && typeof window.toastr.error === 'function') {
+                window.toastr.error(`音频播放失败: ${err.message || '资源无法访问'}`);
+            }
             this.onError(err);
             this.cleanup();
             this.emit('ended');
@@ -326,7 +329,10 @@ export class AudioPlayer {
      * @private
      */
     _onAudioError(e) {
-        console.error('[AudioPlayer] 音频错误:', e);
+        console.error('[AudioPlayer] 音频加载/播放错误:', e);
+        if (window.toastr && typeof window.toastr.error === 'function') {
+            window.toastr.error('音频文件加载失败 (资源 404 或格式不支持)');
+        }
         this._isPlaying = false;
         this.onError(e);
         this.emit('error', e);
