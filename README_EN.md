@@ -1,14 +1,18 @@
-# SillyTavern-GPT-SoVITS Middleware
+# SillyTavern-EchoCore
+
+> **The All-in-One Immersive Voice OS & Multi-Provider Hub for SillyTavern**  
+> *(Formerly known as: SillyTavern-GPT-SoVITS)*
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 
-> 📢 **【Project Status Announcement / Maintenance Mode】**  
-> After months of continuous development and polishing, **SillyTavern-GPT-SoVITS (v3.2.x)** has reached complete maturity with full-stack asynchronous queuing, 5 flagship themes, creative workshop, and a **microkernel plugin architecture (dynamic Provider / App / Parser registration)**.  
-> The project has officially transitioned into **Feature Complete & Maintenance Mode**. Moving forward, focus will be directed toward core bug fixes and upstream SillyTavern compatibility. Community developers are encouraged to extend new features via the open microkernel hooks.
+> 📢 **【Project Status & Rebranding Announcement / Maintenance Mode】**  
+> After months of continuous evolution, this project has outgrown its origin as a single-model connector and transformed into a full-fledged **Immersive Voice Operating System & Multi-Provider Ecosystem (MiniMax / ElevenLabs / Doubao / GPT-SoVITS, etc.)** featuring **microkernel plugin architecture**, **5 flagship themes**, and a **Creative Workshop**. It is now officially rebranded as **SillyTavern-EchoCore**.  
+> 
+> The project has officially transitioned into **Feature Complete & Maintenance Mode**. Moving forward, focus will be directed toward core stability and upstream compatibility. Community developers are warmly welcomed to build upon the open microkernel hooks.
 
-This is a deep integration plugin tailored for **SillyTavern** with **GPT-SoVITS**.
+This is a comprehensive full-stack voice middleware and interaction operating system tailored for **SillyTavern**.
 
 It is far more than a simple TTS connector. It features a full-stack architecture with a Python Fast-API backend manager and a vanilla JS frontend extension, providing zero-latency audio caching, dynamic model switching, and **12 highly customizable immersive voice bubble UI themes**.
 

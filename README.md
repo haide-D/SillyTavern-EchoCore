@@ -1,14 +1,18 @@
-# SillyTavern-GPT-SoVITS
+# SillyTavern-EchoCore
+
+> **酒馆全能沉浸式回响中枢 & 多供应商语音操作系统**  
+> *(原名: SillyTavern-GPT-SoVITS)*
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 
-> 📢 **【项目状态公告 / Maintenance Mode】**  
-> 历经数百个日夜的迭代打磨，**SillyTavern-GPT-SoVITS (v3.2.x 旗舰版)** 核心功能已全部完备成熟：包含全链路异步并发调度、五大旗舰场景主题、创作者剧本工坊以及**微内核开放注册体系（Provider / App / Parser 插件化机制）**。  
+> 📢 **【项目状态与品牌升级公告 / Maintenance Mode】**  
+> 历经数百个日夜的深度打磨，本项目已由最初单一的 GPT-SoVITS 驱动，全面蜕变为融合了**云端/本地多供应商生态（MiniMax / ElevenLabs / 豆包 / GPT-SoVITS 等）**、**微内核插件化注册**、**五大巅峰沉浸主题**与**创作者剧本工坊**的旗舰级声音交互中枢，正式命名为 **SillyTavern-EchoCore (回响中枢)**。  
+> 
 > 本项目现已正式进入**长期稳定维护阶段（Feature Complete）**。未来将重心专注于核心稳定性维护与重大缺陷修复，不再开展高强度的社区日常答疑与定制功能堆叠。欢迎社区开发者基于开放的微内核接口在独立模块中进行二次开发与 PR 贡献。
 
-这是一个为 **SillyTavern (酒馆)** 量身打造的 **GPT-SoVITS / 多 TTS 供应商** 深度全栈集成插件。
+这是一个为 **SillyTavern (酒馆)** 量身打造的深度全栈集成沉浸式语音中枢系统。
 
 它不仅仅是一个简单的 TTS 连接器，它包含一个高性能 Python 后端管理器和一个现代化模块化前端扩展，提供了**创作者工坊 (Creative Workshop)**、**旗舰级高定主题系统**、**全链路非阻塞异步队列**、模型自动切换、智能音频缓存、以及多达 12 种气泡皮肤与全屏沉浸视听体验。
 
