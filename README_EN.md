@@ -116,13 +116,13 @@ To guarantee lightning-fast response times and protect GPU resources, this proje
 
 This project started from a simple dream: to give SillyTavern characters warm, expressive, and living voices. From an early Python script to a mature v3.2 flagship ecosystem with 5 themes, creative workshop, and an asynchronous microkernel, it reflects countless late nights and weekends of dedicated craftsmanship.
 
-**This open-source journey has fulfilled its greatest mission**: beyond providing an immersive audiovisual experience to thousands of users, it has served as a solid stepping stone towards higher-level engineering leadership in international backend development.
+**This open-source journey has fulfilled its greatest mission**: bringing an immersive audiovisual experience to thousands of users while marking a meaningful chapter of architectural exploration and personal growth.
 
-As my primary focus shifts towards overseas team management and core distributed architecture, active community support will be concluded. **With the microkernel registration mechanism now fully open, the future possibilities are in the capable hands of the community.**
+As my personal schedule and work priorities shift, active community support will be concluded. **With the microkernel registration mechanism now fully open, the future possibilities are in the capable hands of the community.**
 
 Heartfelt thanks to everyone who provided authentic support, feedback, and Stars along the way.
 
-**May this codebase continue to illuminate your roleplaying worlds with the magic of voice. See you at the summit! ✨**
+**May this codebase continue to illuminate your roleplaying worlds with the magic of voice. Wishing you all the best! ✨**
 
 — *haide-D (Project Creator & Lead Maintainer)*
 
