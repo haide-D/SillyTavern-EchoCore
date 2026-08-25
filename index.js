@@ -27,6 +27,7 @@ import { ThemeTesterUI } from './frontend/js/theme_tester_ui.js';
 import { initSettingsUI } from './frontend/js/settings_ui.js';
 import { PromptInjector } from './frontend/js/prompt_injector.js';
 import { CallQueueManager } from './frontend/js/call_queue_manager.js';
+// import { DailyEgg } from './frontend/js/daily_egg.js';
 
 // ================= 1. 配置区域 =================
 const remoteConfig = TTS_Utils.getLatestRemoteConfig();
@@ -47,6 +48,7 @@ window.TTS_Templates = TTS_Templates;
 window.TTS_PromptInjector = PromptInjector;  // 暴露 PromptInjector 供全局消费
 window.LLM_Client = LLM_Client;  // 暴露 LLM_Client 供 mobile_ui.js 使用
 window.TTS_ThemeEngine = ThemeEngine;  // 暴露 ThemeEngine 供通知处理器等使用
+// window.TTS_DailyEgg = DailyEgg;  // 每日盲盒暂未开放
 // 不要覆盖整个 window.TTS_UI,只添加 Templates
 // ui_main.js 的 IIFE 已经初始化了 window.TTS_UI.CTX
 if (!window.TTS_UI.Templates) {

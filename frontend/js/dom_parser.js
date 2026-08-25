@@ -13,6 +13,25 @@ function escapeHtmlAttr(str) {
 
 export const TTS_Parser = {
     htmlCache: {},
+    /**
+     * 外部/扩展格式解析器字典 (formatId -> handler)
+     */
+    customParsers: new Map(),
+
+    /**
+     * 注册自定义/扩展正文格式解析器 (如双语格式、特殊四字段格式)
+     * @param {string} formatId - 格式唯一标识 (如 'bilingual_v3', 'custom_tts')
+     * @param {Function} handler - 接收 (html, context) 返回修改后的 html
+     */
+    registerParser(formatId, handler) {
+        if (!formatId || typeof handler !== 'function') {
+            console.error('[TTS_Parser] 注册 Parser 失败: 无效的 formatId 或 handler');
+            return;
+        }
+        this.customParsers.set(formatId, handler);
+        console.log(`[TTS_Parser] ✅ 成功注册扩展正文解析器: ${formatId}`);
+    },
+
     init() {
         console.log("✅ [Parser] DOM 解析器已加载 (ElevenLabs V3 + Observer 模式)");
         this.startObserver();
@@ -316,6 +335,25 @@ export const TTS_Parser = {
             if (!html || typeof html !== 'string') return html;
 
             let modifiedHtml = html;
+
+            // 0. 串联执行已注册的外部扩展解析器 (如双语格式、多角色特殊格式)
+            if (TTS_Parser.customParsers && TTS_Parser.customParsers.size > 0) {
+                for (const [id, handler] of TTS_Parser.customParsers.entries()) {
+                    try {
+                        const parsed = handler(modifiedHtml, {
+                            buildBubbleHtml,
+                            CACHE,
+                            escapeHtmlAttr,
+                            isSkippedSpeaker: (spk) => window.TTS_PromptInjector && window.TTS_PromptInjector.getSkippedSpeakers().includes(spk)
+                        });
+                        if (typeof parsed === 'string') {
+                            modifiedHtml = parsed;
+                        }
+                    } catch (e) {
+                        console.error(`[TTS_Parser] 扩展解析器 [${id}] 执行异常:`, e);
+                    }
+                }
+            }
 
             // 1. 解析 [新角色, New] 或 【新角色, new】 -> 渲染发现态交互卡片
             const NEW_SPEAKER_REGEX = /[\[【]([^\],:【】\[\]\n]{1,30})\s*[,，]\s*(?:New|new)[\]】](?:\s*[:：]?\s*([^[\n<]+))?/gi;

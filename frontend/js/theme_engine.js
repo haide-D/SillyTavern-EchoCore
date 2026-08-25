@@ -39,7 +39,7 @@ if (!window.TTS_ThemeEngine) {
 
     /**
      * 注册一个新的应用到全局注册表
-     * @param {Object} appConfig - { id, defaultName, defaultIcon, sceneId, hidden }
+     * @param {Object} appConfig - { id, defaultName, defaultIcon, sceneId, page, order, category, hidden }
      */
     engine.registerApp = function (appConfig) {
         if (!appConfig || !appConfig.id) {
@@ -47,28 +47,49 @@ if (!window.TTS_ThemeEngine) {
             return;
         }
         
+        const appEntry = {
+            id: appConfig.id,
+            defaultName: appConfig.defaultName || appConfig.id,
+            defaultIcon: appConfig.defaultIcon || '⚙️',
+            sceneId: appConfig.sceneId || appConfig.id,
+            page: typeof appConfig.page === 'number' ? appConfig.page : 1, // 桌面页码 (1: 核心页, 2: 扩展页)
+            order: typeof appConfig.order === 'number' ? appConfig.order : 100, // 排序权重 (越小越靠前)
+            category: appConfig.category || 'tool',
+            hidden: !!appConfig.hidden,
+            ...appConfig
+        };
+
         // 检查是否已存在
         const existingIndex = _state.apps.findIndex(a => a.id === appConfig.id);
         if (existingIndex >= 0) {
-            _state.apps[existingIndex] = { ..._state.apps[existingIndex], ...appConfig };
+            _state.apps[existingIndex] = { ..._state.apps[existingIndex], ...appEntry };
         } else {
-            _state.apps.push({
-                id: appConfig.id,
-                defaultName: appConfig.defaultName || appConfig.id,
-                defaultIcon: appConfig.defaultIcon || '⚙️',
-                sceneId: appConfig.sceneId || appConfig.id,
-                hidden: !!appConfig.hidden
-            });
+            _state.apps.push(appEntry);
         }
-        console.log(`[ThemeEngine] ✅ App 已注册: ${appConfig.id}`);
+
+        // 保持全局应用按 page 升序，再按 order 升序排列
+        _state.apps.sort((a, b) => {
+            if (a.page !== b.page) return a.page - b.page;
+            return a.order - b.order;
+        });
+
+        console.log(`[ThemeEngine] ✅ App 已注册: ${appConfig.id} (Page: ${appEntry.page}, Order: ${appEntry.order}, Hidden: ${appEntry.hidden})`);
     };
 
     /**
      * 获取所有已注册的应用列表
+     * @param {Object} [filter] - { page?: number, includeHidden?: boolean }
      * @returns {Array} 
      */
-    engine.getRegisteredApps = function () {
-        return _state.apps;
+    engine.getRegisteredApps = function (filter = {}) {
+        let list = _state.apps;
+        if (!filter.includeHidden) {
+            list = list.filter(a => !a.hidden);
+        }
+        if (typeof filter.page === 'number') {
+            list = list.filter(a => a.page === filter.page);
+        }
+        return list;
     };
 
     // ==================== 主题管理 ====================

@@ -54,6 +54,9 @@ export function loadExtensionSettings() {
     if (config.auto_inject_on_answer === undefined) {
         config.auto_inject_on_answer = false;
     }
+    if (config.telemetry_enabled === undefined) {
+        config.telemetry_enabled = true;
+    }
     if (!config.speaker_avatars) {
         config.speaker_avatars = {};
     }
@@ -109,6 +112,7 @@ export async function initSettingsUI() {
         $('#tts-ext-remote-port').val(config.remote_port || 3000);
         $('#tts-ext-remote-token').val(config.remote_token || '');
         $('#tts-ext-auto-inject').prop('checked', !!config.auto_inject_on_answer);
+        $('#tts-ext-telemetry-enabled').prop('checked', config.telemetry_enabled !== false);
 
         const $providerSelect = $('#tts-provider-select');
         $providerSelect.val(config.active_provider || 'gpt_sovits');
@@ -718,6 +722,28 @@ export async function initSettingsUI() {
             config.provider_settings.doubao.api_key = $(e.target).val();
             context.saveSettingsDebounced();
         });
+
+        /* 
+        // 每日剧本盲盒与匿名统计开关 (暂未开放)
+        $('#tts-ext-telemetry-enabled').on('change', (e) => {
+            const enabled = $(e.target).prop('checked');
+            config.telemetry_enabled = enabled;
+            context.saveSettingsDebounced();
+            if (DailyEgg) {
+                DailyEgg.state.isEnabled = enabled;
+                if (enabled) {
+                    DailyEgg.init();
+                } else {
+                    DailyEgg.renderUI();
+                }
+            }
+        });
+
+        // 初始化每日盲盒与无感打点
+        DailyEgg.init().catch(err => {
+            console.warn('[ST-Direct-TTS] 每日盲盒初始化异常:', err);
+        });
+        */
 
         console.log('[ST-Direct-TTS] ✅ 酒馆原生扩展设置面板挂载并初始化完成');
 
