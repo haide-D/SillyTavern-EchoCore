@@ -235,7 +235,7 @@ export async function initSettingsUI() {
                         default_voice_id: mm.voice_id || 'female-shaonv',
                         custom_emotions: mm.custom_emotions || 'default, neutral, happy, sad, angry, fear, whisper, surprise, disgust, smug, panting, climax'
                     }
-                }).catch(() => {});
+                }).catch(() => { });
             }
         };
 
@@ -416,11 +416,11 @@ export async function initSettingsUI() {
         const loadMinimaxVoices = async (isManualRefresh = false) => {
             const $count = $('#tts-minimax-voice-count');
             const $list = $('#tts-minimax-voices-list');
-            
+
             // 阶段 1: Cache-First 0毫秒秒开渲染 (优先提取内置官方预设与本地自定义音色)
             const { presetVoices, customVoices } = getAllMiniMaxVoices();
             const localCombined = [...presetVoices, ...customVoices];
-            
+
             if (cachedMinimaxVoices.length === 0 || localCombined.length > 0) {
                 cachedMinimaxVoices = localCombined;
                 renderMinimaxVoicesList($('#tts-minimax-voice-search').val() || '');
@@ -551,7 +551,7 @@ export async function initSettingsUI() {
                 list = list.filter(v => v.id !== voiceId && v.id !== editingVoiceId);
                 list.push({ id: voiceId, name: name || voiceId, gender: gender || 'female', category: 'custom', description: '用户自定义克隆音色' });
                 localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
-            } catch (e) {}
+            } catch (e) { }
 
             try {
                 // 如果处于编辑模式且修改了原 ID，先删除原 ID
@@ -574,7 +574,7 @@ export async function initSettingsUI() {
                         category: 'custom'
                     });
                 }
-                
+
                 $status.text('✅ 已保存！').css('color', '#55ff55');
                 resetEntryForm();
                 $('#tts-minimax-add-drawer').removeClass('expanded');
@@ -690,7 +690,7 @@ export async function initSettingsUI() {
                     const list = (JSON.parse(saved) || []).filter(v => v.id !== voiceId && v.id !== `minimax:${voiceId}`);
                     localStorage.setItem('tts_custom_minimax_voices', JSON.stringify(list));
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             try {
                 if (api && typeof api.deleteMinimaxVoice === 'function') {
@@ -736,7 +736,8 @@ export async function initSettingsUI() {
                 } else {
                     DailyEgg.renderUI();
                 }
-            }
+            d杜宇航35448
+            
         });
 
         // 初始化每日盲盒与无感打点

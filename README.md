@@ -2,7 +2,11 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Version](https://img.shields.io/badge/version-v3.0.1-green)
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
+
+> 📢 **【项目状态公告 / Maintenance Mode】**  
+> 历经数百个日夜的迭代打磨，**SillyTavern-GPT-SoVITS (v3.2.x 旗舰版)** 核心功能已全部完备成熟：包含全链路异步并发调度、五大旗舰场景主题、创作者剧本工坊以及**微内核开放注册体系（Provider / App / Parser 插件化机制）**。  
+> 本项目现已正式进入**长期稳定维护阶段（Feature Complete）**。未来将重心专注于核心稳定性维护与重大缺陷修复，不再开展高强度的社区日常答疑与定制功能堆叠。欢迎社区开发者基于开放的微内核接口在独立模块中进行二次开发与 PR 贡献。
 
 这是一个为 **SillyTavern (酒馆)** 量身打造的 **GPT-SoVITS / 多 TTS 供应商** 深度全栈集成插件。
 
@@ -116,8 +120,25 @@ git clone -b V3.0.0 https://github.com/haide-D/SillyTavern-GPT-SoVITS.git SillyT
 
 ---
 
-## 🤝 社区交流
-
-* **💬 Discord 官方社区**：[https://discord.gg/usSz6XPdK](https://discord.gg/usSz6XPdK)（免费模型分享 · 版本通知 · 创作者预设分享）
+## 🤝 社区与支持
 * **📄 更新日志与白皮书**：查阅 [RELEASE_NOTES_V3.0.0.md](./RELEASE_NOTES_V3.0.0.md)
+* **💬 历史交流归档**：[Discord 归档社区](https://discord.gg/usSz6XPdK)
+
+---
+
+## ☕ 作者寄语与告别随笔 (Author's Note & Epilogue)
+
+> “代码是冰冷的字符，但创造的热情曾经无比滚烫。”
+
+这个项目起源于一个单纯的热爱——想让酒馆的角色拥有真正有温度、有情绪、有灵魂的生动声线。从最初简陋的 Python 脚本，到如今拥有 5 大巅峰主题、完整创作者工坊和异步微内核的 v3.2 旗舰生态，这里倾注了我无数个深夜与周末的纯粹心血。
+
+**这段开源旅程已经完成了它最美好的使命**：它不仅为成千上万的酒馆玩家带来了沉浸的视听体验，更成为我通往更高阶技术生涯（跨国团队后端研发与架构 Lead）的坚实基石。
+
+由于个人工作重心已全面转向海外团队的研发与管理，我将无法再把大量精力投入到社区的日常答疑和定制化功能维护中。**项目已全面开放微内核注册机制，未来的无限可能交由社区自由书写。**
+
+衷心感谢一路走来所有给予过真实鼓励、真诚反馈与 Star 支持的朋友。
+
+**愿这段代码如星火，继续在你的酒馆世界里点亮声音的魔法。江湖路远，我们更高处见！✨**
+
+— *haide-D (Project Creator & Lead Maintainer)*
 

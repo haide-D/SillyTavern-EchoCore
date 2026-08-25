@@ -2,7 +2,11 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple)
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
+
+> 📢 **【Project Status Announcement / Maintenance Mode】**  
+> After months of continuous development and polishing, **SillyTavern-GPT-SoVITS (v3.2.x)** has reached complete maturity with full-stack asynchronous queuing, 5 flagship themes, creative workshop, and a **microkernel plugin architecture (dynamic Provider / App / Parser registration)**.  
+> The project has officially transitioned into **Feature Complete & Maintenance Mode**. Moving forward, focus will be directed toward core bug fixes and upstream SillyTavern compatibility. Community developers are encouraged to extend new features via the open microkernel hooks.
 
 This is a deep integration plugin tailored for **SillyTavern** with **GPT-SoVITS**.
 
@@ -103,3 +107,22 @@ To guarantee lightning-fast response times and protect GPU resources, this proje
 ## 🚀 Installation & Usage
 
 *(Please refer to the Chinese documentation or the standard SillyTavern extension installation process for detailed instructions).*
+
+---
+
+## ☕ Author's Note & Epilogue
+
+> *"Code is a sequence of cold characters, but the passion for creation was once incandescent."*
+
+This project started from a simple dream: to give SillyTavern characters warm, expressive, and living voices. From an early Python script to a mature v3.2 flagship ecosystem with 5 themes, creative workshop, and an asynchronous microkernel, it reflects countless late nights and weekends of dedicated craftsmanship.
+
+**This open-source journey has fulfilled its greatest mission**: beyond providing an immersive audiovisual experience to thousands of users, it has served as a solid stepping stone towards higher-level engineering leadership in international backend development.
+
+As my primary focus shifts towards overseas team management and core distributed architecture, active community support will be concluded. **With the microkernel registration mechanism now fully open, the future possibilities are in the capable hands of the community.**
+
+Heartfelt thanks to everyone who provided authentic support, feedback, and Stars along the way.
+
+**May this codebase continue to illuminate your roleplaying worlds with the magic of voice. See you at the summit! ✨**
+
+— *haide-D (Project Creator & Lead Maintainer)*
+
