@@ -86,6 +86,7 @@ export class GPTSoVITSProvider extends BaseTTSProvider {
             speed_factor: speed
         };
 
+        if (task.forceRegenerate) params.force_regenerate = true;
         const { blob, filename } = await window.TTS_API.generateAudio(params);
         
         return {

@@ -1,5 +1,6 @@
 // static/js/events.js
 let currentAudio = null;
+let finishCurrentAudio = null;
 
 export const TTS_Events = {
     // 事件监听器存储
@@ -58,11 +59,24 @@ export const TTS_Events = {
         console.log("✅[Events] 事件监听器已加载");
     },
 
-    playAudio(key, audioUrl) {
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
+    stopAudio() {
+        if (currentAudio) currentAudio.pause();
+        if (finishCurrentAudio) finishCurrentAudio(false);
+        currentAudio = null;
+        $('.voice-bubble').removeClass('playing');
+    },
+
+    pauseAudio() { currentAudio?.pause(); },
+
+    resumeAudio() {
+        const audio = currentAudio;
+        const finish = finishCurrentAudio;
+        if (audio) audio.play().catch(() => finish?.(false));
+    },
+
+    playAudio(key, audioUrl, { signal, managed = false } = {}) {
+        if (!managed) window.TTS_Reading?.stop();
+        this.stopAudio();
 
         // 定义动画同步函数 (使用 filter 方法避免特殊字符导致选择器语法错误)
         const setAnim = (active) => {
@@ -80,24 +94,34 @@ export const TTS_Events = {
             });
         };
 
-        if (!audioUrl) return;
+        if (!audioUrl || signal?.aborted) return Promise.resolve(false);
         const audio = new Audio(audioUrl);
         currentAudio = audio;
 
         setAnim(true);
 
-        audio.onended = () => {
-            currentAudio = null;
-            setAnim(false);
-        };
-
-        audio.onerror = () => {
-            console.error("音频播放出错");
-            setAnim(false);
-            currentAudio = null;
-        };
-
-        audio.play();
+        return new Promise(resolve => {
+            let settled = false;
+            const abort = () => { audio.pause(); finish(false); };
+            const finish = success => {
+                if (settled) return;
+                settled = true;
+                audio.onended = null;
+                audio.onerror = null;
+                signal?.removeEventListener('abort', abort);
+                setAnim(false);
+                if (currentAudio === audio) {
+                    currentAudio = null;
+                    finishCurrentAudio = null;
+                }
+                resolve(success);
+            };
+            finishCurrentAudio = finish;
+            audio.onended = () => finish(true);
+            audio.onerror = () => finish(false);
+            signal?.addEventListener('abort', abort, { once: true });
+            audio.play().catch(() => finish(false));
+        });
     },
 
     handleContextMenu(e, $btn) {
@@ -130,6 +154,11 @@ export const TTS_Events = {
             const charName = $btn.data('voice-name');
             const CACHE = window.TTS_State.CACHE;
             const Scheduler = window.TTS_Scheduler;
+
+            // 手动点读始终接管播放，包括尚未生成的语音。
+            const wasPlaying = $btn.hasClass('playing');
+            window.TTS_Reading?.stop();
+            if (wasPlaying) { this.stopAudio(); return; }
 
             if ($btn.attr('data-status') === 'ready') {
                 const audioUrl = $btn.attr('data-audio-url') || $btn.data('audio-url');
@@ -251,6 +280,8 @@ export const TTS_Events = {
             const { key, text, charName, emotion } = event.data;
             const CACHE = window.TTS_State.CACHE;
             const Scheduler = window.TTS_Scheduler;
+
+            window.TTS_Reading?.stop();
 
             if (!CACHE.mappings[charName]) {
                 if (window.TTS_Parser && typeof window.TTS_Parser.openQuickBindModal === 'function') {

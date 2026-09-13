@@ -384,7 +384,8 @@ class MiniMaxTTSService:
         speed: Optional[float] = None,
         pitch: Optional[int] = None,
         vol: Optional[float] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        force_regenerate: bool = False
     ) -> Dict[str, Any]:
         """
         执行 MiniMax 语音合成 (支持本地缓存与格式自动对齐为 WAV)
@@ -459,7 +460,7 @@ class MiniMaxTTSService:
         cache_dir = cls.get_cache_dir()
         target_path = os.path.join(cache_dir, filename)
 
-        if cached and cached_path and os.path.exists(cached_path):
+        if not force_regenerate and cached and cached_path and os.path.exists(cached_path):
             print(f"[MiniMax TTS] ⚡ 命中本地缓存: {filename} (voice={final_voice_id}, emotion={emotion})")
             with open(cached_path, "rb") as f:
                 audio_bytes = f.read()

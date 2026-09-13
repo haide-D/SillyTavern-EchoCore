@@ -10,7 +10,7 @@
 import { TTS_API } from './api.js';
 import * as TTS_Utils from './utils.js';
 
-const PLUGIN_VERSION = '3.1.0';
+const PLUGIN_VERSION = '3.3.0';
 // 默认远端 VPS 盲盒服务地址 (作者部署后可在此填入生产域名，如 https://api.st-tts.com)
 // 默认支持通过 localStorage 或 window.TTS_EGG_SERVER_URL 覆盖
 const DEFAULT_REMOTE_URL = window.TTS_EGG_SERVER_URL || 'https://api.st-tts.com';

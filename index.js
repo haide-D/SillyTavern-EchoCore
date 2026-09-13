@@ -13,6 +13,7 @@ import { TTS_State } from './frontend/js/state.js';
 import { TTS_Parser } from './frontend/js/dom_parser.js';
 import { TTS_Scheduler } from './frontend/js/scheduler.js';
 import { TTS_Events } from './frontend/js/events.js';
+import { TTS_Reading } from './frontend/js/reading_controller.js';
 import * as TTS_Templates from './frontend/js/ui_templates.js';
 import { SpeakerManager } from './frontend/js/speaker_manager.js';
 
@@ -44,6 +45,7 @@ window.TTS_State = TTS_State;
 window.TTS_Parser = TTS_Parser;
 window.TTS_Scheduler = TTS_Scheduler;
 window.TTS_Events = TTS_Events;
+window.TTS_Reading = TTS_Reading;
 window.TTS_Templates = TTS_Templates;
 window.TTS_PromptInjector = PromptInjector;  // 暴露 PromptInjector 供全局消费
 window.LLM_Client = LLM_Client;  // 暴露 LLM_Client 供 mobile_ui.js 使用
@@ -76,6 +78,7 @@ function initPlugin() {
     if (TTS_Events.init) TTS_Events.init();
     if (TTS_Scheduler.init) TTS_Scheduler.init();
     if (PromptInjector.init) PromptInjector.init();
+    TTS_Reading.init(eventSource, event_types);
 
     // 3. 建立局部引用
     const CACHE = TTS_State.CACHE;

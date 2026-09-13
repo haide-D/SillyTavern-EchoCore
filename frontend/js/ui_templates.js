@@ -20,6 +20,7 @@ export function getDashboardHTML(data) {
                     <!-- 1. 核心开关卡片 -->
                     <div class="tts-card tts-card-compact">
                         <div class="tts-card-title">⚡ 基础与生成</div>
+                        <button type="button" id="tts-open-reading-settings" class="menu_button">全文朗读 / 连续读设置</button>
                         <div class="tts-switch-group">
                             <label class="tts-switch-row">
                                 <span class="tts-switch-label">自动生成语音 (建议开启)</span>

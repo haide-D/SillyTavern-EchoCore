@@ -11,6 +11,8 @@
  */
 
 // 默认内置全局情感场景与注释知识库
+import { getReadingSettings, fulltextPrompt } from './reading_text.js';
+
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
     "happy": "心情愉悦、开朗、赞许或微笑时使用",
@@ -346,7 +348,9 @@ export const PromptInjector = {
         const primaryCharNote = primaryChar ? `- Current Active Character: "${primaryChar}" (Ensure consistent naming if speaking).` : '';
 
         // 获取模板（优先使用用户自定义模板，否则使用默认）
-        const template = (this.customTemplate && this.customTemplate.trim()) ? this.customTemplate : DEFAULT_PROMPT_TEMPLATE;
+        const reading = getReadingSettings();
+        const template = reading.fulltextTemplate ? fulltextPrompt(reading)
+            : (this.customTemplate && this.customTemplate.trim()) ? this.customTemplate : DEFAULT_PROMPT_TEMPLATE;
 
         // 插槽替换
         return template

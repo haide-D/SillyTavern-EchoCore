@@ -219,7 +219,8 @@ async def tts_proxy(
     streaming_mode: Optional[str] = "false", 
     check_only: Optional[str] = None,
     provider: Optional[str] = None,
-    voice_id: Optional[str] = None
+    voice_id: Optional[str] = None,
+    force_regenerate: bool = False
 ):
     from services.model_weight_service import model_weight_service
     
@@ -264,7 +265,8 @@ async def tts_proxy(
                 text=text,
                 voice_id=target_voice_id,
                 emotion=actual_emotion,
-                speed=actual_speed
+                speed=actual_speed,
+                force_regenerate=force_regenerate
             )
             custom_headers = {
                 "X-Audio-Filename": result["filename"],
@@ -308,11 +310,11 @@ async def tts_proxy(
             }
 
         # 优先查找新缓存 (不需要锁)
-        if os.path.exists(new_cache_path):
+        if not force_regenerate and os.path.exists(new_cache_path):
             return FileResponse(new_cache_path, media_type="audio/wav", headers=custom_headers)
 
         # 回退查找旧缓存 (不需要锁)
-        if os.path.exists(old_cache_path):
+        if not force_regenerate and os.path.exists(old_cache_path):
             # 找到旧缓存,复制到新Key (逐步迁移)
             try:
                 import shutil

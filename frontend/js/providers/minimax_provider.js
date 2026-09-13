@@ -74,6 +74,7 @@ export class MiniMaxProvider extends BaseTTSProvider {
             voice_id: voiceId
         };
 
+        if (task.forceRegenerate) params.force_regenerate = true;
         const { blob, filename } = await window.TTS_API.generateAudio(params);
         return {
             blob: blob,

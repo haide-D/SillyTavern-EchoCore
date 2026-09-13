@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from config import FRONTEND_DIR, init_settings, get_manager_port
 from routers import (
     data, tts, system, admin, phone_call, speakers,
-    eavesdrop, continuous_analysis, sovits_installer, themes, workshop, auth
+    eavesdrop, continuous_analysis, sovits_installer, themes, workshop, auth, fulltext_audio
 )
 
 # 导入自定义中间件
@@ -183,6 +183,7 @@ async def serve_eavesdrop_audio(filename: str):
 app.include_router(data.router, tags=["Data Management"])
 app.include_router(data.router, prefix="/api", tags=["Data Management (API)"])
 app.include_router(tts.router, tags=["TTS Core"])
+app.include_router(fulltext_audio.router, prefix="/api", tags=["Fulltext Audio"])
 app.include_router(tts.router, prefix="/api", tags=["TTS Core (API)"])
 app.include_router(tts.router, prefix="/api/admin", tags=["TTS Core (Admin API)"])
 app.include_router(system.router, tags=["System Settings"])
