@@ -387,7 +387,12 @@ export const TTS_Reading = {
             generation.ended = true;
             this.scheduleAutoRead(generation);
         });
-        $(document).on('click', '#tts-open-reading-settings', () => this.openSettings());
+        // 手机外壳会阻止冒泡，在捕获阶段处理动态插入的设置入口。
+        document.addEventListener('click', (event) => {
+            if (event.target instanceof Element && event.target.closest('#tts-open-reading-settings')) {
+                this.openSettings();
+            }
+        }, { capture: true });
         this.mount();
         this.observer = new MutationObserver(() => this.mount());
         const chat = document.querySelector('#chat');

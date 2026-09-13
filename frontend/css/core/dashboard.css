@@ -230,7 +230,7 @@
 /* 2列网格响应式布局 (视觉体验) */
 .tts-grid-2col {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
 }
 
@@ -241,6 +241,7 @@
 }
 
 .tts-input-group {
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
@@ -670,3 +671,36 @@
     opacity: 0.8;
 }
 
+
+/* 设置入口不继承宿主 menu_button 的固定宽度。 */
+.tts-reading-settings-button {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    box-sizing: border-box;
+    margin: 10px 0;
+    padding: 10px 12px;
+    line-height: 1.5;
+    white-space: normal;
+}
+
+.tts-custom-select .select-trigger {
+    min-width: 0;
+    min-height: 38px;
+    height: auto;
+    box-sizing: border-box;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.tts-custom-select .select-trigger > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tts-custom-select .arrow-icon,
+.tts-switch-row .tts-toggle {
+    flex-shrink: 0;
+}

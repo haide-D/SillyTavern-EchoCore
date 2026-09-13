@@ -412,6 +412,20 @@ try {
         return !!document.querySelector('.tts-fulltext-player audio');
     }, reloadFixture);
     assert.ok(restoredAfterReload, 'fulltext player survives actual page reload without scheduler or TTS provider');
+    await page.evaluate(() => {
+        const shell = document.createElement('div');
+        shell.id = 'settings-phone-fixture';
+        shell.innerHTML = '<button id="tts-open-reading-settings"><span>全文朗读 / 连续读设置</span></button>';
+        shell.addEventListener('click', event => event.stopPropagation());
+        document.body.append(shell);
+    });
+    await page.locator('#tts-open-reading-settings span').click();
+    assert.equal(await page.locator('#tts-reading-dialog').evaluate(node => node.open), true,
+        'reading settings opens inside a phone shell that stops click propagation');
+    await page.evaluate(() => {
+        document.querySelector('#tts-reading-dialog').close();
+        document.querySelector('#settings-phone-fixture').remove();
+    });
     if (process.env.READING_SCREENSHOT_DIR) {
         await fs.mkdir(process.env.READING_SCREENSHOT_DIR, { recursive: true });
         await page.addStyleTag({ content: 'body { background:#101820; color:#d6dfe6; font-family:Arial,"Microsoft YaHei",sans-serif; margin:20px; }' });

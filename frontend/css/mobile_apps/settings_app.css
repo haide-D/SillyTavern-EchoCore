@@ -262,3 +262,96 @@
     color: #1c1c1e !important;
 }
 
+
+/* 内嵌面板按手机容器布局，不依赖浏览器窗口的媒体查询。 */
+#mobile-screen-content .mobile-settings-content {
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 12px 12px 32px !important;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-content {
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-grid-2col {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px 15px 15px;
+    gap: 12px;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-reading-settings-button {
+    width: calc(100% - 30px);
+    margin: 10px 15px;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-btn-subtle,
+#mobile-screen-content .mobile-settings-content .btn-secondary {
+    color: #333;
+    background: #e5e5ea;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-card-header-flex {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-card-header-flex .tts-card-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-count-badge {
+    margin-left: 0;
+    color: #666;
+    white-space: nowrap;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-mapping-toolbar {
+    flex-wrap: wrap;
+}
+
+#mobile-screen-content .mobile-settings-content .toolbar-left {
+    flex-basis: 100%;
+}
+
+#mobile-screen-content .mobile-settings-content .toolbar-right {
+    margin-left: auto;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-mapping-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-card-right {
+    grid-column: 2;
+    justify-content: flex-end;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-card-row-top {
+    flex-wrap: wrap;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-char-name,
+#mobile-screen-content .mobile-settings-content .voice-badge-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-dashboard-footer {
+    margin: 10px 0 !important;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#mobile-screen-content .mobile-settings-content .tts-form-row {
+    flex-wrap: wrap;
+}

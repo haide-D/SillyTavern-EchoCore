@@ -5,7 +5,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-**最新功能更新：v3.3.0** — 全文朗读、对白一键连播、边生成边播放，以及全新 SVG 声波控制条与朗读设置。[查看更新公告](./RELEASE_NOTES_V3.3.0.md)
+**最新版本：v3.3.1** — 修复手机设置排版与朗读设置入口点击无响应。功能更新： — 全文朗读、对白一键连播、边生成边播放，以及全新 SVG 声波控制条与朗读设置。[查看更新公告](./RELEASE_NOTES_V3.3.0.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 
