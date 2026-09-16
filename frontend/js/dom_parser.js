@@ -373,6 +373,12 @@ export const TTS_Parser = {
                         return textPart;
                     }
 
+                    // [人物, New] 只表示本轮提示词没有列出该人物，并不代表本地没有音色绑定。
+                    // 若全局已绑定，转为默认情绪标签，让本轮生成后的气泡直接复用该音色。
+                    if (CACHE.mappings && CACHE.mappings[cleanSpeaker]) {
+                        return `[${cleanSpeaker}, default]${textPart}`;
+                    }
+
                     return `<span class="tts-new-speaker-badge" data-speaker="${safeSpeaker}">
                         <span class="tts-badge-icon">✨</span>
                         <span class="tts-badge-title">新登场: <b>${safeSpeaker}</b></span>

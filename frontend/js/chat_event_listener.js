@@ -164,6 +164,7 @@ export const ChatEventListener = {
             console.log('[ChatEventListener] 🔄 聊天切换开始,等待数据加载...');
             this.pendingChatChange = true;
             SpeakerManager.clearCache();
+            window.TTS_PromptInjector?.clearActiveChat?.();
         });
 
         // 监听聊天加载完成事件
@@ -188,6 +189,8 @@ export const ChatEventListener = {
         const onChatStateChanged = () => {
             const context = window.SillyTavern.getContext();
             const chatBranch = context.chatId || 'default';
+            // 先同步重新编译，避免防抖中的说话人持久化让删除、编辑或滑动后的提示词停留在旧名单。
+            window.TTS_PromptInjector?.refreshAndInject?.();
             SpeakerManager.updateSpeakers(context, chatBranch, 200);
         };
 
@@ -305,6 +308,9 @@ export const ChatEventListener = {
 
             const { charName } = charInfo;
             this.currentCharName = charName;
+
+            // 新回复中的新人物会在下一轮生成前进入当前聊天名单；无需等待后端说话人表写入。
+            window.TTS_PromptInjector?.refreshAndInject?.();
 
             // 建立 WebSocket 连接 (如果尚未连接)
             WebSocketManager.connect(charName);

@@ -12,6 +12,7 @@
 
 // 默认内置全局情感场景与注释知识库
 import { getReadingSettings, fulltextPrompt } from './reading_text.js';
+import { extractAllSpeakers } from './utils.js';
 
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
@@ -73,6 +74,9 @@ export const PromptInjector = {
     
     // 当前分支已绑定角色信息缓存: { charName: [emotion1, emotion2, ...] }
     boundSpeakersMap: {},
+
+    // 当前聊天已确认的说话人。只用于限制送给模型的角色名单，不影响全局音色绑定。
+    activeChatSpeakers: new Set(),
 
     // 按模型细分的情感场景与语速配置: { "AD学姐": { speed: 1.1, emotions: { ... } } }
     modelsConfig: {},
@@ -227,6 +231,45 @@ export const PromptInjector = {
     },
 
     /**
+     * 清除正在切换的聊天所残留的提示词，避免旧聊天的人物在新聊天加载前进入上下文。
+     */
+    clearActiveChat() {
+        this.activeChatSpeakers = new Set();
+        this.boundSpeakersMap = {};
+        this._clearExtensionPrompt();
+    },
+
+    /**
+     * 从 SillyTavern 上下文取当前主角色名，同时兼容 characterId 为数组下标或 avatar 标识的版本。
+     * @private
+     */
+    _getPrimaryCharacterName(context) {
+        if (!context) return '';
+        const characters = Array.isArray(context.characters) ? context.characters : [];
+        const byAvatar = characters.find(character => character && character.avatar === context.characterId);
+        const byIndex = Number.isInteger(context.characterId) ? characters[context.characterId] : null;
+        return String(byAvatar?.name || byIndex?.name || context.name2 || '').trim();
+    },
+
+    /**
+     * 仅从当前加载的聊天记录收集说话人；不读取其他聊天，也不调用后端或 LLM。
+     * @private
+     */
+    _getActiveChatSpeakers(context, primaryChar) {
+        const speakers = new Set();
+        const add = name => {
+            const clean = String(name || '').trim();
+            if (clean) speakers.add(clean);
+        };
+
+        if (Array.isArray(context?.chat)) {
+            extractAllSpeakers(context.chat).forEach(add);
+        }
+        add(primaryChar);
+        return speakers;
+    },
+
+    /**
      * 刷新在场绑定角色、提取各角色专属情绪池，并编译注入 Prompt
      */
     refreshAndInject() {
@@ -257,28 +300,31 @@ export const PromptInjector = {
         const mappings = state.CACHE.mappings || {};
         const modelsData = state.CACHE.models || {};
 
-        // 1. 获取当前主角色名称 (Primary Character)
-        let primaryChar = '';
+        // 1. 只从当前加载聊天收集角色。新聊天没有历史时仅保留可确认的主角色，
+        //    绝不回退为全部历史音色绑定。
+        let context = null;
         try {
             if (window.SillyTavern && typeof window.SillyTavern.getContext === 'function') {
-                const ctx = window.SillyTavern.getContext();
-                if (ctx.characters && ctx.characterId !== undefined && ctx.characters[ctx.characterId]) {
-                    primaryChar = (ctx.characters[ctx.characterId].name || '').trim();
-                } else if (ctx.name2) {
-                    primaryChar = String(ctx.name2).trim();
-                }
+                context = window.SillyTavern.getContext();
             }
         } catch (e) {
             console.warn('[PromptInjector] 获取主角色名失败:', e);
         }
+        const primaryChar = this._getPrimaryCharacterName(context);
+        const activeSpeakers = this._getActiveChatSpeakers(context, primaryChar);
+        this.activeChatSpeakers = activeSpeakers;
+        const activeSpeakerKeys = new Set(Array.from(activeSpeakers, speaker => speaker.toLocaleLowerCase()));
 
-        // 2. 构建 List 1: 已绑定角色及其情绪词池与模型关联
+        // 2. 构建 List 1：全局绑定仍供配音复用，但只把当前聊天出现过的人物交给模型。
         const boundMap = {};
         for (const [charName, modelName] of Object.entries(mappings)) {
             if (!charName || !modelName) continue;
             const cleanChar = charName.trim();
-            
-            if (this.skippedSpeakers.has(cleanChar)) continue;
+            if (!activeSpeakerKeys.has(cleanChar.toLocaleLowerCase())) continue;
+
+            const isSkipped = Array.from(this.skippedSpeakers).some(speaker =>
+                String(speaker).trim().toLocaleLowerCase() === cleanChar.toLocaleLowerCase());
+            if (isSkipped) continue;
 
             const modelConfig = modelsData[modelName];
             const emotionsSet = new Set(['default']);
@@ -302,9 +348,11 @@ export const PromptInjector = {
         }
 
         this.boundSpeakersMap = boundMap;
+        const skippedInActiveChat = Array.from(this.skippedSpeakers).filter(speaker =>
+            activeSpeakerKeys.has(String(speaker).trim().toLocaleLowerCase()));
 
         // 3. 编译强力通用的提示词
-        const promptText = this.buildPromptDirective(boundMap, Array.from(this.skippedSpeakers), primaryChar);
+        const promptText = this.buildPromptDirective(boundMap, skippedInActiveChat, primaryChar);
 
         // 4. 注入到 SillyTavern
         this._injectIntoSillyTavern(promptText);
