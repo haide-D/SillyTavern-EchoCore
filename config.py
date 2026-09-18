@@ -37,6 +37,21 @@ MAX_CACHE_SIZE_MB = 500
 SOVITS_HOST = "http://127.0.0.1:9880"
 DEFAULT_MANAGER_PORT = 3000
 
+# Fish.audio 默认配置
+fish_audio_tts_defaults = {
+    "enabled": False,
+    "api_key": "",
+    "api_url": "https://api.fish.audio/v1/tts",
+    "model": "s2.1-pro",
+    "default_voice_id": "",
+    "speed": 1.0,
+    "vol": 1.0,
+    "format": "wav",
+    "latency": "normal",
+    "custom_voices": []
+}
+
+
 # ================= 配置加载逻辑 =================
 def load_json(filename):
     """读取 JSON 文件，文件不存在或被 Docker 挂载为目录时返回空字典"""
@@ -303,6 +318,15 @@ def init_settings():
     else:
         if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
             dirty = True
+
+    # fish_audio_tts 默认配置 - Fish.audio 云端/自建 TTS 引擎
+    if "fish_audio_tts" not in settings or not isinstance(settings["fish_audio_tts"], dict):
+        settings["fish_audio_tts"] = dict(fish_audio_tts_defaults)
+        dirty = True
+    else:
+        if deep_merge(dict(fish_audio_tts_defaults), settings["fish_audio_tts"]):
+            dirty = True
+
     # security 访问控制与密码保护默认配置
     security_defaults = {
         "enabled": False,
@@ -395,12 +419,23 @@ def get_character_provider(char_name: str) -> str:
     获取角色所绑定的 TTS 引擎供应商
     
     Returns:
-        'minimax' 或 'gpt_sovits'
+        'minimax', 'fish_audio' 或 'gpt_sovits'
     """
+    if not char_name:
+        return "gpt_sovits"
+    
+    # 允许直接传递绑定目标值
+    if char_name.startswith("minimax:") or char_name.startswith("minimax_"):
+        return "minimax"
+    if char_name.startswith("fish:") or char_name.startswith("fish_audio:"):
+        return "fish_audio"
+
     mappings = get_character_mappings()
     target = str(mappings.get(char_name, ""))
     if target.startswith("minimax:") or target.startswith("minimax_"):
         return "minimax"
+    if target.startswith("fish:") or target.startswith("fish_audio:"):
+        return "fish_audio"
     return "gpt_sovits"
 
 
@@ -409,14 +444,44 @@ def is_minimax_character(char_name: str) -> bool:
     return get_character_provider(char_name) == "minimax"
 
 
+def is_fish_audio_character(char_name: str) -> bool:
+    """检查角色是否绑定了 Fish.audio 声线"""
+    return get_character_provider(char_name) == "fish_audio"
+
+
 def get_character_voice_id(char_name: str, default: str = "female-shaonv") -> str:
     """获取 MiniMax 角色的音色 ID"""
+    if not char_name:
+        return default
+    if char_name.startswith("minimax:"):
+        return char_name[len("minimax:"):].strip() or default
+    elif char_name.startswith("minimax_"):
+        return char_name[len("minimax_"):].strip() or default
+
     mappings = get_character_mappings()
     target = str(mappings.get(char_name, ""))
     if target.startswith("minimax:"):
         return target[len("minimax:"):].strip() or default
     elif target.startswith("minimax_"):
         return target[len("minimax_"):].strip() or default
+    return default
+
+
+def get_character_fish_voice_id(char_name: str, default: str = "") -> str:
+    """获取 Fish.audio 角色的音色 reference_id"""
+    if not char_name:
+        return default
+    if char_name.startswith("fish:"):
+        return char_name[len("fish:"):].strip() or default
+    elif char_name.startswith("fish_audio:"):
+        return char_name[len("fish_audio:"):].strip() or default
+
+    mappings = get_character_mappings()
+    target = str(mappings.get(char_name, ""))
+    if target.startswith("fish:"):
+        return target[len("fish:"):].strip() or default
+    elif target.startswith("fish_audio:"):
+        return target[len("fish_audio:"):].strip() or default
     return default
 
 

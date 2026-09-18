@@ -112,7 +112,11 @@ export const TTS_Parser = {
             ? window.TTS_Utils.getAllMiniMaxVoices()
             : { presetVoices: [], customVoices: [] };
 
-        if (modelKeys.length === 0 && presetVoices.length === 0 && customVoices.length === 0) {
+        const { presetVoices: fishPresets, customVoices: fishCustoms } = (window.TTS_Utils && typeof window.TTS_Utils.getAllFishAudioVoices === 'function')
+            ? window.TTS_Utils.getAllFishAudioVoices()
+            : { presetVoices: [], customVoices: [] };
+
+        if (modelKeys.length === 0 && presetVoices.length === 0 && customVoices.length === 0 && fishPresets.length === 0 && fishCustoms.length === 0) {
             if (window.TTS_Utils && window.TTS_Utils.showNotification) {
                 window.TTS_Utils.showNotification("未发现可用的语音模型或音色", "error");
             }
@@ -135,7 +139,7 @@ export const TTS_Parser = {
         }
 
         if (customVoices.length > 0) {
-            optionsHtml += '<optgroup label="✨ 我的自定义克隆音色">';
+            optionsHtml += '<optgroup label="✨ MiniMax 自定义克隆音色">';
             optionsHtml += customVoices.map(v => {
                 const val = `minimax:${v.id}`;
                 const isSelected = currentBound === val;
@@ -144,14 +148,32 @@ export const TTS_Parser = {
             optionsHtml += '</optgroup>';
         }
 
-        optionsHtml += '<optgroup label="☁️ MiniMax 官方预设声线">';
-        optionsHtml += presetVoices.map(v => {
-            const val = `minimax:${v.id}`;
-            const isSelected = currentBound === val;
-            return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>☁️ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
-        }).join('');
-        optionsHtml += '<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>';
-        optionsHtml += '</optgroup>';
+        if (presetVoices.length > 0) {
+            optionsHtml += '<optgroup label="☁️ MiniMax 官方预设声线">';
+            optionsHtml += presetVoices.map(v => {
+                const val = `minimax:${v.id}`;
+                const isSelected = currentBound === val;
+                return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>☁️ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+            }).join('');
+            optionsHtml += '<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>';
+            optionsHtml += '</optgroup>';
+        }
+
+        if (fishCustoms.length > 0 || fishPresets.length > 0) {
+            optionsHtml += '<optgroup label="🐟 Fish.audio 官方/同步声线库">';
+            optionsHtml += fishCustoms.map(v => {
+                const val = `fish:${v.id}`;
+                const isSelected = currentBound === val;
+                return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>✨ ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+            }).join('');
+            optionsHtml += fishPresets.map(v => {
+                const val = `fish:${v.id}`;
+                const isSelected = currentBound === val;
+                return `<option value="${escapeHtmlAttr(val)}" ${isSelected ? 'selected' : ''}>🐟 ${escapeHtmlAttr(v.name)} (${escapeHtmlAttr(v.id)})</option>`;
+            }).join('');
+            optionsHtml += '<option value="__custom_fish_audio__">✏️ 新增自定义 Fish.audio 音色 (输入 Model ID)...</option>';
+            optionsHtml += '</optgroup>';
+        }
 
         const modalHtml = `
             <div id="tts-quick-bind-modal" class="tts-quick-modal-overlay">
@@ -186,8 +208,12 @@ export const TTS_Parser = {
         $('body').append(modalHtml);
 
         $('#tts-quick-model-select').on('change', function () {
-            if ($(this).val() === '__custom_minimax__') {
+            const val = $(this).val();
+            if (val === '__custom_minimax__' || val === '__custom_fish_audio__') {
                 $('#tts-quick-custom-voice-wrap').slideDown(150);
+                const isFish = val === '__custom_fish_audio__';
+                $('#tts-quick-custom-voice-wrap label:nth-of-type(2)').text(isFish ? 'Fish.audio Model ID (32位 UUID):' : 'MiniMax Voice ID (官方/克隆音色 ID):');
+                $('#tts-quick-custom-voice-input').attr('placeholder', isFish ? '例如: 8029148a07114138a08d633f84e27f71' : '例如: female-shaonv 或 custom_voice_12345');
                 $('#tts-quick-custom-voice-name').focus();
             } else {
                 $('#tts-quick-custom-voice-wrap').slideUp(150);
@@ -212,6 +238,21 @@ export const TTS_Parser = {
 
                 if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
                     await window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                }
+            } else if (selectedModel === '__custom_fish_audio__') {
+                let customId = $('#tts-quick-custom-voice-input').val().trim();
+                let customName = $('#tts-quick-custom-voice-name').val().trim();
+                if (!customId) {
+                    if (window.TTS_Utils && window.TTS_Utils.showNotification) {
+                        window.TTS_Utils.showNotification('请输入 Fish.audio Model ID (UUID)', 'warning');
+                    }
+                    return;
+                }
+                const rawId = customId.startsWith('fish:') ? customId.slice(5) : (customId.startsWith('fish_audio:') ? customId.slice(11) : customId);
+                selectedModel = `fish:${rawId}`;
+
+                if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomFishAudioVoice === 'function') {
+                    await window.TTS_Utils.saveCustomFishAudioVoice(rawId, customName || rawId);
                 }
             }
 

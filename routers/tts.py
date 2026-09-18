@@ -1,6 +1,7 @@
 import os
 import hashlib
 import httpx
+from services.local_http import model_trust_env
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from typing import Optional, Union, List
@@ -206,6 +207,161 @@ async def preview_minimax_voice(req: MiniMaxPreviewRequest):
         raise HTTPException(status_code=500, detail=f"试听生成失败: {str(e)}")
 
 
+# ================= Fish.audio 云端 TTS 路由 =================
+
+class FishAudioTestRequest(BaseModel):
+    api_key: str
+    api_url: Optional[str] = "https://api.fish.audio/v1/tts"
+    model: Optional[str] = "s2.1-pro"
+
+
+class FishAudioVoiceItem(BaseModel):
+    id: str
+    name: str
+    gender: Optional[str] = "female"
+    category: Optional[str] = "custom"
+    description: Optional[str] = "用户自定义/克隆音色"
+
+
+class FishAudioPreviewRequest(BaseModel):
+    voice_id: str
+    text: Optional[str] = "主人，您好！这是我的Fish.audio语音合成试听效果。"
+    speed: Optional[float] = 1.0
+    model: Optional[str] = "s2.1-pro"
+
+
+class FishAudioSyncRequest(BaseModel):
+    api_key: Optional[str] = None
+
+
+@router.post("/tts/fish_audio/test")
+async def test_fish_audio(req: FishAudioTestRequest):
+    """测试 Fish.audio API Key 连通性"""
+    from services.fish_audio_service import fish_audio_service
+    return await fish_audio_service.test_credentials(req.api_key, req.api_url, req.model)
+
+
+@router.get("/tts/fish_audio/voices")
+def get_fish_audio_voices():
+    """获取 Fish.audio 可用音色列表 (预设 + 个人同步/自定义)"""
+    from services.fish_audio_service import fish_audio_service
+    return {
+        "status": "success",
+        "voices": fish_audio_service.get_preset_voices()
+    }
+
+
+@router.post("/tts/fish_audio/sync_remote")
+async def sync_fish_audio_remote_voices(req: FishAudioSyncRequest):
+    """从 Fish.audio 官方一键同步当前账号创建与收藏的音色"""
+    from services.fish_audio_service import fish_audio_service
+    try:
+        result = await fish_audio_service.sync_remote_voices(req.api_key)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/tts/fish_audio/voices")
+def add_fish_audio_voice(voice: FishAudioVoiceItem):
+    """添加或更新 Fish.audio 自定义音色"""
+    from config import load_json, save_json, SETTINGS_FILE, init_settings
+    settings = load_json(SETTINGS_FILE)
+    if "fish_audio_tts" not in settings:
+        settings["fish_audio_tts"] = {}
+    if "custom_voices" not in settings["fish_audio_tts"]:
+        settings["fish_audio_tts"]["custom_voices"] = []
+
+    custom_list = settings["fish_audio_tts"]["custom_voices"]
+    clean_id = voice.id.strip()
+    if clean_id.startswith("fish:"):
+        clean_id = clean_id[len("fish:"):].strip()
+    elif clean_id.startswith("fish_audio:"):
+        clean_id = clean_id[len("fish_audio:"):].strip()
+
+    name = voice.name.strip() or clean_id
+    voice_dict = {
+        "id": clean_id,
+        "name": name,
+        "gender": voice.gender or "female",
+        "category": "custom",
+        "description": voice.description or "用户自定义音色"
+    }
+
+    # 直接允许重复：仅当 ID 与名称完全一致时原地更新，否则作为独立新音色条目直接追加
+    found = False
+    for idx, item in enumerate(custom_list):
+        if isinstance(item, dict) and item.get("id") == clean_id and item.get("name") == name:
+            custom_list[idx] = voice_dict
+            found = True
+            break
+    if not found:
+        custom_list.append(voice_dict)
+
+    save_json(SETTINGS_FILE, settings)
+    init_settings()
+    from services.fish_audio_service import fish_audio_service
+    return {
+        "status": "success",
+        "message": f"音色「{name}」已保存至 Fish.audio 库",
+        "voices": fish_audio_service.get_preset_voices()
+    }
+
+
+@router.delete("/tts/fish_audio/voices/{voice_id}")
+def delete_fish_audio_voice(voice_id: str, name: Optional[str] = None):
+    """删除 Fish.audio 自定义音色 (支持按 ID 或按 ID+名称精准删除)"""
+    from config import load_json, save_json, SETTINGS_FILE, init_settings
+    settings = load_json(SETTINGS_FILE)
+    clean_id = voice_id.strip()
+    if clean_id.startswith("fish:"):
+        clean_id = clean_id[len("fish:"):].strip()
+    elif clean_id.startswith("fish_audio:"):
+        clean_id = clean_id[len("fish_audio:"):].strip()
+
+    target_name = name.strip() if (name and name.strip()) else None
+
+    if "fish_audio_tts" in settings and "custom_voices" in settings["fish_audio_tts"]:
+        if target_name:
+            settings["fish_audio_tts"]["custom_voices"] = [
+                v for v in settings["fish_audio_tts"]["custom_voices"]
+                if not (isinstance(v, dict) and v.get("id") == clean_id and v.get("name") == target_name)
+            ]
+        else:
+            settings["fish_audio_tts"]["custom_voices"] = [
+                v for v in settings["fish_audio_tts"]["custom_voices"]
+                if isinstance(v, dict) and v.get("id") != clean_id
+            ]
+        save_json(SETTINGS_FILE, settings)
+        init_settings()
+    from services.fish_audio_service import fish_audio_service
+    return {
+        "status": "success",
+        "message": "音色已从自定义库移除",
+        "voices": fish_audio_service.get_preset_voices()
+    }
+
+
+@router.post("/tts/fish_audio/preview")
+async def preview_fish_audio_voice(req: FishAudioPreviewRequest):
+    """快速试听指定 Fish.audio 声线"""
+    from services.fish_audio_service import fish_audio_service
+    try:
+        result = await fish_audio_service.generate_audio(
+            text=req.text or "主人，您好！这是我的Fish.audio语音合成试听效果。",
+            voice_id=req.voice_id,
+            speed=req.speed or 1.0,
+            model=req.model or "s2.1-pro"
+        )
+        custom_headers = {
+            "X-Audio-Filename": result["filename"],
+            "Access-Control-Expose-Headers": "X-Audio-Filename"
+        }
+        return FileResponse(result["file_path"], media_type="audio/wav", headers=custom_headers)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"试听生成失败: {str(e)}")
+
+
 @router.get("/tts_proxy")
 async def tts_proxy(
     text: str, 
@@ -276,6 +432,52 @@ async def tts_proxy(
         except Exception as mm_err:
             print(f"[TTS Proxy] ❌ MiniMax 语音生成失败: {mm_err}")
             raise HTTPException(status_code=500, detail=f"MiniMax 语音生成失败: {str(mm_err)}")
+
+    # ========== 识别是否为 Fish.audio 云端供应商 ==========
+    is_fish_audio = (
+        (provider and provider.lower() in ("fish", "fish_audio", "fish_audio_tts")) or
+        (ref_audio_path and (ref_audio_path.startswith("fish:") or ref_audio_path.startswith("fish_audio:")))
+    )
+
+    if is_fish_audio:
+        from services.fish_audio_service import fish_audio_service
+
+        target_voice_id = voice_id
+        if not target_voice_id and ref_audio_path:
+            if ref_audio_path.startswith("fish:"):
+                target_voice_id = ref_audio_path[len("fish:"):].strip()
+            elif ref_audio_path.startswith("fish_audio:"):
+                target_voice_id = ref_audio_path[len("fish_audio:"):].strip()
+
+        # 检查仅预检缓存
+        if check_only == "true":
+            cached, filename, _ = fish_audio_service.check_cache(
+                text=text,
+                emotion=emotion or "default",
+                voice_id=target_voice_id or "",
+                speed=actual_speed
+            )
+            return {
+                "cached": cached,
+                "filename": filename
+            }
+
+        try:
+            result = await fish_audio_service.generate_audio(
+                text=text,
+                emotion=emotion or "default",
+                voice_id=target_voice_id,
+                speed=actual_speed,
+                force_regenerate=force_regenerate
+            )
+            custom_headers = {
+                "X-Audio-Filename": result["filename"],
+                "Access-Control-Expose-Headers": "X-Audio-Filename"
+            }
+            return FileResponse(result["file_path"], media_type="audio/wav", headers=custom_headers)
+        except Exception as fa_err:
+            print(f"[TTS Proxy] ❌ Fish.audio 语音生成失败: {fa_err}")
+            raise HTTPException(status_code=500, detail=f"Fish.audio 语音生成失败: {str(fa_err)}")
 
     # ========== GPT-SoVITS 本地模型流程 ==========
     _, cache_dir = get_current_dirs()
@@ -356,7 +558,7 @@ async def tts_proxy(
             }
 
             try:
-                async with httpx.AsyncClient(timeout=120.0) as client:
+                async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
                     r = await client.get(url, params=params)
             except (httpx.ConnectError, httpx.RequestError):
                 raise HTTPException(status_code=503, detail="无法连接到 SoVITS 服务，请检查 9880 端口")
@@ -485,7 +687,7 @@ async def tts_proxy_v2(req: TTSRequest, check_only: Optional[str] = None):
         params["streaming_mode"] = False  # 强制非流式
 
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
                 r = await client.get(url, params=params)
         except httpx.RequestError:
             raise HTTPException(status_code=503, detail="无法连接到 SoVITS 服务,请检查 9880 端口")

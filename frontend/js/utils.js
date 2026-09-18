@@ -980,16 +980,189 @@ export async function deleteCustomMiniMaxVoice(id) {
  */
 export function getVoiceDisplayName(voiceId) {
     if (!voiceId) return '';
-    if (!voiceId.startsWith('minimax:') && !voiceId.startsWith('minimax_')) {
-        return voiceId;
+    if (voiceId.startsWith('minimax:') || voiceId.startsWith('minimax_')) {
+        const cleanId = voiceId.startsWith('minimax:') ? voiceId.slice(8) : voiceId.slice(8);
+        const { presetVoices, customVoices } = getAllMiniMaxVoices();
+        const foundPreset = presetVoices.find(v => v.id === cleanId);
+        const foundCustom = customVoices.find(v => v.id === cleanId);
+        if (foundCustom) return `✨ ${foundCustom.name} (${cleanId})`;
+        if (foundPreset) return `☁️ ${foundPreset.name} (${cleanId})`;
+        return `☁️ MiniMax (${cleanId})`;
     }
-    const cleanId = voiceId.startsWith('minimax:') ? voiceId.slice(8) : (voiceId.startsWith('minimax_') ? voiceId.slice(8) : voiceId);
-    const { presetVoices, customVoices } = getAllMiniMaxVoices();
-    const foundPreset = presetVoices.find(v => v.id === cleanId);
-    const foundCustom = customVoices.find(v => v.id === cleanId);
-    if (foundCustom) return `✨ ${foundCustom.name} (${cleanId})`;
-    if (foundPreset) return `☁️ ${foundPreset.name} (${cleanId})`;
-    return `☁️ MiniMax (${cleanId})`;
+    if (voiceId.startsWith('fish:') || voiceId.startsWith('fish_audio:')) {
+        const cleanId = voiceId.startsWith('fish:') ? voiceId.slice(5) : voiceId.slice(11);
+        const { presetVoices, customVoices } = getAllFishAudioVoices();
+        const foundPreset = presetVoices.find(v => v.id === cleanId);
+        const foundCustom = customVoices.find(v => v.id === cleanId);
+        if (foundCustom) return `✨ ${foundCustom.name} (${cleanId})`;
+        if (foundPreset) return `🐟 ${foundPreset.name} (${cleanId})`;
+        return `🐟 Fish.audio (${cleanId})`;
+    }
+    return voiceId;
+}
+
+/**
+ * 获取所有的 Fish.audio 音色 (包含官方预设 + 用户同步/自定义克隆音色)
+ */
+export function getAllFishAudioVoices() {
+    const defaultPresets = [
+        { id: "7f92f8afb8ec43bf81429cc1c9199cb1", name: "温柔知性小姐姐 (示例预设)", gender: "female", category: "preset", description: "温柔柔和女声" },
+        { id: "9a9cf47702da476aa4629e2506d4a857", name: "元气活泼少女 (示例预设)", gender: "female", category: "preset", description: "明朗活泼少女音" },
+        { id: "8029148a07114138a08d633f84e27f71", name: "沉稳磁性男声 (示例预设)", gender: "male", category: "preset", description: "沉稳成年男声" }
+    ];
+
+    const cacheVoices = (window.TTS_State && window.TTS_State.CACHE && Array.isArray(window.TTS_State.CACHE.fish_audio_voices))
+        ? window.TTS_State.CACHE.fish_audio_voices
+        : [];
+
+    // 1. 读取本地存储兜底
+    let localCustoms = [];
+    try {
+        const saved = localStorage.getItem('tts_custom_fish_audio_voices');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) localCustoms = parsed;
+        }
+    } catch (e) { }
+
+    const customVoices = [];
+    const customIdSet = new Set();
+
+    // 2. 直接允许重复：所有自定义与同步音色全量保留
+    cacheVoices.filter(v => v && v.id && v.category !== 'preset').forEach(v => {
+        customVoices.push({
+            id: v.id.trim(),
+            name: v.name || v.id,
+            gender: v.gender || 'female',
+            category: v.category || 'custom',
+            description: v.description || '用户自定义/同步音色'
+        });
+    });
+
+    // 3. 融合本地存储中可能尚未同步的自定义条目 (仅当 ID+名称均相同时才去重，不同名称直接允许重复并存)
+    localCustoms.forEach(lv => {
+        if (lv && lv.id) {
+            const cid = lv.id.trim();
+            const cname = lv.name || cid;
+            if (!customVoices.some(cv => cv.id === cid && cv.name === cname)) {
+                customVoices.push({
+                    id: cid,
+                    name: cname,
+                    gender: lv.gender || 'female',
+                    category: 'custom',
+                    description: lv.description || '用户自定义音色'
+                });
+            }
+        }
+    });
+
+    // 4. 官方示例预设全部保留展示 (直接允许与自定义重复并存)
+    const cachePresets = cacheVoices.filter(v => v.category === 'preset');
+    const presetVoices = cachePresets.length > 0 ? cachePresets : defaultPresets;
+
+    return { presetVoices, customVoices };
+}
+
+/**
+ * 注册或更新一个用户自定义 Fish.audio 音色 (直接允许重复 ID)
+ */
+export async function saveCustomFishAudioVoice(id, name, gender = 'female') {
+    if (!id) return;
+    const cleanId = id.startsWith('fish:') ? id.slice(5) : (id.startsWith('fish_audio:') ? id.slice(11) : id);
+    const cleanName = (name || cleanId).trim();
+    const voiceItem = {
+        id: cleanId,
+        name: cleanName,
+        gender: gender,
+        category: 'custom',
+        description: '用户自定义音色'
+    };
+
+    if (window.TTS_State && window.TTS_State.CACHE) {
+        if (!Array.isArray(window.TTS_State.CACHE.fish_audio_voices)) {
+            window.TTS_State.CACHE.fish_audio_voices = [];
+        }
+        const list = window.TTS_State.CACHE.fish_audio_voices;
+        // 允许重复：仅当 id 与 name 完全相同时才原地更新，否则作为独立新条目追加
+        const idx = list.findIndex(v => v.id === cleanId && v.name === cleanName);
+        if (idx >= 0) {
+            list[idx] = { ...list[idx], ...voiceItem };
+        } else {
+            list.unshift(voiceItem);
+        }
+    }
+
+    try {
+        let localList = [];
+        const saved = localStorage.getItem('tts_custom_fish_audio_voices');
+        if (saved) localList = JSON.parse(saved) || [];
+        const idx = localList.findIndex(v => v.id === cleanId && v.name === cleanName);
+        if (idx >= 0) {
+            localList[idx] = { ...localList[idx], ...voiceItem };
+        } else {
+            localList.unshift(voiceItem);
+        }
+        localStorage.setItem('tts_custom_fish_audio_voices', JSON.stringify(localList));
+    } catch (e) { }
+
+    try {
+        if (window.TTS_API && typeof window.TTS_API.addFishAudioVoice === 'function') {
+            const res = await window.TTS_API.addFishAudioVoice(voiceItem);
+            if (res && Array.isArray(res.voices) && window.TTS_State && window.TTS_State.CACHE) {
+                window.TTS_State.CACHE.fish_audio_voices = res.voices;
+            }
+        }
+    } catch (err) {
+        console.warn('[ST-Direct-TTS] 后端持久化 Fish.audio 音色失败:', err);
+    }
+
+    if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+        window.TTS_UI.renderModelOptions();
+    }
+    return getAllFishAudioVoices().customVoices;
+}
+
+/**
+ * 删除一个用户自定义 Fish.audio 音色 (支持按 ID 或按 ID+名称精准删除)
+ */
+export async function deleteCustomFishAudioVoice(id, name = null) {
+    if (!id) return;
+    const cleanId = id.startsWith('fish:') ? id.slice(5) : (id.startsWith('fish_audio:') ? id.slice(11) : id);
+    const targetName = name ? name.trim() : null;
+
+    if (window.TTS_State && window.TTS_State.CACHE && Array.isArray(window.TTS_State.CACHE.fish_audio_voices)) {
+        window.TTS_State.CACHE.fish_audio_voices = window.TTS_State.CACHE.fish_audio_voices.filter(v => {
+            if (targetName) return !(v.id === cleanId && v.name === targetName);
+            return v.id !== cleanId;
+        });
+    }
+
+    try {
+        let localList = [];
+        const saved = localStorage.getItem('tts_custom_fish_audio_voices');
+        if (saved) {
+            localList = (JSON.parse(saved) || []).filter(v => {
+                if (targetName) return !(v.id === cleanId && v.name === targetName);
+                return v.id !== cleanId;
+            });
+            localStorage.setItem('tts_custom_fish_audio_voices', JSON.stringify(localList));
+        }
+    } catch (e) { }
+
+    try {
+        if (window.TTS_API && typeof window.TTS_API.deleteFishAudioVoice === 'function') {
+            const res = await window.TTS_API.deleteFishAudioVoice(cleanId, targetName);
+            if (res && Array.isArray(res.voices) && window.TTS_State && window.TTS_State.CACHE) {
+                window.TTS_State.CACHE.fish_audio_voices = res.voices;
+            }
+        }
+    } catch (err) {
+        console.warn('[ST-Direct-TTS] 后端删除 Fish.audio 音色失败:', err);
+    }
+
+    if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+        window.TTS_UI.renderModelOptions();
+    }
 }
 
 /**
@@ -1015,7 +1188,11 @@ export function getAuthHeaders(extra = {}) {
 
 if (window.TTS_Utils) {
     window.TTS_Utils.getAuthHeaders = getAuthHeaders;
+    window.TTS_Utils.getAllFishAudioVoices = getAllFishAudioVoices;
+    window.TTS_Utils.saveCustomFishAudioVoice = saveCustomFishAudioVoice;
+    window.TTS_Utils.deleteCustomFishAudioVoice = deleteCustomFishAudioVoice;
 }
 
 console.log("🟢 [2] TTS_Utils.js 执行完毕");
+
 

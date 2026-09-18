@@ -93,11 +93,16 @@ def get_data():
     from services.minimax_service import minimax_service
     minimax_voices = minimax_service.get_preset_voices()
 
+    # 附带 Fish.audio 云端音色库列表
+    from services.fish_audio_service import fish_audio_service
+    fish_audio_voices = fish_audio_service.get_preset_voices()
+
     return { 
         "models": models_data, 
         "mappings": mappings, 
         "settings": settings,
-        "minimax_voices": minimax_voices
+        "minimax_voices": minimax_voices,
+        "fish_audio_voices": fish_audio_voices
     }
 
 @router.post("/bind_character")

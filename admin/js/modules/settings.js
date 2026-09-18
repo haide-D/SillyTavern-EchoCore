@@ -258,6 +258,24 @@ export async function loadSettings() {
         if (mmPitchEl) mmPitchEl.value = mm.pitch !== undefined ? mm.pitch : 0;
         if (mmVolEl) mmVolEl.value = mm.vol !== undefined ? mm.vol : 1.0;
 
+        // Fish.audio TTS 配置
+        const fa = settings.fish_audio_tts || {};
+        const faEnabledEl = document.getElementById('setting-fish_audio-enabled');
+        const faApiKeyEl = document.getElementById('setting-fish_audio-api-key');
+        const faApiUrlEl = document.getElementById('setting-fish_audio-api-url');
+        const faModelEl = document.getElementById('setting-fish_audio-model');
+        const faDefaultVoiceEl = document.getElementById('setting-fish_audio-default-voice');
+        const faSpeedEl = document.getElementById('setting-fish_audio-speed');
+        const faVolEl = document.getElementById('setting-fish_audio-vol');
+
+        if (faEnabledEl) faEnabledEl.value = String(fa.enabled || false);
+        if (faApiKeyEl) faApiKeyEl.value = fa.api_key || '';
+        if (faApiUrlEl) faApiUrlEl.value = fa.api_url || 'https://api.fish.audio/v1/tts';
+        if (faModelEl) faModelEl.value = fa.model || 's2.1-pro';
+        if (faDefaultVoiceEl) faDefaultVoiceEl.value = fa.default_voice_id || '';
+        if (faSpeedEl) faSpeedEl.value = fa.speed !== undefined ? fa.speed : 1.0;
+        if (faVolEl) faVolEl.value = fa.vol !== undefined ? fa.vol : 1.0;
+
         // 远程穿透
         const autoShareTunnelEl = document.getElementById('setting-auto-share-tunnel');
         if (autoShareTunnelEl) autoShareTunnelEl.value = String(settings.auto_share_tunnel === true);
@@ -298,6 +316,14 @@ export async function saveSettings() {
     const mmSpeedEl = document.getElementById('setting-minimax-speed');
     const mmPitchEl = document.getElementById('setting-minimax-pitch');
     const mmVolEl = document.getElementById('setting-minimax-vol');
+
+    const faEnabledEl = document.getElementById('setting-fish_audio-enabled');
+    const faApiKeyEl = document.getElementById('setting-fish_audio-api-key');
+    const faApiUrlEl = document.getElementById('setting-fish_audio-api-url');
+    const faModelEl = document.getElementById('setting-fish_audio-model');
+    const faDefaultVoiceEl = document.getElementById('setting-fish_audio-default-voice');
+    const faSpeedEl = document.getElementById('setting-fish_audio-speed');
+    const faVolEl = document.getElementById('setting-fish_audio-vol');
 
     const analysisEnabledEl = document.getElementById('setting-analysis-enabled');
     const analysisIntervalEl = document.getElementById('setting-analysis-interval');
@@ -355,6 +381,15 @@ export async function saveSettings() {
             speed: mmSpeedEl ? parseFloat(mmSpeedEl.value) || 1.0 : 1.0,
             pitch: mmPitchEl ? parseInt(mmPitchEl.value) || 0 : 0,
             vol: mmVolEl ? parseFloat(mmVolEl.value) || 1.0 : 1.0
+        },
+        fish_audio_tts: {
+            enabled: faEnabledEl ? faEnabledEl.value === 'true' : false,
+            api_key: faApiKeyEl ? faApiKeyEl.value.trim() : '',
+            api_url: faApiUrlEl ? faApiUrlEl.value.trim() : 'https://api.fish.audio/v1/tts',
+            model: faModelEl ? faModelEl.value : 's2.1-pro',
+            default_voice_id: faDefaultVoiceEl ? faDefaultVoiceEl.value.trim() : '',
+            speed: faSpeedEl ? parseFloat(faSpeedEl.value) || 1.0 : 1.0,
+            vol: faVolEl ? parseFloat(faVolEl.value) || 1.0 : 1.0
         },
 
         prompt_injector: {
@@ -906,6 +941,67 @@ export function bindTestMiniMaxButton() {
         } finally {
             btn.disabled = false;
             btn.textContent = '⚡ 测试 MiniMax API 连接';
+        }
+    });
+}
+
+/**
+ * 绑定 Fish.audio 云端连接测试辅助按钮
+ */
+export function bindTestFishAudioButton() {
+    const btn = document.getElementById('test-fish_audio-connection-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        const apiKey = document.getElementById('setting-fish_audio-api-key')?.value.trim();
+        const apiUrl = document.getElementById('setting-fish_audio-api-url')?.value.trim();
+        const resEl = document.getElementById('test-fish_audio-connection-result');
+
+        if (!apiKey) {
+            showNotification('请先填写 Fish.audio API Key', 'warning');
+            if (resEl) {
+                resEl.textContent = '❌ 请先填写 Fish.audio API Key';
+                resEl.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '🔄 测试中...';
+        if (resEl) {
+            resEl.textContent = '正在连接 Fish.audio 开放平台...';
+            resEl.style.color = '#9ca3af';
+        }
+
+        try {
+            const resp = await fetch(`${API_BASE}/tts/fish_audio/test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey, api_url: apiUrl })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showNotification(data.message, 'success');
+                if (resEl) {
+                    resEl.textContent = `✅ ${data.message}`;
+                    resEl.style.color = '#10b981';
+                }
+            } else {
+                showNotification(data.message, 'error');
+                if (resEl) {
+                    resEl.textContent = `❌ ${data.message}`;
+                    resEl.style.color = '#ef4444';
+                }
+            }
+        } catch (e) {
+            showNotification(`连接失败: ${e.message}`, 'error');
+            if (resEl) {
+                resEl.textContent = `❌ 请求异常: ${e.message}`;
+                resEl.style.color = '#ef4444';
+            }
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚡ 测试 Fish.audio API 连接';
         }
     });
 }

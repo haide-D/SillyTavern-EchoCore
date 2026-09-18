@@ -58,6 +58,7 @@ import {
     bindFetchModelsButton,
     bindTestConnectionButton,
     bindTestMiniMaxButton,
+    bindTestFishAudioButton,
     bindAnalysisLLMButtons,
     bindPromptAndEmotionControls,
     bindTextReplacementControls,
@@ -328,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindFetchModelsButton();
     bindTestConnectionButton();
     bindTestMiniMaxButton();
+    bindTestFishAudioButton();
     bindAnalysisLLMButtons();
     bindTextReplacementControls();
     bindTunnelAndNginxControls();

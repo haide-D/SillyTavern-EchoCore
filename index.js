@@ -134,7 +134,13 @@ function initPlugin() {
             CACHE.models = data.models;
             CACHE.mappings = data.mappings;
             if (data.minimax_voices) CACHE.minimax_voices = data.minimax_voices;
-            if (data.settings) CACHE.settings = { ...CACHE.settings, ...data.settings };
+            if (data.fish_audio_voices) CACHE.fish_audio_voices = data.fish_audio_voices;
+            if (data.settings) {
+                CACHE.settings = { ...CACHE.settings, ...data.settings };
+                if (window.TTS_SettingsUI && typeof window.TTS_SettingsUI.syncUIFromBackendSettings === 'function') {
+                    window.TTS_SettingsUI.syncUIFromBackendSettings(data.settings);
+                }
+            }
 
             if (CACHE.settings.bubble_style) {
                 document.body.setAttribute('data-bubble-style', CACHE.settings.bubble_style);

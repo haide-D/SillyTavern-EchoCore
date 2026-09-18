@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import { PromptPresetStore, PROVIDER_RULES } from '../frontend/js/prompt_presets.js';
+const memory = new Map();
+const storage = { getItem: key => memory.get(key), setItem: (key, value) => memory.set(key, value) };
+const store = new PromptPresetStore('Template {{punctuation_rules}}', storage);
+for (const provider of Object.keys(PROVIDER_RULES)) assert.equal(store.active(provider).provider, provider);
+const base = store.active('fish_audio');
+const id = store.save({ ...base, name: '小说', punctuation_guide: '自定义规则' });
+assert.equal(store.active('fish_audio').id, id);
+assert.equal(store.builtins.builtin_fish_audio.name, 'Fish.audio 默认');
+store.save({ ...store.active('fish_audio'), name: '新名称' });
+assert.equal(new PromptPresetStore('Template', storage).active('fish_audio').name, '新名称');
+const exported = store.export(id);
+store.import(exported);
+assert.equal(store.list('fish_audio').length, 3);
+store.import(exported, true);
+assert.equal(store.list('fish_audio').length, 3);
+assert.equal(store.active('fish_audio').id, id);
+const before = JSON.stringify(store.state);
+for (const input of ['{', JSON.stringify({ version: 999 }), exported.replace('"fish_audio"', '"unknown"'), exported.replace('custom_', '__proto__'), exported.replace('"template": "Template {{punctuation_rules}}"', '"template": null')]) {
+    assert.throws(() => store.import(input));
+    assert.equal(JSON.stringify(store.state), before);
+}
+assert.throws(() => store.select('minimax', id));
+assert.throws(() => store.remove('builtin_fish_audio'));
+store.remove(id);
+assert.equal(store.active('fish_audio').id, 'builtin_fish_audio');
+const reloaded = new PromptPresetStore('Template', storage);
+assert.equal(reloaded.state.presets[id], undefined);
+const freshStorage = { getItem: () => null, setItem: () => {} };
+const fresh = new PromptPresetStore('Template', freshStorage);
+fresh.import(store.export());
+assert.deepEqual(fresh.state, store.state);
+fresh.import(store.export('builtin_minimax'));
+assert.equal(fresh.active('minimax').punctuation_guide, store.active('minimax').punctuation_guide);
+const failing = new PromptPresetStore('Template', { getItem: () => null, setItem: () => { throw new Error('quota'); } });
+assert.throws(() => failing.save({ ...base, name: 'quota' }));
+assert.equal(failing.list('fish_audio').length, 1);
+console.log('Preset CRUD, isolation, reload, import/export, atomic validation and storage-failure regressions passed.');
+
+const corrupt = new PromptPresetStore('Template', { getItem: () => '{', setItem: () => { throw new Error('must not overwrite'); } });
+assert.ok(corrupt.loadError);
+assert.equal(corrupt.active('gpt_sovits').is_builtin, true);

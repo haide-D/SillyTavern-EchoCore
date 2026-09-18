@@ -15,6 +15,7 @@ import glob
 import asyncio
 import logging
 import httpx
+from services.local_http import model_trust_env
 from typing import Optional, Dict
 from contextlib import asynccontextmanager
 
@@ -228,7 +229,7 @@ class ModelWeightService:
             url = f"{sovits_host}/set_gpt_weights"
             print(f"[ModelWeightService] 🔄 异步切换 GPT 权重: {weights_path}")
             
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
                 resp = await client.get(url, params={"weights_path": weights_path})
             
             if resp.status_code != 200:
@@ -275,7 +276,7 @@ class ModelWeightService:
             url = f"{sovits_host}/set_sovits_weights"
             print(f"[ModelWeightService] 🔄 异步切换 SoVITS 权重: {weights_path}")
             
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
                 resp = await client.get(url, params={"weights_path": weights_path})
             
             if resp.status_code != 200:

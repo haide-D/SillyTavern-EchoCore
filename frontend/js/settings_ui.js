@@ -1,6 +1,7 @@
 // frontend/js/settings_ui.js
 import { resolveBackendUrls, getAllMiniMaxVoices } from './utils.js';
 import { TTS_API } from './api.js';
+import { mountPromptPresets } from './prompt_presets_ui.js';
 
 const MODULE_NAME = 'st_direct_tts';
 // 动态基于当前模块定位 settings.html，自动兼容任何文件夹名称 (st-direct-tts 或 SillyTavern-GPT-SoVITS 等)
@@ -18,7 +19,8 @@ const defaultSettings = {
     provider_settings: {
         gpt_sovits: {},
         minimax: { api_key: '', group_id: '' },
-        doubao: { api_key: '' }
+        doubao: { api_key: '' },
+        fish_audio: { api_key: '', api_url: 'https://api.fish.audio/v1/tts', model: 's2.1-pro', voice_id: '' }
     }
 };
 
@@ -87,6 +89,96 @@ function getCurrentManagerUrls(config) {
 }
 
 /**
+ * 从后端 settings 同步并回填到酒馆设置 UI 与 extensionSettings 中
+ * 确保 Admin 面板保存的云端配置能即时同步到酒馆插件界面
+ */
+export function syncUIFromBackendSettings(backendSettings) {
+    if (!backendSettings || typeof backendSettings !== 'object') return;
+    const context = window.SillyTavern ? window.SillyTavern.getContext() : null;
+    const config = loadExtensionSettings();
+
+    let changed = false;
+
+    // 1. 同步 MiniMax 配置
+    if (backendSettings.minimax_tts && typeof backendSettings.minimax_tts === 'object') {
+        const mm = backendSettings.minimax_tts;
+        if (!config.provider_settings) config.provider_settings = {};
+        if (!config.provider_settings.minimax) config.provider_settings.minimax = {};
+
+        const localMm = config.provider_settings.minimax;
+        if (mm.api_key !== undefined && mm.api_key !== localMm.api_key) {
+            localMm.api_key = mm.api_key;
+            changed = true;
+        }
+        if (mm.group_id !== undefined && mm.group_id !== localMm.group_id) {
+            localMm.group_id = mm.group_id;
+            changed = true;
+        }
+        if (mm.model !== undefined && mm.model !== localMm.model) {
+            localMm.model = mm.model;
+            changed = true;
+        }
+        if (mm.default_voice_id !== undefined && mm.default_voice_id !== localMm.voice_id) {
+            localMm.voice_id = mm.default_voice_id;
+            changed = true;
+        }
+        if (mm.custom_emotions !== undefined && mm.custom_emotions !== localMm.custom_emotions) {
+            localMm.custom_emotions = mm.custom_emotions;
+            changed = true;
+        }
+
+        // 如果 DOM 已经渲染，立即回填输入框
+        if ($('#tts-minimax-api-key').length > 0) {
+            $('#tts-minimax-api-key').val(localMm.api_key || '');
+            $('#tts-minimax-group-id').val(localMm.group_id || '');
+            if (localMm.model) $('#tts-minimax-model').val(localMm.model);
+            $('#tts-minimax-voice-id').val(localMm.voice_id || 'female-shaonv');
+            if (localMm.custom_emotions) $('#tts-minimax-custom-emotions').val(localMm.custom_emotions);
+        }
+    }
+
+    // 2. 同步 Fish.audio 配置
+    if (backendSettings.fish_audio_tts && typeof backendSettings.fish_audio_tts === 'object') {
+        const fa = backendSettings.fish_audio_tts;
+        if (!config.provider_settings) config.provider_settings = {};
+        if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+
+        const localFa = config.provider_settings.fish_audio;
+        if (fa.api_key !== undefined && fa.api_key !== localFa.api_key) {
+            localFa.api_key = fa.api_key;
+            changed = true;
+        }
+        if (fa.api_url !== undefined && fa.api_url !== localFa.api_url) {
+            localFa.api_url = fa.api_url;
+            changed = true;
+        }
+        if (fa.model !== undefined && fa.model !== localFa.model) {
+            localFa.model = fa.model;
+            changed = true;
+        }
+        if (fa.default_voice_id !== undefined && fa.default_voice_id !== localFa.voice_id) {
+            localFa.voice_id = fa.default_voice_id;
+            changed = true;
+        }
+
+        // 如果 DOM 已经渲染，立即回填输入框
+        if ($('#tts-fish-api-key').length > 0) {
+            $('#tts-fish-api-key').val(localFa.api_key || '');
+            $('#tts-fish-api-url').val(localFa.api_url || 'https://api.fish.audio/v1/tts');
+            if (localFa.model) $('#tts-fish-model').val(localFa.model);
+            $('#tts-fish-voice-id').val(localFa.voice_id || '');
+        }
+    }
+
+    if (changed && context && typeof context.saveSettingsDebounced === 'function') {
+        context.saveSettingsDebounced();
+    }
+}
+
+// 挂载到全局供 index.js 与调试调用
+window.TTS_SettingsUI = { syncUIFromBackendSettings };
+
+/**
  * 初始化并挂载酒馆原生扩展设置 UI
  */
 export async function initSettingsUI() {
@@ -117,6 +209,7 @@ export async function initSettingsUI() {
         const $providerSelect = $('#tts-provider-select');
         $providerSelect.val(config.active_provider || 'gpt_sovits');
         switchProviderPanel(config.active_provider || 'gpt_sovits');
+        mountPromptPresets();
 
         if (config.provider_settings?.minimax) {
             $('#tts-minimax-api-key').val(config.provider_settings.minimax.api_key || '');
@@ -127,6 +220,12 @@ export async function initSettingsUI() {
         }
         if (config.provider_settings?.doubao) {
             $('#tts-doubao-api-key').val(config.provider_settings.doubao.api_key || '');
+        }
+        if (config.provider_settings?.fish_audio) {
+            $('#tts-fish-api-key').val(config.provider_settings.fish_audio.api_key || '');
+            $('#tts-fish-api-url').val(config.provider_settings.fish_audio.api_url || 'https://api.fish.audio/v1/tts');
+            $('#tts-fish-model').val(config.provider_settings.fish_audio.model || 's2.1-pro');
+            $('#tts-fish-voice-id').val(config.provider_settings.fish_audio.voice_id || '');
         }
 
         // 更新管理面板跳转链接
@@ -143,6 +242,52 @@ export async function initSettingsUI() {
             }
         };
         updateAdminLink();
+
+        // 1.5 自动从后端拉取并双向对齐系统级云端配置 (彻底打通 Admin 控制台与酒馆插件设置)
+        const cachedSettings = window.TTS_State?.CACHE?.settings;
+        if (cachedSettings) {
+            syncUIFromBackendSettings(cachedSettings);
+        }
+        (async () => {
+            try {
+                const api = window.TTS_API || TTS_API;
+                if (api && typeof api.getData === 'function') {
+                    const latestData = await api.getData();
+                    if (latestData && latestData.settings) {
+                        if (window.TTS_State?.CACHE) {
+                            window.TTS_State.CACHE.settings = { ...window.TTS_State.CACHE.settings, ...latestData.settings };
+                        }
+                        syncUIFromBackendSettings(latestData.settings);
+                    }
+                }
+            } catch (syncErr) {
+                console.warn('[ST-Direct-TTS] 异步同步后端系统配置跳过(可能离线):', syncErr.message);
+            }
+        })();
+
+        // 绑定手动同步服务端配置按钮
+        $('#tts-ext-sync-backend-btn').on('click', async function () {
+            const $btn = $(this);
+            const origHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span>🔄 同步中...</span>');
+            try {
+                const api = window.TTS_API || TTS_API;
+                const latestData = await api.getData();
+                if (latestData && latestData.settings) {
+                    if (window.TTS_State?.CACHE) {
+                        window.TTS_State.CACHE.settings = { ...window.TTS_State.CACHE.settings, ...latestData.settings };
+                    }
+                    syncUIFromBackendSettings(latestData.settings);
+                    alert('✅ 成功从服务端同步最新的 MiniMax / Fish.audio 配置！');
+                } else {
+                    alert('⚠️ 服务端未返回配置数据，请检查后端连接');
+                }
+            } catch (err) {
+                alert(`❌ 同步失败: ${err.message}`);
+            } finally {
+                $btn.prop('disabled', false).html(origHtml);
+            }
+        });
 
         // 2. 绑定事件
         // 主开关
@@ -220,6 +365,7 @@ export async function initSettingsUI() {
             const val = $(e.target).val();
             config.active_provider = val;
             switchProviderPanel(val);
+            window.TTS_PromptInjector?.refreshAndInject();
             context.saveSettingsDebounced();
         });
 
@@ -721,6 +867,379 @@ export async function initSettingsUI() {
             if (!config.provider_settings.doubao) config.provider_settings.doubao = {};
             config.provider_settings.doubao.api_key = $(e.target).val();
             context.saveSettingsDebounced();
+        });
+
+        // ============================================================
+        // Fish.audio 字段同步与交互
+        // ============================================================
+        const syncFishAudioBackend = () => {
+            const fa = config.provider_settings.fish_audio || {};
+            if (window.TTS_API && typeof window.TTS_API.updateSettings === 'function') {
+                window.TTS_API.updateSettings({
+                    fish_audio_tts: {
+                        api_key: fa.api_key || '',
+                        api_url: fa.api_url || 'https://api.fish.audio/v1/tts',
+                        model: fa.model || 's2.1-pro',
+                        default_voice_id: fa.voice_id || ''
+                    }
+                }).catch(() => { });
+            }
+        };
+
+        $('#tts-fish-api-key').on('input', (e) => {
+            if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+            config.provider_settings.fish_audio.api_key = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncFishAudioBackend();
+        });
+
+        $('#tts-fish-api-url').on('input', (e) => {
+            if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+            config.provider_settings.fish_audio.api_url = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncFishAudioBackend();
+        });
+
+        $('#tts-fish-model').on('change', (e) => {
+            if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+            config.provider_settings.fish_audio.model = $(e.target).val();
+            context.saveSettingsDebounced();
+            syncFishAudioBackend();
+        });
+
+        $('#tts-fish-voice-id').on('input', (e) => {
+            if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+            config.provider_settings.fish_audio.voice_id = $(e.target).val().trim();
+            context.saveSettingsDebounced();
+            syncFishAudioBackend();
+        });
+
+        // 测试 Fish.audio 连通性
+        $('#tts-fish-test-btn').on('click', async () => {
+            const $res = $('#tts-fish-test-result');
+            const apiKey = $('#tts-fish-api-key').val().trim();
+            const apiUrl = $('#tts-fish-api-url').val().trim() || 'https://api.fish.audio/v1/tts';
+            const model = $('#tts-fish-model').val() || 's2.1-pro';
+
+            if (!apiKey) {
+                $res.text('❌ 请先填写 Fish.audio API Key').css('color', '#ff5555');
+                return;
+            }
+
+            $res.text('🔄 正在测试连接...').css('color', '#aaa');
+
+            try {
+                const api = window.TTS_API || TTS_API;
+                const data = await api.testFishAudio(apiKey, apiUrl, model);
+                if (data.success) {
+                    $res.text(`✅ ${data.message}`).css('color', '#55ff55');
+                } else {
+                    $res.text(`❌ ${data.message}`).css('color', '#ff5555');
+                }
+            } catch (err) {
+                $res.text(`❌ 连接失败: ${err.message}`).css('color', '#ff5555');
+            }
+        });
+
+        // 一键同步 Fish.audio 远程个人音色库
+        $('#tts-fish-sync-btn').on('click', async () => {
+            const $btn = $('#tts-fish-sync-btn');
+            const $res = $('#tts-fish-test-result');
+            const apiKey = $('#tts-fish-api-key').val().trim();
+
+            if (!apiKey) {
+                $res.text('❌ 请先填写 Fish.audio API Key').css('color', '#ff5555');
+                return;
+            }
+
+            $btn.prop('disabled', true).text('🔄 正在同步官方音色库...');
+            $res.text('🔄 正在从官方拉取当前账号收藏的声音模型...').css('color', '#aaa');
+
+            try {
+                const api = window.TTS_API || TTS_API;
+                const result = await api.syncFishAudioRemoteVoices(apiKey);
+                if (result.success) {
+                    $res.text(`✅ ${result.message}`).css('color', '#55ff55');
+                    if (window.TTS_State && window.TTS_State.CACHE && result.voices) {
+                        window.TTS_State.CACHE.fish_audio_voices = result.voices;
+                    }
+                    loadFishVoices();
+                    if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                        window.TTS_UI.renderModelOptions();
+                    }
+                } else {
+                    $res.text(`❌ 同步失败: ${result.message || '未知错误'}`).css('color', '#ff5555');
+                }
+            } catch (err) {
+                $res.text(`❌ 同步异常: ${err.message}`).css('color', '#ff5555');
+            } finally {
+                $btn.prop('disabled', false).html('<span>🔄 一键同步个人音色库</span>');
+            }
+        });
+
+        // ============================================================
+        // Fish.audio 音色列表展示与管理
+        // ============================================================
+        let cachedFishVoices = [];
+        let fishPreviewAudio = null;
+
+        const renderFishVoicesList = (filterText = '') => {
+            const $list = $('#tts-fish-voices-list');
+            const $count = $('#tts-fish-voice-count');
+            if ($list.length === 0) return;
+
+            const q = filterText.trim().toLowerCase();
+            const filtered = cachedFishVoices.filter(v => {
+                if (!q) return true;
+                const name = (v.name || '').toLowerCase();
+                const id = (v.id || '').toLowerCase();
+                const desc = (v.description || '').toLowerCase();
+                return name.includes(q) || id.includes(q) || desc.includes(q);
+            });
+
+            $count.text(`(共 ${cachedFishVoices.length} 个${q ? `，过滤出 ${filtered.length} 个` : ''})`);
+
+            if (filtered.length === 0) {
+                $list.html('<div style="text-align: center; color: #888; font-size: 11.5px; padding: 12px;">未找到匹配声线</div>');
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(v => {
+                const isCustom = v.category !== 'preset';
+                const genderIcon = v.gender === 'female' ? '♀' : (v.gender === 'male' ? '♂' : '⚥');
+                const badgeText = v.category === 'preset' ? '预设' : (v.category === 'remote_sync' ? '云同步' : '自定义');
+                const badgeClass = v.category === 'preset' ? 'st-tts-badge-preset' : 'st-tts-badge-custom';
+
+                html += `
+                <div class="st-tts-voice-row" data-id="${escapeHtml(v.id)}">
+                    <div class="st-tts-voice-info">
+                        <span class="st-tts-badge ${badgeClass}">${badgeText}</span>
+                        <span class="st-tts-voice-gender">${genderIcon}</span>
+                        <span class="st-tts-voice-name" title="${escapeHtml(v.name || v.id)}">${escapeHtml(v.name || v.id)}</span>
+                        <span class="st-tts-voice-id-tag" title="Model ID: ${escapeHtml(v.id)}">${escapeHtml(v.id)}</span>
+                    </div>
+                    <div class="st-tts-voice-actions">
+                        <button type="button" class="st-tts-btn st-tts-btn-xs btn-preview-fish-voice" data-id="${escapeHtml(v.id)}" title="试听当前声线">▶️ 试听</button>
+                        <button type="button" class="st-tts-btn st-tts-btn-xs btn-set-default-fish-voice" data-id="${escapeHtml(v.id)}" title="填入默认音色输入框">⭐ 设默认</button>
+                        ${isCustom ? `
+                            <button type="button" class="st-tts-btn st-tts-btn-xs btn-edit-fish-voice" data-id="${escapeHtml(v.id)}" data-name="${escapeHtml(v.name || v.id)}" data-gender="${escapeHtml(v.gender || 'female')}" title="编辑此声线">✏️</button>
+                            <button type="button" class="st-tts-btn st-tts-btn-xs st-tts-btn-danger btn-del-fish-voice" data-id="${escapeHtml(v.id)}" data-name="${escapeHtml(v.name || v.id)}" title="从库中删除此音色">🗑️</button>
+                        ` : ''}
+                    </div>
+                </div>`;
+            });
+
+            $list.html(html);
+        };
+
+        const loadFishVoices = async (isManualRefresh = false) => {
+            const $count = $('#tts-fish-voice-count');
+            if (isManualRefresh) $count.text('(正在刷新...)');
+
+            const { presetVoices, customVoices } = (window.TTS_Utils && typeof window.TTS_Utils.getAllFishAudioVoices === 'function')
+                ? window.TTS_Utils.getAllFishAudioVoices()
+                : { presetVoices: [], customVoices: [] };
+
+            const localCombined = [...presetVoices, ...customVoices];
+            if (cachedFishVoices.length === 0 || localCombined.length > 0) {
+                cachedFishVoices = localCombined;
+                renderFishVoicesList($('#tts-fish-voice-search').val() || '');
+            }
+
+            try {
+                const api = window.TTS_API || TTS_API;
+                if (api && typeof api.getFishAudioVoices === 'function') {
+                    const data = await api.getFishAudioVoices();
+                    if (data && Array.isArray(data.voices)) {
+                        cachedFishVoices = data.voices;
+                        if (window.TTS_State && window.TTS_State.CACHE) {
+                            window.TTS_State.CACHE.fish_audio_voices = data.voices;
+                        }
+                        renderFishVoicesList($('#tts-fish-voice-search').val() || '');
+                    }
+                }
+            } catch (err) {
+                if (cachedFishVoices.length === 0) {
+                    $('#tts-fish-voices-list').html(`<div style="text-align: center; color: #ff7777; font-size: 11.5px; padding: 10px;">读取音色库失败: ${err.message}</div>`);
+                }
+            }
+        };
+
+        loadFishVoices();
+
+        $('#tts-fish-btn-refresh-voices').on('click', () => {
+            loadFishVoices(true);
+        });
+
+        $('#tts-fish-voice-search').on('input', (e) => {
+            renderFishVoicesList($(e.target).val());
+        });
+
+        // 抽屉状态与重置
+        let editingFishVoiceId = null;
+        let editingFishVoiceName = null;
+        const resetFishEntryForm = () => {
+            editingFishVoiceId = null;
+            editingFishVoiceName = null;
+            $('#tts-fish-new-voice-name').val('');
+            $('#tts-fish-new-voice-id').val('').prop('disabled', false);
+            $('#tts-fish-new-voice-gender').val('female');
+            $('#tts-fish-form-title').text('➕ 录入自定义 / 官方声线');
+            $('#tts-fish-editing-hint').hide();
+            $('#tts-fish-save-btn-text').text('➕ 保存到音色库');
+            $('#tts-fish-cancel-edit-btn').hide();
+            $('#tts-fish-add-voice-status').text('');
+        };
+
+        // 展开/收起录入抽屉
+        $('#tts-fish-btn-add-voice').on('click', () => {
+            const $drawer = $('#tts-fish-add-drawer');
+            const isExpanded = $drawer.hasClass('expanded');
+            if (isExpanded) {
+                $drawer.removeClass('expanded');
+                $('#tts-fish-toggle-add-text').text('➕ 添加音色');
+                resetFishEntryForm();
+            } else {
+                $drawer.addClass('expanded');
+                $('#tts-fish-toggle-add-text').text('❌ 收起');
+                $('#tts-fish-new-voice-name').focus();
+            }
+        });
+
+        // 取消编辑
+        $('#tts-fish-cancel-edit-btn').on('click', () => {
+            resetFishEntryForm();
+            $('#tts-fish-add-drawer').removeClass('expanded');
+            $('#tts-fish-toggle-add-text').text('➕ 添加音色');
+        });
+
+        // 保存自定义声线 (直接允许重复 ID 新增 / 修改)
+        $('#tts-fish-save-voice-btn').on('click', async () => {
+            const name = $('#tts-fish-new-voice-name').val().trim();
+            const rawId = $('#tts-fish-new-voice-id').val().trim();
+            const gender = $('#tts-fish-new-voice-gender').val() || 'female';
+            const $status = $('#tts-fish-add-voice-status');
+
+            if (!rawId) {
+                $status.text('❌ 请填写 Model ID').css('color', '#ff5555');
+                $('#tts-fish-new-voice-id').focus();
+                return;
+            }
+
+            const cleanId = rawId.startsWith('fish:') ? rawId.slice(5) : (rawId.startsWith('fish_audio:') ? rawId.slice(11) : rawId);
+            $status.text('⏳ 保存中...').css('color', '#aaa');
+
+            try {
+                // 如果处于编辑模式且修改了原 ID 或原名称，先删除旧项
+                if (editingFishVoiceId && (editingFishVoiceId !== cleanId || editingFishVoiceName !== name)) {
+                    if (window.TTS_Utils && typeof window.TTS_Utils.deleteCustomFishAudioVoice === 'function') {
+                        await window.TTS_Utils.deleteCustomFishAudioVoice(editingFishVoiceId, editingFishVoiceName);
+                    }
+                }
+
+                if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomFishAudioVoice === 'function') {
+                    await window.TTS_Utils.saveCustomFishAudioVoice(cleanId, name || cleanId, gender);
+                }
+
+                $status.text('✅ 已保存！').css('color', '#55ff55');
+                resetFishEntryForm();
+                $('#tts-fish-add-drawer').removeClass('expanded');
+                $('#tts-fish-toggle-add-text').text('➕ 添加音色');
+
+                await loadFishVoices();
+                if (window.TTS_UI && typeof window.TTS_UI.renderModelOptions === 'function') {
+                    window.TTS_UI.renderModelOptions();
+                }
+                setTimeout(() => $status.text(''), 3000);
+            } catch (err) {
+                $status.text(`❌ 保存失败: ${err.message}`).css('color', '#ff5555');
+            }
+        });
+
+        // 设默认按钮
+        $('#tts-fish-voices-list').on('click', '.btn-set-default-fish-voice', (e) => {
+            const voiceId = $(e.currentTarget).data('id');
+            $('#tts-fish-voice-id').val(voiceId);
+            if (!config.provider_settings.fish_audio) config.provider_settings.fish_audio = {};
+            config.provider_settings.fish_audio.voice_id = voiceId;
+            context.saveSettingsDebounced();
+            syncFishAudioBackend();
+            alert(`已将「${voiceId}」设为 Fish.audio 默认 Voice ID`);
+        });
+
+        // 编辑自定义音色 (回填抽屉)
+        $('#tts-fish-voices-list').on('click', '.btn-edit-fish-voice', (e) => {
+            const $btn = $(e.currentTarget);
+            const voiceId = $btn.data('id');
+            const voiceName = $btn.data('name');
+            const voiceGender = $btn.data('gender') || 'female';
+
+            editingFishVoiceId = voiceId;
+            editingFishVoiceName = voiceName || voiceId;
+            $('#tts-fish-new-voice-name').val(voiceName || voiceId);
+            $('#tts-fish-new-voice-id').val(voiceId);
+            $('#tts-fish-new-voice-gender').val(voiceGender);
+            $('#tts-fish-form-title').text('✏️ 编辑 Fish.audio 声线');
+            $('#tts-fish-editing-hint').show();
+            $('#tts-fish-save-btn-text').text('💾 保存修改');
+            $('#tts-fish-cancel-edit-btn').show();
+
+            const $drawer = $('#tts-fish-add-drawer');
+            $drawer.addClass('expanded');
+            $('#tts-fish-toggle-add-text').text('❌ 收起');
+            $('#tts-fish-new-voice-name').focus();
+        });
+
+        // 试听按钮
+        $('#tts-fish-voices-list').on('click', '.btn-preview-fish-voice', async (e) => {
+            const $btn = $(e.currentTarget);
+            const voiceId = $btn.data('id');
+
+            if (fishPreviewAudio) {
+                fishPreviewAudio.pause();
+                fishPreviewAudio = null;
+                $('.btn-preview-fish-voice').text('▶️ 试听').prop('disabled', false);
+            }
+
+            const model = $('#tts-fish-model').val() || 's2.1-pro';
+            $btn.prop('disabled', true).text('⏳ 合成中...');
+
+            try {
+                const api = window.TTS_API || TTS_API;
+                const blob = await api.previewFishAudioVoice(voiceId, "主人，您好！这是我的Fish.audio语音合成试听效果。", model);
+                const audioUrl = URL.createObjectURL(blob);
+                fishPreviewAudio = new Audio(audioUrl);
+                $btn.prop('disabled', false).text('⏹️ 停止');
+
+                fishPreviewAudio.onended = () => {
+                    $btn.text('▶️ 试听');
+                    fishPreviewAudio = null;
+                };
+                fishPreviewAudio.onerror = () => {
+                    $btn.text('▶️ 试听');
+                    fishPreviewAudio = null;
+                    alert('试听音频播放失败');
+                };
+                await fishPreviewAudio.play();
+            } catch (err) {
+                $btn.prop('disabled', false).text('▶️ 试听');
+                alert(`试听失败: ${err.message}`);
+            }
+        });
+
+        // 删除按钮
+        $('#tts-fish-voices-list').on('click', '.btn-del-fish-voice', async (e) => {
+            const $btn = $(e.currentTarget);
+            const voiceId = $btn.data('id');
+            const voiceName = $btn.data('name');
+
+            if (!confirm(`确定要从音色库中移除「${voiceName || voiceId}」吗？`)) return;
+
+            if (window.TTS_Utils && typeof window.TTS_Utils.deleteCustomFishAudioVoice === 'function') {
+                await window.TTS_Utils.deleteCustomFishAudioVoice(voiceId, voiceName);
+            }
+            loadFishVoices();
         });
 
         /* 

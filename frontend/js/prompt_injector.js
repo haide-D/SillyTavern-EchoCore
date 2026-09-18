@@ -13,6 +13,7 @@
 // 默认内置全局情感场景与注释知识库
 import { getReadingSettings, fulltextPrompt } from './reading_text.js';
 import { extractAllSpeakers } from './utils.js';
+import { PromptPresetStore, PROVIDER_RULES, providerForModel } from './prompt_presets.js';
 
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
@@ -93,6 +94,15 @@ export const PromptInjector = {
     /**
      * 初始化提示词注入器
      */
+    getProvider() {
+        return window.SillyTavern?.getContext?.().extensionSettings?.st_direct_tts?.active_provider || 'gpt_sovits';
+    },
+
+    getPresetStore() {
+        if (!this.presetStore) this.presetStore = new PromptPresetStore(DEFAULT_PROMPT_TEMPLATE);
+        return this.presetStore;
+    },
+
     init() {
         console.log('🎙️ [PromptInjector] 初始化系统级提示词与情感约束注入引擎...');
         this._loadStorage();
@@ -152,6 +162,11 @@ export const PromptInjector = {
      * 保存自定义模板
      */
     setCustomTemplate(templateText) {
+        const store = this.getPresetStore();
+        const provider = this.getProvider();
+        if (templateText?.trim()) store.save({ ...store.active(provider), template: templateText });
+        else store.select(provider, `builtin_${provider}`);
+        localStorage.setItem('tts_prompt_legacy_migrated', '1');
         this.customTemplate = templateText || '';
         if (this.customTemplate.trim()) {
             localStorage.setItem('tts_custom_prompt_template', this.customTemplate);
@@ -329,8 +344,8 @@ export const PromptInjector = {
             const modelConfig = modelsData[modelName];
             const emotionsSet = new Set(['default']);
 
-            if (modelName.startsWith('minimax:') || modelName.startsWith('minimax_')) {
-                ['default', 'happy', 'sad', 'angry', 'surprise', 'fear', 'whisper', 'disgust', 'smug'].forEach(e => emotionsSet.add(e));
+            if (providerForModel(modelName) !== 'gpt_sovits') {
+                this.getPresetStore().active(providerForModel(modelName)).allowed_emotions.forEach(e => emotionsSet.add(e));
             } else if (modelConfig && modelConfig.languages) {
                 for (const langConfig of Object.values(modelConfig.languages)) {
                     if (Array.isArray(langConfig)) {
@@ -341,6 +356,12 @@ export const PromptInjector = {
                 }
             }
 
+            const allowed = this.getPresetStore().active(providerForModel(modelName)).allowed_emotions;
+            if (providerForModel(modelName) === 'gpt_sovits' && allowed.length) {
+                for (const emotion of emotionsSet) {
+                    if (emotion !== 'default' && !allowed.includes(emotion)) emotionsSet.delete(emotion);
+                }
+            }
             boundMap[cleanChar] = {
                 modelName: modelName,
                 emotions: Array.from(emotionsSet)
@@ -380,7 +401,8 @@ export const PromptInjector = {
                     }
                     return `       * ${emo}`;
                 }).join('\n');
-                return `   - **${char}** (Available emotions & constraints):\n${emotionLines}`;
+                const rules = this.getPresetStore().active(providerForModel(modelName)).punctuation_guide;
+                return `   - **${char}** (Available emotions & constraints):\n${emotionLines}\n       Voice-specific rules (override global guidance for this character): ${rules}`;
             }).join('\n');
         } else {
             boundSection = '   (None currently bound - see Rule 4 below)';
@@ -395,16 +417,32 @@ export const PromptInjector = {
 
         const primaryCharNote = primaryChar ? `- Current Active Character: "${primaryChar}" (Ensure consistent naming if speaking).` : '';
 
-        // 获取模板（优先使用用户自定义模板，否则使用默认）
+        const store = this.getPresetStore();
+        const provider = this.getProvider();
+        // Migrate the old global custom template once, preserving it for every provider.
+        if (this.customTemplate?.trim() && !localStorage.getItem('tts_prompt_legacy_migrated')) {
+            for (const key of Object.keys(PROVIDER_RULES)) {
+                if (!store.state.active_presets[key]) store.save({ ...store.active(key), name: '旧自定义模板', template: this.customTemplate }, true);
+            }
+            localStorage.setItem('tts_prompt_legacy_migrated', '1');
+        }
+        const preset = store.active(provider);
+        let punctuation = preset.punctuation_guide;
+        // The fulltext structural protocol takes priority, while provider guidance remains active.
         const reading = getReadingSettings();
+        if (reading.fulltextTemplate && reading.narrator) {
+            const model = window.TTS_State?.CACHE?.mappings?.[reading.narrator] || '';
+            punctuation += '\nNarrator voice rules: ' + store.active(providerForModel(model)).punctuation_guide;
+        }
         const template = reading.fulltextTemplate ? fulltextPrompt(reading)
-            : (this.customTemplate && this.customTemplate.trim()) ? this.customTemplate : DEFAULT_PROMPT_TEMPLATE;
+            : preset.template;
 
         // 插槽替换
-        return template
-            .replace(/\{\{primary_character_note\}\}/g, primaryCharNote)
-            .replace(/\{\{bound_characters_section\}\}/g, boundSection)
-            .replace(/\{\{skipped_characters_section\}\}/g, skippedSection)
+        return (template + '\n[Provider punctuation rules]\n' + punctuation + (reading.fulltextTemplate && !preset.is_builtin ? '\n[Provider dialogue guidance]\n' + preset.template + '\nFull Story Reading Protocol overrides conflicting narration, skipped-character and body-format rules above.' : ''))
+            .replace(/\{\{punctuation_rules\}\}/g, () => punctuation)
+            .replace(/\{\{primary_character_note\}\}/g, () => primaryCharNote)
+            .replace(/\{\{bound_characters_section\}\}/g, () => boundSection)
+            .replace(/\{\{skipped_characters_section\}\}/g, () => skippedSection)
             .trim();
     },
 

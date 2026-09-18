@@ -417,6 +417,7 @@
                     <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
                     <button class="settings-tab" data-tab="security">🔒 安全与鉴权</button>
                     <button class="settings-tab" data-tab="minimax">☁️ MiniMax 云端 TTS</button>
+                    <button class="settings-tab" data-tab="fish_audio">🐟 Fish.audio 云端 TTS</button>
                     <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
                     <button class="settings-tab" data-tab="phone">📞 电话功能</button>
                     <button class="settings-tab" data-tab="remote">🌐 远程与穿透</button>
@@ -648,6 +649,77 @@
                                     ⚡ 测试 MiniMax API 连接
                                 </button>
                                 <span id="test-minimax-connection-result" style="font-size: 13px;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fish.audio 云端 TTS Tab -->
+                <div id="settings-tab-fish_audio" class="settings-tab-content">
+                    <div class="settings-form">
+                        <h3 class="settings-section-title">🐟 Fish.audio 开放平台云端 TTS 服务</h3>
+                        <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
+                            Fish.audio 拥有庞大的高质量多语言开源社区声音模型生态，支持 S2.1-pro 等多版本大模型推理，音质细腻纯净。
+                        </small>
+
+                        <div class="form-group">
+                            <label>启用 Fish.audio 服务</label>
+                            <select id="setting-fish_audio-enabled" class="select">
+                                <option value="false">禁用 (使用本地 GPT-SoVITS)</option>
+                                <option value="true">启用 (支持全局与角色混合绑定)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Fish.audio API Key</label>
+                            <input type="password" id="setting-fish_audio-api-key" class="input" placeholder="例: 你的 Fish.audio API 访问密钥">
+                            <small>在 <a href="https://fish.audio/zh-CN/go-api/" target="_blank" style="color:#60a5fa;">Fish.audio 开放平台</a> 申请的 API Key</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>API 请求地址 (Base URL)</label>
+                            <input type="text" id="setting-fish_audio-api-url" class="input" value="https://api.fish.audio/v1/tts">
+                            <small>官方语音合成端点为 https://api.fish.audio/v1/tts</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>基础推理模型 (Header model)</label>
+                            <select id="setting-fish_audio-model" class="select">
+                                <option value="s2.1-pro">s2.1-pro (旗舰多语言 - 最强推荐)</option>
+                                <option value="s2.1-pro-free">s2.1-pro-free (免费体验版)</option>
+                                <option value="s2-pro">s2-pro (高质量多语言)</option>
+                                <option value="drama-3-preview">drama-3-preview (戏剧/强表现力预览版)</option>
+                                <option value="s1">s1 (经典基础版)</option>
+                            </select>
+                            <small>Fish.audio 基础大语言推理模型，将通过 HTTP Header <code>model: &lt;id&gt;</code> 传递</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>默认预设音色 (Voice ID / reference_id)</label>
+                            <input type="text" id="setting-fish_audio-default-voice" class="input" placeholder="例: 7f92f8af3323488ebbc4e48ff12fe0e2 (留空使用官方默认声线)">
+                            <small>未指定角色声线时的全局兜底音色 ID（即 reference_id）</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>基础声学参数调优</label>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                                <div>
+                                    <small>语速倍率 (0.5 - 2.0):</small>
+                                    <input type="number" id="setting-fish_audio-speed" class="input" step="0.05" min="0.5" max="2.0" value="1.0">
+                                </div>
+                                <div>
+                                    <small>音量倍率 (0.1 - 2.0):</small>
+                                    <input type="number" id="setting-fish_audio-vol" class="input" step="0.1" min="0.1" max="2.0" value="1.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <div style="display:flex; align-items:center; gap: 12px;">
+                                <button type="button" id="test-fish_audio-connection-btn" class="btn btn-secondary">
+                                    ⚡ 测试 Fish.audio API 连接
+                                </button>
+                                <span id="test-fish_audio-connection-result" style="font-size: 13px;"></span>
                             </div>
                         </div>
                     </div>

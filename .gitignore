@@ -44,6 +44,7 @@ data/
 runtime_backup/
 
 # --- 任务管理与本地配置 ---
+/AGENTS.md
 management/
 .agents/
 .gemini/

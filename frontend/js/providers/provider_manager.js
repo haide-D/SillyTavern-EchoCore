@@ -2,6 +2,7 @@
 import { GPTSoVITSProvider } from './gpt_sovits_provider.js';
 import { MiniMaxProvider } from './minimax_provider.js';
 import { DoubaoProvider } from './doubao_provider.js';
+import { FishAudioProvider } from './fish_audio_provider.js';
 
 export const ProviderManager = {
     /**
@@ -52,6 +53,9 @@ export const ProviderManager = {
                 return new MiniMaxProvider(providerConfig);
             case 'doubao':
                 return new DoubaoProvider(providerConfig);
+            case 'fish_audio':
+            case 'fish':
+                return new FishAudioProvider(providerConfig);
             case 'gpt_sovits':
             default:
                 return new GPTSoVITSProvider(providerConfig);
@@ -89,11 +93,19 @@ export const ProviderManager = {
                 if (providerPrefix === 'doubao') {
                     return new DoubaoProvider(providerConfig);
                 }
+                if (providerPrefix === 'fish' || providerPrefix === 'fish_audio') {
+                    return new FishAudioProvider(providerConfig);
+                }
             } else if (mappedModel.startsWith('minimax_')) {
                 const extensionSettings = window.SillyTavern ? window.SillyTavern.getContext().extensionSettings : {};
                 const config = extensionSettings.st_direct_tts || {};
                 const providerConfig = config.provider_settings ? config.provider_settings['minimax'] : {};
                 return new MiniMaxProvider(providerConfig);
+            } else if (mappedModel.startsWith('fish_')) {
+                const extensionSettings = window.SillyTavern ? window.SillyTavern.getContext().extensionSettings : {};
+                const config = extensionSettings.st_direct_tts || {};
+                const providerConfig = config.provider_settings ? config.provider_settings['fish_audio'] : {};
+                return new FishAudioProvider(providerConfig);
             }
         }
         return this.getCurrentProvider();

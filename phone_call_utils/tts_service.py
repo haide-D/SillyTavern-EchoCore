@@ -1,5 +1,6 @@
 import re
 import httpx
+from services.local_http import model_trust_env
 from typing import Dict, Optional
 from phone_call_utils.response_parser import EmotionSegment
 
@@ -108,6 +109,32 @@ class TTSService:
             )
             return res["audio_bytes"]
 
+        # ========== Fish.audio 云端引擎快速通道 ==========
+        is_fish_audio = (
+            ref_audio.get("is_fish_audio") is True or
+            str(ref_audio.get("path", "")).startswith("fish:") or
+            str(ref_audio.get("path", "")).startswith("fish_audio:")
+        )
+
+        if is_fish_audio:
+            from services.fish_audio_service import fish_audio_service
+            raw_path = str(ref_audio.get("path", ""))
+            voice_id = ref_audio.get("voice_id")
+            if not voice_id:
+                if ":" in raw_path:
+                    voice_id = raw_path.split(":", 1)[1].strip()
+                else:
+                    voice_id = ""
+
+            print(f"[TTSService] 🐟 路由到 Fish.audio TTS: voice={voice_id}, text=\"{segment.text[:30]}\"")
+            res = await fish_audio_service.generate_audio(
+                text=segment.text,
+                emotion=segment.emotion,
+                voice_id=voice_id,
+                speed=segment.speed
+            )
+            return res["audio_bytes"]
+
         # ========== GPT-SoVITS 本地引擎通道 ==========
         url = f"{self.sovits_host}/tts"
         
@@ -146,7 +173,7 @@ class TTSService:
         print(f"[TTSService] 参数: text={params['text'][:30]}... (lang={effective_text_lang}), ref_audio={ref_audio['path']} (prompt_lang={effective_prompt_lang})")
         
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
                 response = await client.get(url, params=params)
             
             if response.status_code != 200:

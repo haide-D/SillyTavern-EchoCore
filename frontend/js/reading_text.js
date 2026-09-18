@@ -2,6 +2,7 @@
 export const READING_DEFAULTS = Object.freeze({
     autoDialogue: false,
     fulltextTemplate: false,
+    enableEmotionalNarration: false,
     startMarker: '<tts-body>',
     endMarker: '</tts-body>',
     excludeTags: 'think,thinking,analysis,status,options,system',
@@ -37,12 +38,12 @@ ${settings.startMarker}
 Complete story body here.
 ${settings.endMarker}
 Never summarize or duplicate the story. Never nest or repeat these markers. Keep analysis, status panels, options, system notes, HTML/CSS/scripts and code OUTSIDE the body.
-Inside the body use plain text. Narration is untagged. Every spoken line uses [Exact_Character_Name, emotion] followed immediately by quoted speech: [Alice, happy] “Hello.”
+Inside the body use plain text. ${settings.enableEmotionalNarration ? 'Prefix each narration paragraph with [旁白, emotion] or [Narration, emotion]. Use default, happy, sad, angry, fear, whisper, excited; keep an emotion consistent across a paragraph or scene, do not fragment sentences or abruptly change emotions. Untagged narration remains default.' : 'Narration is untagged.'} Every spoken line uses [Exact_Character_Name, emotion] followed immediately by quoted speech: [Alice, happy] “Hello.”
 Use matching quotes “…” or "…" or 「…」. Put action and narration outside the spoken quotes. Keep names consistent and emotions natural.
 Bound characters and permitted emotions:
 {{bound_characters_section}}
 Other characters (including skipped characters) still use their exact name and the emotion default; include their complete dialogue.
-Example body: She opened the door. [Alice, happy] “Hello.” Rain fell outside. [Bob, default] “Come in.”`;
+Example body: ${settings.enableEmotionalNarration ? '[旁白, happy] ' : ''}She opened the door. [Alice, happy] “Hello.” Rain fell outside. [Bob, default] “Come in.”`;
 }
 
 export function extractBody(raw, settings) {
@@ -101,7 +102,7 @@ export function splitReadingText(text, maxLength = 350) {
     return chunks.filter(Boolean);
 }
 
-export function parseFulltext(text, narrator, mappings) {
+export function parseFulltext(text, narrator, mappings, settings = {}) {
     const segments = [];
     const tag = /[\[【]([^\],:【】\[\]\n]{1,30})\s*[,，]\s*([^\]】\n]{1,30})[\]】]/g;
     const pairs = { '“': '”', '"': '"', '「': '」', '『': '』' };
@@ -111,20 +112,27 @@ export function parseFulltext(text, narrator, mappings) {
             segments.push({ charName, sourceName: narration ? '旁白' : sourceName, emotion: emotion === 'New' ? 'default' : emotion, text: chunk, fallback: !narration && !mappings[sourceName] });
         }
     };
+    let narrationEmotion = 'default';
     let cursor = 0;
     let match;
     while ((match = tag.exec(text))) {
-        append('', 'default', text.slice(cursor, match.index), true);
+        append('', narrationEmotion, text.slice(cursor, match.index), true);
+        if (/^(旁白|narration)$/i.test(match[1].trim())) {
+            narrationEmotion = settings.enableEmotionalNarration ? match[2].trim() : 'default';
+            cursor = tag.lastIndex;
+            continue;
+        }
         let start = tag.lastIndex;
         while (/\s/.test(text[start] || '') && start < text.length) start++;
         const close = pairs[text[start]];
         const end = close ? text.indexOf(close, start + 1) : -1;
         if (end < 0) throw new Error(`人物「${match[1].trim()}」的对白缺少配对引号，请先修正正文。`);
         append(match[1].trim(), match[2].trim(), text.slice(start + 1, end));
+        narrationEmotion = 'default';
         cursor = end + 1;
         tag.lastIndex = cursor;
     }
-    append('', 'default', text.slice(cursor), true);
+    append('', narrationEmotion, text.slice(cursor), true);
     if (!segments.length) throw new Error('过滤后的正文为空，没有可朗读内容。');
     return segments;
 }

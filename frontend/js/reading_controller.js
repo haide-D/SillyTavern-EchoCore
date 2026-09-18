@@ -204,7 +204,7 @@ export const TTS_Reading = {
             }
             const settings = getReadingSettings();
             const text = cleanBody(extractBody(snapshot.raw, settings), settings);
-            const segments = parseFulltext(text, settings.narrator, window.TTS_State.CACHE.mappings);
+            const segments = parseFulltext(text, settings.narrator, window.TTS_State.CACHE.mappings, settings);
             const $dialog = this.dialog(regenerate ? '重新生成全文 · 提取预览' : '全文朗读 · 提取预览');
             if (regenerate) $('<p class="tts-r-note">').text('将重新合成所有片段，云端可能产生费用；成功保存后替换旧成品。').appendTo($dialog.find('.tts-r-body'));
             $('<p class="tts-r-note">').text('人物与旁白依次呈现。确认内容后，点一次即可开始朗读。').appendTo($dialog.find('.tts-r-body'));
@@ -286,6 +286,7 @@ export const TTS_Reading = {
         const $modes = section('play', '朗读方式');
         const auto = toggle($modes, 'play', '自动连播对白', '新回复完成后，自动播放已有对白气泡。', settings.autoDialogue);
         const template = toggle($modes, 'book', '全文朗读模板', '让后续回复包含可提取的人物对白与旁白。', settings.fulltextTemplate);
+        const emotional = toggle($modes, 'voice', '启用有感情的旁白', '全文模板为旁白添加情绪；未标注时使用默认语气。', settings.enableEmotionalNarration);
         const $voices = section('voice', '旁白声音');
         const narrator = field($voices, '使用已绑定的音色', $('<select>').append($('<option value="">').text('选择旁白音色')));
         for (const name of Object.keys(window.TTS_State.CACHE.mappings)) {
@@ -314,7 +315,7 @@ export const TTS_Reading = {
         $('<small>').text('设置保存在当前浏览器').appendTo($footer);
         readingButton('check', '保存设置').addClass('tts-r-primary').on('click', () => {
             try {
-                const next = { autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
+                const next = { enableEmotionalNarration: emotional.prop('checked'), autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
                     startMarker: start.val().trim(), endMarker: end.val().trim(), excludeTags: exclude.val().trim() };
                 validateReadingSettings(next);
                 localStorage.setItem('tts_reading_settings', JSON.stringify(next));

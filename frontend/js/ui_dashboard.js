@@ -208,10 +208,13 @@ export const TTS_UI = window.TTS_UI;
             });
         });
 
-        // 监听模型选择切换，支持展开自定义 MiniMax Voice ID
+        // 监听模型选择切换，支持展开自定义 MiniMax / Fish.audio Voice ID
         $('#tts-new-model').off('change').on('change', function () {
-            if ($(this).val() === '__custom_minimax__') {
+            const val = $(this).val();
+            if (val === '__custom_minimax__' || val === '__custom_fish_audio__') {
                 $('#tts-custom-voice-wrap').slideDown(150);
+                const isFish = val === '__custom_fish_audio__';
+                $('#tts-custom-voice-input').attr('placeholder', isFish ? '输入 32 位 Model ID (UUID)' : '输入 MiniMax Voice ID');
                 $('#tts-custom-voice-name').focus();
             } else {
                 $('#tts-custom-voice-wrap').slideUp(150);
@@ -246,6 +249,20 @@ export const TTS_UI = window.TTS_UI;
 
                 if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomMiniMaxVoice === 'function') {
                     await window.TTS_Utils.saveCustomMiniMaxVoice(rawId, customName || rawId);
+                }
+            } else if (modelName === '__custom_fish_audio__') {
+                let customId = $('#tts-custom-voice-input').val().trim();
+                let customName = $('#tts-custom-voice-name').val().trim();
+                if (!customId) {
+                    alert('请输入 Fish.audio Model ID (UUID)');
+                    $('#tts-custom-voice-input').focus();
+                    return;
+                }
+                const rawId = customId.startsWith('fish:') ? customId.slice(5) : (customId.startsWith('fish_audio:') ? customId.slice(11) : customId);
+                modelName = `fish:${rawId}`;
+
+                if (window.TTS_Utils && typeof window.TTS_Utils.saveCustomFishAudioVoice === 'function') {
+                    await window.TTS_Utils.saveCustomFishAudioVoice(rawId, customName || rawId);
                 }
             }
 
@@ -492,6 +509,10 @@ export const TTS_UI = window.TTS_UI;
             ? window.TTS_Utils.getAllMiniMaxVoices()
             : { presetVoices: [], customVoices: [] };
 
+        const { presetVoices: fishPresets, customVoices: fishCustoms } = (window.TTS_Utils && typeof window.TTS_Utils.getAllFishAudioVoices === 'function')
+            ? window.TTS_Utils.getAllFishAudioVoices()
+            : { presetVoices: [], customVoices: [] };
+
         $select.append(`<option disabled ${!currentVal ? 'selected' : ''} value="">🎙️ 请选择语音模型 / 音色...</option>`);
 
         if (modelKeys.length > 0) {
@@ -503,7 +524,7 @@ export const TTS_UI = window.TTS_UI;
         }
 
         if (customVoices.length > 0) {
-            const $customGroup = $('<optgroup label="✨ 我的自定义克隆音色"></optgroup>');
+            const $customGroup = $('<optgroup label="✨ MiniMax 自定义克隆音色"></optgroup>');
             customVoices.forEach(v => {
                 $customGroup.append(`<option value="minimax:${v.id}">✨ ${v.name} (${v.id})</option>`);
             });
@@ -516,6 +537,16 @@ export const TTS_UI = window.TTS_UI;
         });
         $mmGroup.append('<option value="__custom_minimax__">✏️ 新增自定义 MiniMax 音色 (输入名称与 ID)...</option>');
         $select.append($mmGroup);
+
+        const $fishGroup = $('<optgroup label="🐟 Fish.audio 官方/同步声线库"></optgroup>');
+        fishCustoms.forEach(v => {
+            $fishGroup.append(`<option value="fish:${v.id}">✨ ${v.name} (${v.id})</option>`);
+        });
+        fishPresets.forEach(v => {
+            $fishGroup.append(`<option value="fish:${v.id}">🐟 ${v.name} (${v.id})</option>`);
+        });
+        $fishGroup.append('<option value="__custom_fish_audio__">✏️ 新增自定义 Fish.audio 音色 (输入 Model ID)...</option>');
+        $select.append($fishGroup);
 
         if (currentVal) {
             $select.val(currentVal);

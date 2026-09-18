@@ -56,9 +56,14 @@
                         扫描本地权重路径、批量维护全局角色映射、预设工坊与清理缓存。
                     </div>
                 </div>
-                <a id="tts-ext-open-admin-btn" class="st-tts-btn st-tts-btn-primary st-tts-btn-sm" target="_blank" title="在新标签页中打开独立的完整管理后台">
-                    <span>🚀 打开面板</span>
-                </a>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <a id="tts-ext-open-admin-btn" class="st-tts-btn st-tts-btn-primary st-tts-btn-sm" target="_blank" title="在新标签页中打开独立的完整管理后台">
+                        <span>🚀 打开面板</span>
+                    </a>
+                    <button type="button" id="tts-ext-sync-backend-btn" class="st-tts-btn st-tts-btn-secondary st-tts-btn-sm" title="立即从服务端拉取最新的系统配置并回填更新">
+                        <span>🔄 同步配置</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -67,11 +72,13 @@
         <!-- 3. TTS 供应商与云端 API 凭证 -->
         <div class="settings_section">
             <h4>🎙️ TTS 供应商生态</h4>
+            <details style="margin:12px 0"><summary><b>提示词预设与供应商规则</b></summary><div id="tts-prompt-presets"></div></details>
             <div style="margin-bottom: 8px;">
                 <label for="tts-provider-select"><b>当前激活供应商:</b></label>
                 <select id="tts-provider-select" class="text_pole" style="width: 100%; margin-top: 4px;">
                     <option value="gpt_sovits">GPT-SoVITS (本地模型推理)</option>
-                    <option value="minimax">MiniMax (云端 API - 实验性)</option>
+                    <option value="fish_audio">Fish.audio (云端 API - 推荐)</option>
+                    <option value="minimax">MiniMax (云端 API - 商业级)</option>
                     <option value="doubao">豆包 TTS (云端 API - 实验性)</option>
                 </select>
             </div>
@@ -214,6 +221,95 @@
                 <div>
                     <small>豆包 API Key:</small>
                     <input type="password" id="tts-doubao-api-key" class="text_pole" placeholder="输入豆包/火山引擎 API Key" />
+                </div>
+            </div>
+
+            <!-- Fish.audio 配置 -->
+            <div id="tts-provider-panel-fish_audio" class="tts-provider-panel" style="display:none; margin-top: 8px;">
+                <div style="margin-bottom: 6px;">
+                    <small>Fish.audio API Key:</small>
+                    <input type="password" id="tts-fish-api-key" class="text_pole" placeholder="输入 Fish.audio API Key" />
+                </div>
+                <div style="margin-bottom: 6px;">
+                    <small>API 地址:</small>
+                    <input type="text" id="tts-fish-api-url" class="text_pole" value="https://api.fish.audio/v1/tts" placeholder="默认: https://api.fish.audio/v1/tts" />
+                </div>
+                <div style="margin-bottom: 6px;">
+                    <small>基础推理模型 (通过 Header 传递):</small>
+                    <select id="tts-fish-model" class="text_pole" style="width: 100%;">
+                        <option value="s2.1-pro">s2.1-pro (官方推荐·最新旗舰生产级)</option>
+                        <option value="s2.1-pro-free">s2.1-pro-free (免费/测试通道)</option>
+                        <option value="s2-pro">s2-pro (上一代旗舰模型)</option>
+                        <option value="drama-3-preview">drama-3-preview (戏剧/情感实验版)</option>
+                        <option value="s1">s1 (旧版初代模型)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <small>默认音色 ID (Reference ID):</small>
+                    <input type="text" id="tts-fish-voice-id" class="text_pole" placeholder="32位十六进制 Model ID，留空使用官方默认声音" />
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <button type="button" id="tts-fish-test-btn" class="st-tts-btn st-tts-btn-sm" style="cursor: pointer;">
+                        <span>⚡ 测试 Fish 连接</span>
+                    </button>
+                    <button type="button" id="tts-fish-sync-btn" class="st-tts-btn st-tts-btn-sm" style="cursor: pointer;" title="调用官方 GET /model 自动拉取当前账号创建和收藏的声音模型">
+                        <span>🔄 一键同步个人音色库</span>
+                    </button>
+                    <span id="tts-fish-test-result" style="font-size: 12px;"></span>
+                </div>
+
+                <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.15); margin: 10px 0;" />
+
+                <!-- Fish.audio 声线与音色库管理卡片 -->
+                <div id="tts-fish-voice-mgr-card" class="st-tts-voice-card">
+                    <div class="st-tts-voice-card-header">
+                        <span style="font-weight: bold; font-size: 12.5px; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
+                            <span>🐟 Fish.audio 声线库管理</span>
+                            <span id="tts-fish-voice-count" style="font-size: 11px; color: #aaa; font-weight: normal;">(加载中...)</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button type="button" id="tts-fish-btn-add-voice" class="st-tts-btn st-tts-btn-xs st-tts-btn-primary" style="color:#38bdf8;" title="展开/收起自定义声线录入面板">
+                                <span id="tts-fish-toggle-add-text">➕ 添加音色</span>
+                            </button>
+                            <button type="button" id="tts-fish-btn-refresh-voices" class="st-tts-btn st-tts-btn-xs" title="重新拉取声线列表">🔄 刷新</button>
+                        </div>
+                    </div>
+
+                    <!-- 快捷录入/编辑自定义 Fish.audio 音色可折叠抽屉 -->
+                    <div id="tts-fish-add-drawer" class="st-tts-collapsible-content st-tts-entry-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <small id="tts-fish-form-title" style="color: #e5e7eb; font-size: 11.5px; font-weight: bold;">➕ 录入自定义 / 官方声线</small>
+                            <span id="tts-fish-editing-hint" style="display:none; font-size: 10.5px; color: #38bdf8;">(编辑模式)</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <input type="text" id="tts-fish-new-voice-name" class="text_pole" style="flex: 1; min-width: 100px; font-size: 12px;" placeholder="音色备注 (如: 纳西妲 / 刻晴)" />
+                            <input type="text" id="tts-fish-new-voice-id" class="text_pole" style="flex: 1.5; min-width: 130px; font-size: 12px;" placeholder="Model ID (32位 UUID)" />
+                            <select id="tts-fish-new-voice-gender" class="text_pole" style="width: 65px; font-size: 12px;">
+                                <option value="female">女性</option>
+                                <option value="male">男性</option>
+                                <option value="unknown">通用</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button type="button" id="tts-fish-save-voice-btn" class="st-tts-btn st-tts-btn-primary" style="flex: 1;">
+                                <span id="tts-fish-save-btn-text">➕ 保存到音色库</span>
+                            </button>
+                            <button type="button" id="tts-fish-cancel-edit-btn" class="st-tts-btn" style="display:none;" title="取消当前编辑并重置表单">
+                                <span>取消</span>
+                            </button>
+                            <span id="tts-fish-add-voice-status" style="font-size: 11.5px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 搜索过滤 -->
+                    <div style="margin-bottom: 6px;">
+                        <input type="text" id="tts-fish-voice-search" class="text_pole" style="width: 100%; font-size: 11.5px; padding: 4px 8px;" placeholder="🔍 快速过滤声线名称或 ID..." />
+                    </div>
+
+                    <!-- 声线列表滚动容器 -->
+                    <div id="tts-fish-voices-list" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px;">
+                        <div style="text-align: center; color: #888; font-size: 11px; padding: 10px;">正在加载音色库...</div>
+                    </div>
                 </div>
             </div>
         </div>

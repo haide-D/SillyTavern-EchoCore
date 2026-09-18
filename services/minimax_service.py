@@ -240,11 +240,11 @@ class MiniMaxTTSService:
         # 针对常见英文/中文自定义情绪的自适应语义推断
         if any(w in tag for w in ("笑", "喜", "乐", "欢", "兴奋", "excited", "joy", "cheerful")):
             return {"emotion": "happy", "speed": 1.05, "pitch": 1, "vol": 1.05}
-        elif any(w in tag for w in ("悲", "哭", "痛", "哀", "低落", "沮丧", "depressed", "grief")):
+        elif any(w in tag for w in ("悲", "哭", "痛", "哀", "低落", "沮丧", "depressed", "grief", "阴沉")):
             return {"emotion": "sad", "speed": 0.92, "pitch": -1, "vol": 0.9}
         elif any(w in tag for w in ("怒", "气", "恨", "暴", "严厉", "furious", "rage")):
             return {"emotion": "angry", "speed": 1.1, "pitch": 1, "vol": 1.2}
-        elif any(w in tag for w in ("怕", "慌", "惊", "惧", "颤", "panic", "scared")):
+        elif any(w in tag for w in ("怕", "慌", "惊", "惧", "颤", "panic", "scared", "tense", "紧张")):
             return {"emotion": "fearful", "speed": 1.08, "pitch": 1, "vol": 0.95}
         elif any(w in tag for w in ("冷", "淡", "静", "漠", "理智", "calm", "cold")):
             return {"emotion": "neutral", "speed": 0.95, "pitch": 0, "vol": 1.0}

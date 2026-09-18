@@ -171,6 +171,152 @@ export const TTS_API = {
             throw error;
         }
     },
+
+    // === Fish.audio 接口 ===
+    async testFishAudio(apiKey, apiUrl = "https://api.fish.audio/v1/tts", model = "s2.1-pro", timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/fish_audio/test'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ api_key: apiKey, api_url: apiUrl, model: model })
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `连通性测试请求失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("Fish.audio 连通性测试超时 (12秒)");
+            }
+            throw error;
+        }
+    },
+
+    async getFishAudioVoices(timeoutMs = 6000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/fish_audio/voices'), {
+                signal: controller.signal,
+                headers: this._headers()
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error(`获取 Fish.audio 音色列表失败 (${res.status})`);
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("获取 Fish.audio 音色列表超时 (6秒)");
+            }
+            throw error;
+        }
+    },
+
+    async syncFishAudioRemoteVoices(apiKey, timeoutMs = 20000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/fish_audio/sync_remote'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ api_key: apiKey })
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `同步远程音色失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("同步 Fish.audio 远程音色超时 (20秒)");
+            }
+            throw error;
+        }
+    },
+
+    async addFishAudioVoice(voice, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/fish_audio/voices'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify(voice)
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `添加声线失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("保存声线请求超时 (8秒)");
+            }
+            throw error;
+        }
+    },
+
+    async deleteFishAudioVoice(voiceId, name = null, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const query = name ? `?name=${encodeURIComponent(name)}` : '';
+            const res = await fetch(this._url(`/api/tts/fish_audio/voices/${encodeURIComponent(voiceId)}${query}`), {
+                signal: controller.signal,
+                method: 'DELETE',
+                headers: this._headers()
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `删除声线失败 (${res.status})`);
+            }
+            return await res.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("删除声线请求超时 (8秒)");
+            }
+            throw error;
+        }
+    },
+
+    async previewFishAudioVoice(voiceId, text = "主人，您好！这是我的Fish.audio语音合成试听效果。", model = "s2.1-pro", timeoutMs = 20000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(this._url('/api/tts/fish_audio/preview'), {
+                signal: controller.signal,
+                method: 'POST',
+                headers: this._headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ voice_id: voiceId, text: text, model: model })
+            });
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `试听生成失败 (${res.status})`);
+            }
+            return await res.blob();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("试听生成请求超时 (20秒)");
+            }
+            throw error;
+        }
+    },
     //TODO 修改为V2端口
     async checkCache(params) {
         const queryParams = { ...params, check_only: "true" };

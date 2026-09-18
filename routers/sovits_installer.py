@@ -248,7 +248,7 @@ async def get_status():
     api_reachable = False
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=3.0, trust_env=False) as client:
             response = await client.get(f"http://127.0.0.1:{config.api_port}/")
             api_reachable = response.status_code < 500
     except:
@@ -273,7 +273,7 @@ async def test_connection():
     
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=5.0, trust_env=False) as client:
             # 尝试获取模型列表或其他 API
             response = await client.get(f"http://127.0.0.1:{config.api_port}/")
             

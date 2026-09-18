@@ -1,6 +1,10 @@
+import { getReadingSettings } from './reading_text.js';
 // 成品不保存原文或密钥，标识仅由聊天与消息快照计算。
 export async function recordingKey(snapshot, context) {
-    const identity = JSON.stringify(['fulltext-v1', context.getCurrentChatId?.() || snapshot.chatId,
+    const reading = getReadingSettings();
+    const variant = reading.enableEmotionalNarration
+        ? ['emotional-narration-v1', reading.narrator, window.TTS_State?.CACHE?.mappings?.[reading.narrator]] : 'fulltext-v1';
+    const identity = JSON.stringify([variant, context.getCurrentChatId?.() || snapshot.chatId,
         context.characterId, context.groupId, snapshot.id, snapshot.swipe, snapshot.raw]);
     const api = window.TTS_API;
     const response = await fetch(api._url('/api/fulltext-audio/identity'), { method: 'POST',

@@ -81,6 +81,15 @@ try {
         check(text.splitReadingText('长'.repeat(901)).map(s => s.length).join(',') === '350,350,201', 'long body split without truncation');
         check(text.cleanBody('<think>one<think>two</think></think>保留。<div class="status-panel">secret</div>', settings) === '保留。', 'nested excluded tags and status containers');
 
+        const emotionalSettings = { ...settings, enableEmotionalNarration: true };
+        const narrationMixed = '[旁白, 紧张] 夜风。 [Alice, fear] “谁？” 普通旁白。 [Narration, sad] 雨落。';
+        const emotionalSegments = text.parseFulltext(narrationMixed, 'Narrator', mappings, emotionalSettings);
+        check(emotionalSegments.map(s => s.emotion).join(',') === '紧张,fear,default,sad', 'emotional narration boundaries and dialogue reset');
+        check(emotionalSegments[0].charName === 'Narrator' && emotionalSegments[3].sourceName === '旁白', 'bilingual narration routes to chosen voice');
+        check(text.parseFulltext(narrationMixed, 'Narrator', mappings).filter(s => s.sourceName === '旁白').every(s => s.emotion === 'default'), 'disabled narration strips tags and preserves default');
+        check(text.fulltextPrompt(emotionalSettings).includes('do not fragment'), 'narration prompt continuity guidance');
+        check(text.parseFulltext('[旁白, sad] ' + '长'.repeat(901), 'Narrator', mappings, emotionalSettings).every(s => s.emotion === 'sad'), 'long narration retains emotion in every chunk');
+
         const ctx = { chatId: 'fixture', chat: [{ mes: raw }], extensionSettings: { st_direct_tts: {} } };
         const notes = [];
         window.SillyTavern = { getContext: () => ctx };
@@ -115,7 +124,7 @@ try {
         await tick();
         reader.openSettings();
         const settingsDialog = document.querySelector('#tts-reading-dialog');
-        check(settingsDialog.querySelectorAll('input[type=checkbox]').length === 2, 'independent template and autoplay settings');
+        check(settingsDialog.querySelectorAll('input[type=checkbox]').length === 3, 'independent template, autoplay and narration settings');
         settingsDialog.close();
         await tick();
         check(PromptInjector.buildPromptDirective({}, []).startsWith(DEFAULT_PROMPT_TEMPLATE.split('\n')[0]), 'default prompt unchanged');
@@ -454,6 +463,82 @@ try {
         const animation = await page.locator('.tts-r-wave rect').first().evaluate(node => getComputedStyle(node).animationName);
         assert.equal(animation, 'none', 'reduced-motion preference disables the wave animation');
     }
+    // Preset editor exercises real DOM events, persistence and downloads using fixture data only.
+    const presetPage = await browser.newPage();
+    await presetPage.goto(`http://127.0.0.1:${server.address().port}`);
+    await presetPage.evaluate(async () => {
+        const { PromptInjector } = await import('/frontend/js/prompt_injector.js');
+        const { mountPromptPresets } = await import('/frontend/js/prompt_presets_ui.js');
+        const ctx = { extensionSettings: { st_direct_tts: { active_provider: 'gpt_sovits' } }, chat: [], name2: 'Alice', setExtensionPrompt(key, text) { window.lastPrompt = text; } };
+        window.SillyTavern = { getContext: () => ctx };
+        window.TTS_State = { CACHE: { mappings: { Alice: 'minimax:voice', Hidden: 'fish:voice' }, models: {}, settings: {} } };
+        window.TTS_PromptInjector = PromptInjector;
+        document.body.innerHTML = '<select id="tts-provider-select"><option value="gpt_sovits">Local</option><option value="fish_audio">Fish</option></select><div id="tts-prompt-presets"></div>';
+        $('#tts-provider-select').on('change', event => { ctx.extensionSettings.st_direct_tts.active_provider = event.target.value; PromptInjector.refreshAndInject(); });
+        PromptInjector.init(); mountPromptPresets();
+    });
+    await presetPage.getByLabel('预设名称', { exact: true }).fill('本地自定义');
+    await presetPage.getByLabel('提示词模板', { exact: true }).fill('LOCAL {{primary_character_note}} {{bound_characters_section}} {{punctuation_rules}}');
+    await presetPage.getByRole('button', { name: '保存 / 重命名', exact: true }).click();
+    assert.ok(await presetPage.evaluate(() => window.lastPrompt.startsWith('LOCAL') && window.lastPrompt.includes('Alice') && !window.lastPrompt.includes('Hidden')));
+    await presetPage.locator('#tts-provider-select').selectOption('fish_audio');
+    assert.equal(await presetPage.getByLabel('提示词供应商').inputValue(), 'fish_audio');
+    assert.ok(await presetPage.evaluate(() => !window.lastPrompt.startsWith('LOCAL')));
+    await presetPage.getByLabel('预设名称', { exact: true }).fill('Fish 小说');
+    await presetPage.getByLabel('提示词模板', { exact: true }).fill('FISH {{punctuation_rules}}');
+    await presetPage.getByRole('button', { name: '保存 / 重命名', exact: true }).click();
+    assert.ok(await presetPage.evaluate(() => window.lastPrompt.startsWith('FISH')));
+    const downloadPromise = presetPage.waitForEvent('download');
+    await presetPage.getByRole('button', { name: '导出当前预设', exact: true }).click();
+    const download = await downloadPromise;
+    const exported = await fs.readFile(await download.path());
+    await presetPage.locator('input[type=file]').setInputFiles({ name: 'preset.json', mimeType: 'application/json', buffer: exported });
+    assert.equal(await presetPage.getByLabel('生效预设').locator('option').count(), 3);
+    await presetPage.locator('input[type=file]').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{"version":999}') });
+    assert.ok((await presetPage.getByRole('status').textContent()).includes('不支持'));
+    assert.equal(await presetPage.getByLabel('生效预设').locator('option').count(), 3);
+    await presetPage.locator('#tts-provider-select').selectOption('gpt_sovits');
+    assert.equal(await presetPage.getByLabel('预设名称', { exact: true }).inputValue(), '本地自定义');
+    const persisted = await presetPage.evaluate(async () => {
+        const { PromptPresetStore } = await import('/frontend/js/prompt_presets.js');
+        return new PromptPresetStore('base').active('gpt_sovits').name;
+    });
+    assert.equal(persisted, '本地自定义');
+    await presetPage.getByRole('button', { name: '恢复内置', exact: true }).click();
+    assert.equal(await presetPage.getByLabel('预设名称', { exact: true }).inputValue(), 'GPT-SoVITS 默认');
+    await presetPage.evaluate(async () => {
+        const { recordingKey } = await import('/frontend/js/fulltext_recording.js');
+        window.TTS_API = { _url: path => path, _headers: extra => extra };
+        const snapshot = { id: 0, raw: 'same message', chatId: 'fixture' };
+        const plain = await recordingKey(snapshot, {});
+        localStorage.setItem('tts_reading_settings', JSON.stringify({ enableEmotionalNarration: true, narrator: 'Alice' }));
+        if (await recordingKey(snapshot, {}) === plain) throw new Error('Emotional recording reused old plain audio');
+    });
+    await presetPage.evaluate(async () => {
+        const { FishAudioProvider } = await import('/frontend/js/providers/fish_audio_provider.js');
+        const { MiniMaxProvider } = await import('/frontend/js/providers/minimax_provider.js');
+        const { GPTSoVITSProvider } = await import('/frontend/js/providers/gpt_sovits_provider.js');
+        const calls = [];
+        window.TTS_API = { checkCache: async params => { calls.push(params); return { cached: false }; }, generateAudio: async params => { calls.push(params); return { blob: new Blob(['fixture']), filename: 'fixture.wav' }; } };
+        for (const Provider of [FishAudioProvider, MiniMaxProvider]) {
+            const provider = new Provider({});
+            await provider.checkCache({ text: '旁白', charName: 'Alice', emotion: 'sad' }, {});
+            const audio = await provider.generateAudio({ text: '旁白', charName: 'Alice', emotion: 'sad' }, {});
+            URL.revokeObjectURL(audio.audioUrl);
+        }
+        if (calls.some(call => call.emotion !== 'sad')) throw new Error('Provider dropped narration emotion');
+        const local = new GPTSoVITSProvider({});
+        const ref = local.selectRefAudio({ emotion: '紧张' }, { languages: { default: [{ emotion: 'happy', path: 'happy.wav' }, { emotion: 'default', path: 'default.wav' }] } });
+        if (ref.path !== 'default.wav') throw new Error('Missing local narration emotion did not fall back');
+    });
+    if (process.env.READING_SCREENSHOT_DIR) {
+        await presetPage.addStyleTag({ content: 'body { background:#202329;color:#eee;font:14px Arial;margin:16px; } .text_pole { display:block;box-sizing:border-box;width:100%;background:#30343b;color:#eee; } button { margin:3px;max-width:100%;white-space:normal;overflow-wrap:anywhere; }' });
+        await presetPage.setViewportSize({ width: 390, height: 844 });
+        await presetPage.screenshot({ path: path.join(process.env.READING_SCREENSHOT_DIR, 'prompt-presets-mobile.png'), fullPage: true });
+        assert.equal(await presetPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    await presetPage.close();
+    console.log('Preset browser UI: save, provider switching, chat isolation, download/import, invalid-file rejection, reset, persistence and emotional recording identity passed.');
     console.log(`Reading browser regressions passed (${results.length} assertions).`);
     for (const result of results) console.log(`  ✓ ${result}`);
 } finally {
