@@ -7,7 +7,10 @@ export const READING_DEFAULTS = Object.freeze({
     endMarker: '</tts-body>',
     excludeTags: 'think,thinking,analysis,status,options,system',
     narrator: '',
-    localStrategy: 'batch',
+    localStrategy: 'eager',
+    paragraphPlayback: true,
+    chunkLength: 240,
+    firstChunkLength: 100,
 });
 
 export function getReadingSettings() {
@@ -17,6 +20,9 @@ export function getReadingSettings() {
 }
 
 export function validateReadingSettings(settings) {
+    if (settings.chunkLength !== undefined && (!Number.isInteger(settings.chunkLength) || settings.chunkLength < 120 || settings.chunkLength > 500)) {
+        throw new Error('每段长度请选择 120–500 字符。');
+    }
     if (settings.localStrategy !== undefined && !['eager', 'batch'].includes(settings.localStrategy)) {
         throw new Error('请选择本地朗读策略。');
     }
@@ -102,13 +108,43 @@ export function splitReadingText(text, maxLength = 350) {
     return chunks.filter(Boolean);
 }
 
+// Each request still returns a complete audio file. Short opening + paragraph
+// boundaries reduce first-play latency without streaming or splitting audio tags.
+export function splitReadingParagraphs(text, first = false, settings = {}) {
+    const normalLimit = Math.max(120, Math.min(500, Number(settings.chunkLength) || 240));
+    const firstLimit = Math.max(60, Math.min(normalLimit, Number(settings.firstChunkLength) || 100));
+    const result = [];
+    for (let rest of text.split(/\n+/).map(value => value.trim()).filter(Boolean)) {
+        while (rest) {
+            const limit = first && !result.length ? firstLimit : normalLimit;
+            if (rest.length <= limit) { result.push(rest); break; }
+            const head = rest.slice(0, limit);
+            const endings = [...head.matchAll(/[。！？!?；;]|\.(?=\s)|\s/g)].map(match => match.index + 1);
+            let cut = endings.filter(index => index >= Math.min(35, limit / 3)).at(-1) || limit;
+            // Keep [audio tags] intact, even when a tag spans the proposed cut.
+            const opening = rest.lastIndexOf('[', cut - 1);
+            if (opening >= 0 && rest.indexOf(']', opening) >= cut) {
+                cut = opening || rest.indexOf(']', opening) + 1;
+            }
+            if (cut <= 0) cut = limit;
+            if (/[\uD800-\uDBFF]/.test(rest[cut - 1])) cut--;
+            const chunk = rest.slice(0, cut).trim();
+            if (chunk) result.push(chunk);
+            rest = rest.slice(cut).trim();
+        }
+    }
+    return result;
+}
+
 export function parseFulltext(text, narrator, mappings, settings = {}) {
     const segments = [];
     const tag = /[\[【]([^\],:【】\[\]\n]{1,30})\s*[,，]\s*([^\]】\n]{1,30})[\]】]/g;
     const pairs = { '“': '”', '"': '"', '「': '」', '『': '』' };
     const append = (sourceName, emotion, value, narration = false) => {
         const charName = narration || !mappings[sourceName] ? narrator : sourceName;
-        for (const chunk of splitReadingText(value)) {
+        const chunks = settings.paragraphPlayback === false ? splitReadingText(value)
+            : splitReadingParagraphs(value, segments.length === 0, settings);
+        for (const chunk of chunks) {
             segments.push({ charName, sourceName: narration ? '旁白' : sourceName, emotion: emotion === 'New' ? 'default' : emotion, text: chunk, fallback: !narration && !mappings[sourceName] });
         }
     };

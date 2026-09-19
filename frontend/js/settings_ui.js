@@ -1,3 +1,4 @@
+import { mountElevenLabsSettings, syncElevenLabsSettings } from './elevenlabs_ui.js';
 // frontend/js/settings_ui.js
 import { resolveBackendUrls, getAllMiniMaxVoices } from './utils.js';
 import { TTS_API } from './api.js';
@@ -97,6 +98,7 @@ export function syncUIFromBackendSettings(backendSettings) {
     const context = window.SillyTavern ? window.SillyTavern.getContext() : null;
     const config = loadExtensionSettings();
 
+    syncElevenLabsSettings(backendSettings);
     let changed = false;
 
     // 1. 同步 MiniMax 配置
@@ -210,6 +212,7 @@ export async function initSettingsUI() {
         $providerSelect.val(config.active_provider || 'gpt_sovits');
         switchProviderPanel(config.active_provider || 'gpt_sovits');
         mountPromptPresets();
+        mountElevenLabsSettings();
 
         if (config.provider_settings?.minimax) {
             $('#tts-minimax-api-key').val(config.provider_settings.minimax.api_key || '');

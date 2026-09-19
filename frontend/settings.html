@@ -77,11 +77,14 @@
                 <label for="tts-provider-select"><b>当前激活供应商:</b></label>
                 <select id="tts-provider-select" class="text_pole" style="width: 100%; margin-top: 4px;">
                     <option value="gpt_sovits">GPT-SoVITS (本地模型推理)</option>
+                    <option value="elevenlabs">ElevenLabs V3 (高级 Audio Tags)</option>
                     <option value="fish_audio">Fish.audio (云端 API - 推荐)</option>
                     <option value="minimax">MiniMax (云端 API - 商业级)</option>
                     <option value="doubao">豆包 TTS (云端 API - 实验性)</option>
                 </select>
             </div>
+
+            <div id="tts-provider-panel-elevenlabs" class="tts-provider-panel" style="display:none"></div>
 
             <!-- GPT-SoVITS 说明 -->
             <div id="tts-provider-panel-gpt_sovits" class="tts-provider-panel" style="margin-top: 8px;">

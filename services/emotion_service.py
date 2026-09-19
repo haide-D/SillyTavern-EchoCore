@@ -36,6 +36,8 @@ class EmotionService:
         mappings = load_json(MAPPINGS_FILE)
         base_dir, _ = get_current_dirs()
         
+        if char_name.startswith("elevenlabs:"):
+            return char_name
         if char_name in mappings:
             return str(mappings[char_name])
         
@@ -60,6 +62,9 @@ class EmotionService:
             情绪列表 (已排序)
         """
         model_target = EmotionService._resolve_model_target(char_name)
+
+        if model_target.startswith("elevenlabs:"):
+            return ["default", "happy", "sad", "angry", "fear", "whisper", "excited", "laugh", "sigh"]
 
         # ========== MiniMax 角色情绪处理 ==========
         if model_target.startswith("minimax:") or model_target.startswith("minimax_"):
@@ -140,6 +145,9 @@ class EmotionService:
             参考音频信息 {"path": str, "text": str} 或 None
         """
         model_target = EmotionService._resolve_model_target(char_name)
+
+        if model_target.startswith("elevenlabs:"):
+            return {"path": model_target, "text": "", "voice_id": model_target.split(":", 1)[1]}
 
         # ========== MiniMax 角色参考音频虚拟对象 ==========
         if model_target.startswith("minimax:") or model_target.startswith("minimax_"):

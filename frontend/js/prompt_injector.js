@@ -14,6 +14,7 @@
 import { getReadingSettings, fulltextPrompt } from './reading_text.js';
 import { extractAllSpeakers } from './utils.js';
 import { PromptPresetStore, PROVIDER_RULES, providerForModel } from './prompt_presets.js';
+import { TTS_API } from './api.js';
 
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
@@ -100,7 +101,54 @@ export const PromptInjector = {
 
     getPresetStore() {
         if (!this.presetStore) this.presetStore = new PromptPresetStore(DEFAULT_PROMPT_TEMPLATE);
+        const remote = window.TTS_State?.CACHE?.settings?.prompt_injector?.provider_presets;
+        const signature = remote ? JSON.stringify(remote) : '';
+        if (signature && signature !== this.backendPresetSignature) {
+            try {
+                const valid = this.presetStore.validate(remote);
+                const syncKey = `tts_prompt_backend_sync:${TTS_API.getBaseUrl()}`;
+                let previous = {};
+                try { previous = JSON.parse(localStorage.getItem(syncKey) || '{}') || {}; } catch { /* Ignore damaged sync metadata. */ }
+                // Retain browser-only presets; server selections take precedence on sync.
+                const local = { ...this.presetStore.state.presets };
+                for (const id of Array.isArray(previous.ids) ? previous.ids : []) delete local[id];
+                const selections = { ...this.presetStore.state.active_presets };
+                for (const provider of Array.isArray(previous.providers) ? previous.providers : []) {
+                    if (Object.hasOwn(PROVIDER_RULES, provider)) selections[provider] = `builtin_${provider}`;
+                }
+                const presets = { ...local, ...valid.presets };
+                for (const [provider, id] of Object.entries(selections)) {
+                    if (!presets[id] && !this.presetStore.builtins[id]) selections[provider] = `builtin_${provider}`;
+                }
+                this.presetStore.commit({ ...valid, presets,
+                    active_presets: { ...selections, ...valid.active_presets } });
+                this.backendPresetSignature = signature;
+                this.backendPresetIds = Object.keys(valid.presets);
+                this.backendPresetProviders = Object.keys(valid.active_presets);
+                try { localStorage.setItem(syncKey, JSON.stringify({ ids: this.backendPresetIds, providers: this.backendPresetProviders })); }
+                catch (error) { console.warn('[PromptInjector] 无法缓存预设同步记录:', error); }
+            } catch (error) { console.warn('[PromptInjector] 后台预设加载失败，保留本地配置:', error); }
+        }
         return this.presetStore;
+    },
+
+    async persistPresets() {
+        const settings = window.TTS_State?.CACHE?.settings;
+        // Existing offline/browser-only installs keep working until shared presets are configured.
+        if (!settings?.prompt_injector?.provider_presets) return false;
+        const state = this.presetStore.state;
+        const res = await fetch(TTS_API._url('/api/admin/settings'), {
+            method: 'POST', headers: TTS_API._headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ prompt_injector: { provider_presets: state } }),
+        });
+        if (!res.ok) throw new Error(`后台预设保存失败 (${res.status})`);
+        settings.prompt_injector.provider_presets = structuredClone(state);
+        this.backendPresetSignature = JSON.stringify(state);
+        this.backendPresetIds = Object.keys(state.presets);
+        this.backendPresetProviders = Object.keys(state.active_presets);
+        try { localStorage.setItem(`tts_prompt_backend_sync:${TTS_API.getBaseUrl()}`, JSON.stringify({ ids: this.backendPresetIds, providers: this.backendPresetProviders })); }
+        catch (error) { console.warn('[PromptInjector] 无法缓存预设同步记录:', error); }
+        return true;
     },
 
     init() {

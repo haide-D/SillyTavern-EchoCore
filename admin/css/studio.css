@@ -1,0 +1,56 @@
+[hidden] { display: none !important; }
+.eyebrow { display: block; margin-bottom: 8px; color: #798a9d; font-size: 10px; font-weight: 600; letter-spacing: .18em; }
+.studio-tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.studio-tabs a { padding: 12px 2px; color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; font-size: 14px; }
+.studio-tabs a.active { color: #b6e6d6; border-bottom-color: #65bea0; }
+.studio-tabs a:focus-visible, .model-entry a:focus-visible { outline: 2px solid #65bea0; outline-offset: 3px; }
+.studio-fold { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.studio-fold > summary { cursor: pointer; color: #c1ccd8; font-size: 13px; padding: 4px 0; }
+.studio-fold > summary span { margin-left: 12px; font-size: 11px; color: #8190a2; }
+.studio-fold[open] > summary { margin-bottom: 18px; }
+.studio-fold > .form-group { margin-top: 16px; }
+#prompt_emotions .card { border-color: var(--border) !important; background: var(--bg-primary) !important; }
+#prompt_emotions .card h3 { color: #dce7ee !important; }
+#prompt_emotions .page-header, #providers .page-header { align-items: center; }
+#model-emotion-search { max-width: 340px; margin-bottom: 16px; }
+#model-emotion-list { display: grid; gap: 8px; }
+.model-entry { display: flex; gap: 14px; align-items: center; padding: 4px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-secondary); }
+.model-entry:hover { border-color: #4b7167; }
+.model-entry a { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 0; color: var(--text-primary); text-decoration: none; }
+.model-entry strong { font-size: 14px; overflow-wrap: anywhere; }
+.model-entry small { display: block; margin-top: 5px; color: #8a9aab; font-size: 11px; }
+.model-entry svg { flex-shrink: 0; color: #8aab9e; }
+.model-breadcrumb { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; color: #748295; font-size: 13px; }
+.model-breadcrumb a, .subtle-link { color: #9bd8c3; text-decoration: none; }
+.model-breadcrumb strong { color: #cbd5e1; overflow-wrap: anywhere; }
+#model-emotion-cards-container .model-emotion-desc-input { min-width: 0; }
+#providers .settings-tab-content { max-width: 760px; padding: 26px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 12px; }
+#providers .settings-form { padding: 0; max-width: none; background: transparent; border: 0; }
+#providers h3 { margin: 0 0 24px; color: #d9e4ec; font-size: 17px; }
+.provider-tabs .settings-tab { min-height: 56px; padding: 12px 20px; }
+.provider-tabs .settings-tab span { color: #809f94; font-size: 10px; margin-left: 6px; }
+#providers .form-group > small { font-size: 11px; }
+#admin-prompt-presets .preset-tools { margin-top: 6px; }
+#admin-prompt-presets .preset-tools .prompt-preset-actions { margin-bottom: 0; }
+#admin-prompt-presets [role="status"]:empty { display: none; }
+@media(max-width: 900px) {
+    .sidebar { padding: 16px 0 10px; max-width: 100vw; }
+    .sidebar .logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 12px; margin-bottom: 10px; }
+    .sidebar .logo h1 { font-size: 17px; }
+    .sidebar .nav { flex-direction: row; overflow-x: auto; flex: none; padding: 0 12px; gap: 4px; }
+    .sidebar .nav-item { flex-shrink: 0; white-space: nowrap; padding: 10px 12px; font-size: 12px; }
+    .sidebar .nav-item .icon { display: none; }
+    .sidebar .nav-item:not([data-page]) { margin-top: 0 !important; }
+    .main-content { min-width: 0; max-width: 100vw; }
+}
+@media(max-width: 640px) {
+    .studio-tabs { gap: 24px; }
+    #providers .settings-tab-content { padding: 20px 16px; }
+    .provider-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+    .provider-tabs .settings-tab { min-width: 0; padding: 10px; }
+    .studio-fold > summary span { display: none; }
+    #model-emotion-cards-container .model-emotion-row { flex-wrap: wrap; }
+    #model-emotion-cards-container .model-emotion-row > div { width: auto !important; }
+    #model-emotion-cards-container .model-emotion-desc-input { flex-basis: 100% !important; order: 3; }
+    #prompt_emotions .page-header h2, #providers .page-header h2 { font-size: 24px; }
+}

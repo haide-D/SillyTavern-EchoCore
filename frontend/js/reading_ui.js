@@ -12,6 +12,15 @@ const shapes = {
     bolt: '<path d="m14 2-9 12h6l-1 8 9-12h-6z"/>',
     layers: '<path d="m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5"/>',
     chevron: '<path d="m9 5 7 7-7 7"/>',
+    music: '<path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/>',
+    volume: '<path d="m11 5-5 4H3v6h3l5 4Zm4 4a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/>',
+    muted: '<path d="m11 5-5 4H3v6h3l5 4Zm5 5 5 5m0-5-5 5"/>',
+    previous: '<path d="M6 5v14m12-14L8 12l10 7Z"/>',
+    next: '<path d="M18 5v14M6 5l10 7-10 7Z"/>',
+    upload: '<path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/>',
+    trash: '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>',
+    more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+    download: '<path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/>',
 };
 
 export function readingIcon(name) {
@@ -29,6 +38,10 @@ export function readingButton(icon, label, iconOnly = false) {
 }
 
 export function installReadingStyles() {
+    if (!document.querySelector('#tts-sound-controls-style')) {
+        $('<link id="tts-sound-controls-style" rel="stylesheet">')
+            .attr('href', new URL('../css/core/sound_controls.css', import.meta.url).href).appendTo(document.head);
+    }
     if (!document.querySelector('#tts-reading-controls-style')) {
         $('<link id="tts-reading-controls-style" rel="stylesheet">')
             .attr('href', new URL('../css/core/reading.css', import.meta.url).href).appendTo(document.head);

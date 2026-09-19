@@ -33,6 +33,9 @@ class RecordingTests(unittest.TestCase):
             # A new client recovers the file without any synthesis dependency.
             self.assertTrue(TestClient(app).get(endpoint + '/status').json()['exists'])
             self.assertEqual(client.get(endpoint).content, original)
+            partial = client.get(endpoint, headers={'Range': 'bytes=44-63'})
+            self.assertEqual(partial.status_code, 206)
+            self.assertEqual(partial.content, original[44:64])
             self.assertEqual(client.put(endpoint, content=b'not audio').status_code, 400)
             self.assertEqual(client.put(endpoint, content=original[:-8]).status_code, 400)
             self.assertEqual(client.get(endpoint).content, original)

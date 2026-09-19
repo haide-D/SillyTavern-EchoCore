@@ -5,6 +5,8 @@
 import { API_BASE } from '../core/api.js';
 import { showNotification } from '../core/ui.js';
 import { escapeHtml } from '../core/utils.js';
+import { mountAdminPromptPresets } from './prompt_presets.js';
+import { initStudioNavigation, renderStudioRoute } from './studio_navigation.js';
 
 // 官方标准默认提示词模板
 export const DEFAULT_PROMPT_TEMPLATE = `[Voice Synthesis & Dialogue Protocol]
@@ -62,11 +64,14 @@ export const DEFAULT_EMOTION_ANNOTATIONS = {
 // 内存缓存当前数据
 let currentSettings = {};
 let currentModels = [];
+let presetEditor;
+let controlsBound = false;
 
 /**
  * 初始化提示词与模型情感管理页面
  */
 export async function initPromptEmotionsPage() {
+    initStudioNavigation();
     bindPromptControls();
     await loadPromptEmotionsData();
 }
@@ -74,9 +79,10 @@ export async function initPromptEmotionsPage() {
 /**
  * 加载全部数据 (Settings + Models) 并渲染
  */
-export async function loadPromptEmotionsData() {
+export async function loadPromptEmotionsData({ modelsOnly = false } = {}) {
     const container = document.getElementById('model-emotion-cards-container');
-    const promptTemplateEl = document.getElementById('setting-prompt-template');
+    const drafts = modelsOnly ? collectModelEmotionSettings() : {};
+    if (!modelsOnly) presetEditor = undefined;
 
     try {
         // 1. 并行获取系统设置与模型列表
@@ -85,18 +91,17 @@ export async function loadPromptEmotionsData() {
             fetch(`${API_BASE}/models`)
         ]);
 
+        if (!settingsRes.ok || !modelsRes.ok) throw new Error('无法读取后台配置，请检查连接或登录状态');
         currentSettings = await settingsRes.json();
         const modelsData = await modelsRes.json();
         currentModels = modelsData.models || [];
 
         // 2. 渲染提示词模板：如果为空则默认直接填入官方标准内置模板
         const pi = currentSettings.prompt_injector || {};
-        if (promptTemplateEl) {
-            promptTemplateEl.value = (pi.custom_template && pi.custom_template.trim()) ? pi.custom_template : DEFAULT_PROMPT_TEMPLATE;
-        }
+        if (!modelsOnly) presetEditor = mountAdminPromptPresets(DEFAULT_PROMPT_TEMPLATE, pi);
 
         // 3. 渲染按模型划分的情感与语速卡片
-        renderModelEmotionCards(currentModels, pi.models || {});
+        renderModelEmotionCards(currentModels, { ...pi.models, ...drafts });
     } catch (e) {
         console.error('加载提示词与模型情感失败:', e);
         if (container) {
@@ -111,9 +116,14 @@ export async function loadPromptEmotionsData() {
 function renderModelEmotionCards(modelsList, savedModelsConfig) {
     const container = document.getElementById('model-emotion-cards-container');
     if (!container) return;
+    const list = document.getElementById('model-emotion-list');
+    list.replaceChildren();
+    document.getElementById('checkbox-select-all-models').closest('label').parentElement.dataset.modelListTools = '';
 
     if (!modelsList || modelsList.length === 0) {
-        container.innerHTML = '<div style="color:#9ca3af; padding:20px; text-align:center; background:rgba(255,255,255,0.02); border-radius:8px;">未扫描到已装载模型，请先在「模型管理」中创建或添加模型。</div>';
+        container.replaceChildren();
+        list.textContent = '还没有模型，请先在模型管理中添加。';
+        renderStudioRoute();
         return;
     }
 
@@ -161,6 +171,7 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
         const card = document.createElement('div');
         card.className = 'model-emotion-card';
         card.dataset.model = modelName;
+        card.hidden = true;
         card.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; transition:all 0.2s;';
 
         // 卡片头部
@@ -195,6 +206,12 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
             const btn = e.currentTarget;
             await triggerAiSummarizeForModel(model, card, btn);
         });
+        const entry = document.createElement('div'); entry.className = 'model-entry'; entry.dataset.model = modelName;
+        const checkbox = header.querySelector('.model-select-checkbox'); checkbox.setAttribute('aria-label', `选择 ${modelName}`);
+        const link = document.createElement('a'); link.href = `#prompt_emotions/models/${encodeURIComponent(modelName)}`;
+        link.innerHTML = `<span><strong>${escapeHtml(modelName)}</strong><small>${emotionsList.length} 种情绪 · ${(model.audio_stats && model.audio_stats.total) || 0} 条音频</small></span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>`;
+        entry.append(checkbox, link); list.append(entry);
+        header.querySelector('.model-speed-input').setAttribute('aria-label', `${modelName} 语速`);
 
         // 情绪列表内容区
         const body = document.createElement('div');
@@ -224,6 +241,7 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
                 row.querySelector('.model-emotion-desc-input').value = defaultDesc;
                 showNotification(`已重置 ${emo} 为默认推荐场景说明`, 'info');
             });
+            row.querySelector('.model-emotion-desc-input').setAttribute('aria-label', `${modelName} ${emo} 场景`);
 
             body.appendChild(row);
         });
@@ -235,6 +253,17 @@ function renderModelEmotionCards(modelsList, savedModelsConfig) {
 
     // 绑定全选与单选联动
     updateSelectAllCheckboxState();
+    const search = document.getElementById('model-emotion-search');
+    search.oninput = () => {
+        let visible = 0;
+        list.querySelectorAll('.model-entry').forEach(row => {
+            row.hidden = !row.dataset.model.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase());
+            if (!row.hidden) visible++;
+        });
+        document.getElementById('model-emotion-empty').hidden = visible > 0;
+    };
+    search.oninput();
+    renderStudioRoute();
 }
 
 /**
@@ -325,6 +354,7 @@ async function triggerAiSummarizeForModel(model, cardElement, triggerButton) {
         });
 
         showNotification(`🎉 已成功通过 AI 总结「${model.name}」的 ${updatedCount} 个情绪场景！请核对后点击保存。`, 'success');
+        return updatedCount > 0;
     } catch (e) {
         console.error('AI 分析情绪场景失败:', e);
         showNotification(`AI 分析失败: ${e.message}`, 'error');
@@ -439,19 +469,13 @@ function getActiveLLMConfig() {
  * 绑定提示词与插槽操作
  */
 function bindPromptControls() {
+    if (controlsBound) return;
+    controlsBound = true;
     const promptTemplateEl = document.getElementById('setting-prompt-template');
-    const resetPromptBtn = document.getElementById('btn-reset-prompt-template');
     const refreshModelsBtn = document.getElementById('btn-refresh-models-emotions');
     const saveBtn = document.getElementById('btn-save-prompt-emotions');
     const selectAllCheckbox = document.getElementById('checkbox-select-all-models');
     const batchAiBtn = document.getElementById('btn-batch-ai-summarize');
-
-    if (resetPromptBtn && promptTemplateEl) {
-        resetPromptBtn.addEventListener('click', () => {
-            promptTemplateEl.value = DEFAULT_PROMPT_TEMPLATE;
-            showNotification('已恢复官方标准 ElevenLabs V3 提示词模板', 'info');
-        });
-    }
 
     document.querySelectorAll('.btn-slot-insert').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -461,6 +485,7 @@ function bindPromptControls() {
                 const end = promptTemplateEl.selectionEnd || 0;
                 const val = promptTemplateEl.value;
                 promptTemplateEl.value = val.substring(0, start) + slot + val.substring(end);
+                promptTemplateEl.dispatchEvent(new Event('input'));
                 promptTemplateEl.focus();
                 promptTemplateEl.selectionStart = promptTemplateEl.selectionEnd = start + slot.length;
                 showNotification(`已插入插槽变量: ${slot}`, 'info');
@@ -473,11 +498,11 @@ function bindPromptControls() {
             refreshModelsBtn.disabled = true;
             refreshModelsBtn.textContent = '🔄 刷新中...';
             try {
-                await loadPromptEmotionsData();
+                await loadPromptEmotionsData({ modelsOnly: true });
                 showNotification('已成功刷新模型与情绪列表！', 'success');
             } finally {
                 refreshModelsBtn.disabled = false;
-                refreshModelsBtn.textContent = '🔄 刷新模型与情绪';
+                refreshModelsBtn.textContent = '刷新列表';
             }
         });
     }
@@ -509,14 +534,13 @@ function bindPromptControls() {
                 const cb = checkedBoxes[i];
                 const modelName = cb.dataset.model;
                 const model = currentModels.find(m => m.name === modelName);
-                const card = cb.closest('.model-emotion-card');
+                const card = [...document.querySelectorAll('.model-emotion-card')].find(card => card.dataset.model === modelName);
 
                 batchAiBtn.textContent = `🤖 正在分析 (${i + 1}/${checkedBoxes.length}): ${modelName}...`;
 
                 if (model && card) {
                     try {
-                        await triggerAiSummarizeForModel(model, card, null);
-                        successCount++;
+                        if (await triggerAiSummarizeForModel(model, card, null)) successCount++;
                     } catch (err) {
                         console.error(`批量分析 ${modelName} 失败:`, err);
                     }
@@ -553,11 +577,7 @@ function updateSelectAllCheckboxState() {
 /**
  * 收集并保存提示词与模型情感规则设置
  */
-export async function savePromptEmotionsSettings() {
-    const saveBtn = document.getElementById('btn-save-prompt-emotions');
-    const promptTemplateEl = document.getElementById('setting-prompt-template');
-
-    // 1. 收集各模型配置
+function collectModelEmotionSettings() {
     const modelsConfig = {};
     document.querySelectorAll('.model-emotion-card').forEach(card => {
         const modelName = card.dataset.model;
@@ -580,40 +600,23 @@ export async function savePromptEmotionsSettings() {
             emotions: emotions
         };
     });
+    return modelsConfig;
+}
 
-    const payload = {
-        prompt_injector: {
-            enabled: true,
-            custom_template: promptTemplateEl ? promptTemplateEl.value.trim() : DEFAULT_PROMPT_TEMPLATE,
-            models: modelsConfig,
-            emotion_annotations: DEFAULT_EMOTION_ANNOTATIONS
-        }
-    };
+export async function savePromptEmotionsSettings() {
+    const modelsConfig = collectModelEmotionSettings();
 
-    if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = '💾 正在保存...';
+    if (!presetEditor) {
+        showNotification('预设尚未加载，请刷新后重试', 'error');
+        return;
     }
-
+    const button = document.getElementById('btn-save-prompt-emotions');
+    button.disabled = true;
     try {
-        const res = await fetch(`${API_BASE}/settings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            showNotification('🎉 提示词模板与各模型情感规则已成功保存并即时生效！', 'success');
-        } else {
-            const err = await res.json().catch(() => ({}));
-            showNotification(`保存失败: ${err.detail || '未知错误'}`, 'error');
-        }
-    } catch (e) {
-        showNotification(`保存异常: ${e.message}`, 'error');
-    } finally {
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = '💾 保存全部配置';
-        }
-    }
+        const res = await fetch(`${API_BASE}/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt_injector: { models: modelsConfig } }) });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || '保存失败');
+        showNotification('模型情绪已保存', 'success');
+    } catch (error) { showNotification(error.message, 'error'); }
+    finally { button.disabled = false; }
 }

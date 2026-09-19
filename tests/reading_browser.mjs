@@ -26,7 +26,15 @@ const server = http.createServer(async (req, res) => {
                 const chunks = []; for await (const chunk of req) chunks.push(chunk);
                 recordings.set(req.url, Buffer.concat(chunks)); res.end('{}'); return;
             }
-            if (recordings.has(req.url)) { res.setHeader('Content-Type', 'audio/wav'); res.end(recordings.get(req.url)); return; }
+            if (recordings.has(req.url)) {
+                const audio = recordings.get(req.url);
+                res.setHeader('Content-Type', 'audio/wav'); res.setHeader('Accept-Ranges', 'bytes');
+                const range = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || '');
+                const start = range ? Number(range[1]) : 0;
+                const end = range?.[2] ? Math.min(Number(range[2]), audio.length - 1) : audio.length - 1;
+                if (range) { res.statusCode = 206; res.setHeader('Content-Range', `bytes ${start}-${end}/${audio.length}`); }
+                res.setHeader('Content-Length', end - start + 1); res.end(audio.subarray(start, end + 1)); return;
+            }
         }
         if (req.url === '/') {
             res.setHeader('Content-Type', 'text/html');
@@ -35,7 +43,7 @@ const server = http.createServer(async (req, res) => {
         }
         const target = req.url === '/jquery.js' ? jquery : path.resolve(root, '.' + req.url);
         if (req.url !== '/jquery.js' && !target.startsWith(path.join(root, 'frontend', 'js') + path.sep) &&
-            target !== path.join(root, 'frontend', 'css', 'core', 'reading.css')) throw new Error('Not allowed');
+            !['reading.css', 'sound_controls.css'].some(file => target === path.join(root, 'frontend', 'css', 'core', file))) throw new Error('Not allowed');
         res.setHeader('Content-Type', target.endsWith('.css') ? 'text/css' : 'text/javascript');
         res.end(await fs.readFile(target));
     } catch { res.statusCode = 404; res.end(); }
@@ -124,7 +132,7 @@ try {
         await tick();
         reader.openSettings();
         const settingsDialog = document.querySelector('#tts-reading-dialog');
-        check(settingsDialog.querySelectorAll('input[type=checkbox]').length === 3, 'independent template, autoplay and narration settings');
+        check(settingsDialog.querySelectorAll('input[type=checkbox]').length === 4, 'independent template, autoplay, paragraph and narration settings');
         settingsDialog.close();
         await tick();
         check(PromptInjector.buildPromptDirective({}, []).startsWith(DEFAULT_PROMPT_TEMPLATE.split('\n')[0]), 'default prompt unchanged');
@@ -248,8 +256,14 @@ try {
         gates.get('cloud-2')(); await tick();
         check(audios.length === initialAudioCount, 'out-of-order second completion cannot play before first');
         gates.get('cloud-1')(); await tick();
-        check(audios.at(-1).url === 'cloud-1' && !gates.has('cloud-3'), 'first ready segment plays before whole message has been generated');
-        check(document.querySelector('.tts-reading-status').textContent.includes('已准备 2/3'), 'status displays prepared segment count');
+        check(audios.at(-1).url === 'cloud-1' && gates.has('cloud-3') && activeCloud === 1, 'first ready segment plays before whole message has been generated');
+        check(document.querySelector('.tts-reading-status').title.includes('已准备 2/3'), 'compact status retains prepared segment count in tooltip');
+        reader.seekSegment(2); await tick();
+        check(audios.at(-1).url === 'cloud-1', 'unprepared paragraphs cannot be selected');
+        document.querySelector('.tts-reading-next').click(); await tick();
+        check(audios.at(-1).url === 'cloud-2', 'inline next control plays a prepared paragraph');
+        document.querySelector('.tts-reading-previous').click(); await tick();
+        check(audios.at(-1).url === 'cloud-1', 'inline previous control reuses prepared audio');
         audios.at(-1).end(); await tick();
         check(audios.at(-1).url === 'cloud-2' && gates.has('cloud-3'), 'next synthesis overlaps playback of already prepared segment');
         reader.stop(); await cloudPlaying;
@@ -304,6 +318,15 @@ try {
         reader.stop(); await queuedPlaying;
         localGates.get('cancel-1')(); await tick();
         check(!localGates.has('cancel-2') && !localGates.has('cancel-3') && scheduler.queue.length === 0 && cache.pendingTasks.size === 0, 'stop removes queued requests without sending additional synthesis');
+
+        // Fulltext paragraph playback overrides the legacy saved batch choice.
+        const paragraphLines = ['paragraph-1', 'paragraph-2', 'paragraph-3', 'paragraph-4'].map(value => ({ charName: 'Alice', text: value }));
+        const paragraphPlaying = reader.start(reader.snapshot(0), paragraphLines, 'fulltext', { key: 'fixture-paragraphs' });
+        await tick(); localGates.get('paragraph-1')(); await tick();
+        check(audios.at(-1).url === 'paragraph-1' && localGates.has('paragraph-2') && !localGates.has('paragraph-4'), 'fulltext starts first paragraph despite saved batch strategy with bounded lookahead');
+        reader.stop(); await paragraphPlaying;
+        localGates.get('paragraph-2')(); await tick();
+        check(!localGates.has('paragraph-3') && !localGates.has('paragraph-4'), 'stopping paragraph fulltext cancels queued lookahead');
 
         // Foreground eager reading promotes already queued bubbles without synthesizing duplicates.
         localStorage.setItem('tts_reading_settings', JSON.stringify({ ...settings, localStrategy: 'eager' }));
@@ -379,7 +402,12 @@ try {
         cache.audioMemory = {};
         reader.showRecording(savedSnapshot, savedKey);
         const native = document.querySelector('.tts-fulltext-player audio');
-        check(native.controls && native.src.includes(savedKey), 'saved player exposes native seek controls and stable file URL');
+        check(!native.controls && native.src.includes(savedKey) && document.querySelector('.tts-reading-seek'), 'saved recording reuses inline transport with seek control and stable file URL');
+        if (native.readyState < 1) await new Promise(resolve => native.addEventListener('loadedmetadata', resolve, { once: true }));
+        const seek = document.querySelector('.tts-reading-seek');
+        check(!seek.hidden && Number(seek.max) > 0, 'saved recording exposes real duration in inline seek control');
+        seek.value = 0.1; seek.dispatchEvent(new Event('input'));
+        check(Math.abs(native.currentTime - 0.1) < 0.001, 'inline seek changes saved recording playback position');
         const priorGenerated = generated;
         await reader.previewFulltext(0);
         check(!document.querySelector('#tts-reading-dialog') && generated === priorGenerated, 'reopening fulltext uses saved player instead of preview or synthesis');
@@ -460,7 +488,7 @@ try {
         });
         await page.screenshot({ path: path.join(process.env.READING_SCREENSHOT_DIR, 'reading-player.png') });
         await page.emulateMedia({ reducedMotion: 'reduce' });
-        const animation = await page.locator('.tts-r-wave rect').first().evaluate(node => getComputedStyle(node).animationName);
+        const animation = await page.locator('.tts-reading-main').first().evaluate(node => getComputedStyle(node).animationName);
         assert.equal(animation, 'none', 'reduced-motion preference disables the wave animation');
     }
     // Preset editor exercises real DOM events, persistence and downloads using fixture data only.
@@ -538,6 +566,62 @@ try {
         assert.equal(await presetPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     }
     await presetPage.close();
+
+    const elevenPage = await browser.newPage();
+    elevenPage.on('pageerror', error => errors.push(error.message));
+    const elevenCalls = [];
+    const voices = [{ id: 'fixtureVoice', name: '<img src=x onerror=alert(1)>', source: 'remote' }];
+    await elevenPage.route('**/tts/elevenlabs/**', async route => {
+        const req = route.request(); elevenCalls.push({ url: req.url(), method: req.method(), data: req.postDataJSON() });
+        await route.fulfill({ json: { voices, message: '已同步 1 个音色' } });
+    });
+    await elevenPage.route('**/update_settings', async route => {
+        elevenCalls.push({ data: route.request().postDataJSON() });
+        await route.fulfill({ json: { status: 'success' } });
+    });
+    await elevenPage.goto(`http://127.0.0.1:${server.address().port}`);
+    await elevenPage.evaluate(async () => {
+        const { mountElevenLabsSettings } = await import('/frontend/js/elevenlabs_ui.js');
+        window.TTS_API = { _url: path => path, _headers: extra => extra };
+        window.TTS_State = { CACHE: { settings: {}, elevenlabs_voices: [], mappings: { Alice: 'elevenlabs:fixtureVoice', Local: 'local-model' } } };
+        window.TTS_UI = { renderModelOptions() { window.voiceRefreshes = (window.voiceRefreshes || 0) + 1; } };
+        window.SillyTavern = { getContext: () => ({ extensionSettings: { st_direct_tts: { active_provider: 'elevenlabs' } } }) };
+        document.body.innerHTML = '<div id="tts-provider-panel-elevenlabs"></div>';
+        mountElevenLabsSettings();
+    });
+    await elevenPage.getByLabel('API Key', { exact: true }).fill('fixture-only');
+    await elevenPage.getByLabel('默认 Voice ID').fill('defaultVoice');
+    await elevenPage.getByLabel('V3 表现力').selectOption('0');
+    await elevenPage.getByRole('button', { name: '保存 V3 配置' }).click();
+    await elevenPage.getByRole('status').filter({ hasText: 'V3 配置已保存' }).waitFor();
+    assert.equal(elevenCalls[0].data.elevenlabs_tts.stability, 0);
+    assert.equal(elevenCalls[0].data.elevenlabs_tts.model, 'eleven_v3');
+    await elevenPage.getByRole('button', { name: '连接并同步音色' }).click();
+    await elevenPage.getByRole('status').filter({ hasText: '已同步 1 个音色' }).waitFor();
+    assert.equal(await elevenPage.locator('img').count(), 0, 'voice names are rendered as text');
+    await elevenPage.getByRole('button', { name: '编辑', exact: true }).click();
+    assert.equal(await elevenPage.getByLabel('ElevenLabs Voice ID', { exact: true }).inputValue(), 'fixtureVoice');
+    await elevenPage.getByRole('button', { name: '保存音色', exact: true }).click();
+    await elevenPage.getByRole('status').filter({ hasText: '音色已保存' }).waitFor();
+    assert.equal(elevenCalls.at(-1).data.id, 'fixtureVoice');
+    await elevenPage.evaluate(async () => {
+        const { ProviderManager } = await import('/frontend/js/providers/provider_manager.js');
+        const { getAllElevenLabsVoices } = await import('/frontend/js/utils.js');
+        if (ProviderManager.getProviderForCharacter('Local').name !== 'GPT-SoVITS') throw new Error('Global V3 overrode local binding');
+        const provider = ProviderManager.getProviderForCharacter('Alice');
+        if (provider.name !== 'ElevenLabs') throw new Error('V3 binding routed incorrectly');
+        const params = provider.params({ charName: 'Alice', text: '[whispers] Hello [sighs].', emotion: 'sad' });
+        if (params.voice_id !== 'fixtureVoice' || params.text !== '[whispers] Hello [sighs].' || params.emotion !== 'sad') throw new Error('V3 request dropped voice or tags');
+        if (!getAllElevenLabsVoices().some(voice => voice.id === 'defaultVoice')) throw new Error('Default voice missing from binding choices');
+        const { TTS_Scheduler: scheduler } = await import('/frontend/js/scheduler.js');
+        const originalKey = scheduler.getTaskKey('Alice', 'Hello', 'sad');
+        if (originalKey === scheduler.getTaskKey('Alice', 'Hello', 'happy')) throw new Error('V3 reused memory audio with wrong emotion');
+        window.TTS_State.CACHE.settings.elevenlabs_tts.stability = 1;
+        if (originalKey === scheduler.getTaskKey('Alice', 'Hello', 'sad')) throw new Error('V3 reused memory audio with old stability');
+    });
+    await elevenPage.close();
+    assert.deepEqual(errors, []);
+    console.log('ElevenLabs browser UI: V3 save, creative stability, voice sync/edit, safe names, default voice and mixed provider routing passed.');
     console.log('Preset browser UI: save, provider switching, chat isolation, download/import, invalid-file rejection, reset, persistence and emotional recording identity passed.');
     console.log(`Reading browser regressions passed (${results.length} assertions).`);
     for (const result of results) console.log(`  ✓ ${result}`);

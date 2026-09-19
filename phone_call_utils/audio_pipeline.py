@@ -48,14 +48,15 @@ class AudioPipeline:
         previous_emotion = None
         previous_ref_audio = None
 
-        from config import is_minimax_character
+        from config import is_minimax_character, get_character_provider
 
         is_minimax = is_minimax_character(char_name)
         prompt_lang = tts_config.get("prompt_lang") or tts_config.get("text_lang")
 
-        if is_minimax:
-            # MiniMax 云端角色：无需占用本地 GPU 模型权重锁，直接并行/分段合成
-            print(f"[AudioPipeline] ☁️ 角色 '{char_name}' 属于 MiniMax 云端模型，免模型锁直接合成")
+        is_eleven = get_character_provider(char_name) == "elevenlabs"
+        if is_minimax or is_eleven:
+            # 云端角色无需占用本地 GPU 模型权重锁。
+            print(f"[AudioPipeline] ☁️ 角色 '{char_name}' 使用云端模型，免模型锁直接合成")
             for i, segment in enumerate(segments):
                 print(f"[AudioPipeline] 生成片段 {i+1}/{len(segments)}: [{segment.emotion}] {segment.text[:30]}...")
                 ref_audio = EmotionService.select_ref_audio(char_name, segment.emotion, prompt_lang=prompt_lang)
@@ -80,7 +81,7 @@ class AudioPipeline:
 
                     audio_bytes_list.append(audio_bytes)
                 except Exception as e:
-                    print(f"[AudioPipeline] ❌ MiniMax 片段 {i+1} 生成失败: {e}")
+                    print(f"[AudioPipeline] ❌ 云端片段 {i+1} 生成失败: {e}")
                     continue
         else:
             # 本地 GPT-SoVITS 角色：使用统一模型权重锁，确保合成期间不被其他并发任务打断

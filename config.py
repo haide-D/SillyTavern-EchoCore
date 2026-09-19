@@ -319,6 +319,10 @@ def init_settings():
         if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
             dirty = True
 
+    if not isinstance(settings.get("elevenlabs_tts"), dict):
+        settings["elevenlabs_tts"] = {"api_key": "", "api_base": "https://api.elevenlabs.io", "model": "eleven_v3", "default_voice_id": "", "stability": 0.5, "audio_tags": True, "voices": []}
+        dirty = True
+
     # fish_audio_tts 默认配置 - Fish.audio 云端/自建 TTS 引擎
     if "fish_audio_tts" not in settings or not isinstance(settings["fish_audio_tts"], dict):
         settings["fish_audio_tts"] = dict(fish_audio_tts_defaults)
@@ -424,6 +428,9 @@ def get_character_provider(char_name: str) -> str:
     if not char_name:
         return "gpt_sovits"
     
+    if char_name.startswith("elevenlabs:"):
+        return "elevenlabs"
+
     # 允许直接传递绑定目标值
     if char_name.startswith("minimax:") or char_name.startswith("minimax_"):
         return "minimax"
@@ -432,6 +439,8 @@ def get_character_provider(char_name: str) -> str:
 
     mappings = get_character_mappings()
     target = str(mappings.get(char_name, ""))
+    if target.startswith("elevenlabs:"):
+        return "elevenlabs"
     if target.startswith("minimax:") or target.startswith("minimax_"):
         return "minimax"
     if target.startswith("fish:") or target.startswith("fish_audio:"):

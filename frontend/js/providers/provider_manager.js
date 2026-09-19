@@ -1,3 +1,4 @@
+import { ElevenLabsProvider } from './elevenlabs_provider.js';
 // frontend/js/providers/provider_manager.js
 import { GPTSoVITSProvider } from './gpt_sovits_provider.js';
 import { MiniMaxProvider } from './minimax_provider.js';
@@ -49,6 +50,8 @@ export const ProviderManager = {
 
         // 2. 兜底回退内建 Provider
         switch (activeProviderId) {
+            case 'elevenlabs':
+                return new ElevenLabsProvider(providerConfig);
             case 'minimax':
                 return new MiniMaxProvider(providerConfig);
             case 'doubao':
@@ -87,6 +90,7 @@ export const ProviderManager = {
                         console.error(`[ProviderManager] 动态分发 Provider [${providerPrefix}] 失败:`, e);
                     }
                 }
+                if (providerPrefix === 'elevenlabs') return new ElevenLabsProvider(providerConfig);
                 if (providerPrefix === 'minimax') {
                     return new MiniMaxProvider(providerConfig);
                 }
@@ -107,6 +111,7 @@ export const ProviderManager = {
                 const providerConfig = config.provider_settings ? config.provider_settings['fish_audio'] : {};
                 return new FishAudioProvider(providerConfig);
             }
+            if (separatorIndex < 0) return new GPTSoVITSProvider({});
         }
         return this.getCurrentProvider();
     }

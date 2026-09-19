@@ -26,7 +26,22 @@ export function mountPromptPresets() {
         $list.val(active.id); $name.val(active.name); $rules.val(active.punctuation_guide);
         $template.val(active.template); $emotions.val(active.allowed_emotions.join(', '));
     };
-    const run = action => { try { action(); injector.refreshAndInject(); refresh(); $status.text('已保存，提示词已更新'); } catch (error) { $status.text(error.message); } };
+    let busy = false;
+    const run = async action => {
+        if (busy) return;
+        busy = true;
+        const before = structuredClone(store.state);
+        $root.find('button, input, select, textarea').prop('disabled', true);
+        try {
+            action();
+            const shared = await injector.persistPresets();
+            injector.refreshAndInject(); refresh();
+            $status.text(shared ? '已保存到后台，提示词已更新' : '已保存到当前浏览器，提示词已更新');
+        } catch (error) {
+            try { store.commit(before); } catch { /* The original stored state survives a failed write. */ }
+            $status.text(error.message);
+        } finally { busy = false; $root.find('button, input, select, textarea').prop('disabled', false); }
+    };
     const edited = () => ({ ...store.active($provider.val()), name: $name.val(), template: $template.val(),
         punctuation_guide: $rules.val(), allowed_emotions: $emotions.val().split(/[,，]/).map(e => e.trim()).filter(Boolean) });
     const button = (label, action) => $('<button type="button" class="menu_button">').css({ maxWidth: '100%', whiteSpace: 'normal', overflowWrap: 'anywhere' }).text(label).on('click', action).appendTo($root);

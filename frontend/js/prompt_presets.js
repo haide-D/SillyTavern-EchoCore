@@ -1,9 +1,9 @@
-// Versioned browser-local presets. Built-ins are never overwritten by imports.
+// Shared versioned preset format for the extension and admin. Built-ins are protected.
 export const PROVIDER_RULES = Object.freeze({
     gpt_sovits: ['GPT-SoVITS', 'Use concise standard punctuation. Avoid repeated ellipses and long dashes; use commas or periods. Keep actions outside speech. Do not insert audio tags.', []],
     minimax: ['MiniMax', 'Use standard punctuation and the listed emotion field. Do not add inline audio tags. Whisper is an application voice adjustment, not a native emotion enum.', ['default', 'happy', 'sad', 'angry', 'fear', 'disgust', 'surprise', 'whisper']],
     fish_audio: ['Fish.audio', 'Use natural punctuation sparingly. Put emotion in the character emotion field; the provider converts it into model-specific cues. Avoid redundant inline cues.', ['default', 'happy', 'sad', 'angry', 'fear', 'whisper', 'excited']],
-    elevenlabs: ['ElevenLabs', 'Use natural punctuation. Audio tags depend on the voice model; only use inline tags when the configured model supports them (v3).', ['default', 'happy', 'sad', 'angry', 'whisper', 'excited']],
+    elevenlabs: ['ElevenLabs', 'Eleven V3: inside spoken quotes, use sparse English Audio Tags such as [whispers], [laughs], [sighs], [excited], [crying], [sarcastic]. Preserve the outer [Character_Name, emotion] tag. Never put speaker names or commas inside Audio Tags. Do not use SSML break tags. Keep non-spoken actions outside quotes.', ['default', 'happy', 'sad', 'angry', 'whisper', 'excited']],
     edge_tts: ['Edge-TTS', 'Use plain spoken text with standard punctuation, without inline audio tags.', ['default']],
     doubao: ['豆包', 'Use standard punctuation and only the emotions supported by the bound voice. Keep actions outside speech.', ['default']],
 });
@@ -14,6 +14,7 @@ export function providerForModel(model = '') {
     return Object.hasOwn(PROVIDER_RULES, prefix) ? prefix : 'gpt_sovits';
 }
 const KEY = 'tts_provider_prompt_presets_v1';
+const newId = () => `custom_${Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, '0')).join('')}`;
 const plain = value => value && typeof value === 'object' && !Array.isArray(value);
 export class PromptPresetStore {
     constructor(baseTemplate, storage = localStorage) {
@@ -60,7 +61,7 @@ export class PromptPresetStore {
     active(provider) { return this.list(provider).find(p => p.id === this.state.active_presets[provider]) || this.builtins[`builtin_${provider}`] || this.builtins.builtin_gpt_sovits; }
     select(provider, id) { this.commit({ ...this.state, active_presets: { ...this.state.active_presets, [provider]: id } }); }
     save(preset, copy = false) {
-        const id = copy || preset.is_builtin ? `custom_${crypto.randomUUID()}` : preset.id;
+        const id = copy || preset.is_builtin ? newId() : preset.id;
         this.commit({ ...this.state, presets: { ...this.state.presets, [id]: { ...preset, id } },
             active_presets: { ...this.state.active_presets, [preset.provider]: id } });
         return id;
@@ -70,7 +71,7 @@ export class PromptPresetStore {
         const next = JSON.parse(JSON.stringify(this.state));
         const provider = next.presets[id].provider;
         delete next.presets[id];
-        if (next.active_presets[provider] === id) delete next.active_presets[provider];
+        if (next.active_presets[provider] === id) next.active_presets[provider] = `builtin_${provider}`;
         this.commit(next);
     }
     export(id) {
@@ -84,7 +85,7 @@ export class PromptPresetStore {
         const data = this.validate(JSON.parse(raw));
         const next = JSON.parse(JSON.stringify(this.state));
         for (const [id, preset] of Object.entries(data.presets)) {
-            const dest = next.presets[id] && !overwrite ? `custom_${crypto.randomUUID()}` : id;
+            const dest = next.presets[id] && !overwrite ? newId() : id;
             next.presets[dest] = { ...preset, id: dest };
             if (data.active_presets[preset.provider] === id) data.active_presets[preset.provider] = dest;
         }

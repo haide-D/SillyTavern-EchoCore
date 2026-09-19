@@ -547,6 +547,11 @@ export const TTS_UI = window.TTS_UI;
         });
         $fishGroup.append('<option value="__custom_fish_audio__">✏️ 新增自定义 Fish.audio 音色 (输入 Model ID)...</option>');
         $select.append($fishGroup);
+        const $elevenGroup = $('<optgroup label="ElevenLabs V3">');
+        for (const voice of window.TTS_Utils.getAllElevenLabsVoices()) {
+            $elevenGroup.append($('<option>').val(`elevenlabs:${voice.id}`).text(voice.name));
+        }
+        $select.append($elevenGroup);
 
         if (currentVal) {
             $select.val(currentVal);

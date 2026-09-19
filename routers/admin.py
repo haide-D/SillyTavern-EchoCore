@@ -4,7 +4,8 @@ from typing import Optional, List
 import os
 import shutil
 
-from config import init_settings, save_json, SETTINGS_FILE
+from config import init_settings, save_json, load_json, SETTINGS_FILE
+from services.prompt_presets import validate_prompt_presets
 
 from utils_admin.service_manager import ServiceManager
 from utils_admin.model_manager import ModelManager
@@ -438,6 +439,14 @@ async def get_settings():
 @router.post("/settings")
 async def update_settings(settings: dict):
     """更新系统配置"""
+    presets = settings.get('prompt_injector', {})
+    if isinstance(presets, dict) and 'provider_presets' in presets:
+        try:
+            presets['provider_presets'] = validate_prompt_presets(presets['provider_presets'])
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=400, detail=str(error))
+    else:
+        presets = None
     try:
         current = init_settings()
         
@@ -455,7 +464,12 @@ async def update_settings(settings: dict):
             return result
         
         current = deep_merge(current, settings)
+        # This document is a snapshot: recursive merge would resurrect deleted presets.
+        if presets is not None:
+            current['prompt_injector']['provider_presets'] = presets['provider_presets']
         save_json(SETTINGS_FILE, current)
+        if presets is not None and load_json(SETTINGS_FILE) != current:
+            raise IOError('配置写入失败，请检查配置文件权限')
         
         # 确保新路径存在
         if "base_dir" in settings:

@@ -978,7 +978,20 @@ export async function deleteCustomMiniMaxVoice(id) {
 /**
  * 根据 Voice ID 获取友好显示名称 (带标签)
  */
+export function getAllElevenLabsVoices() {
+    const cache = window.TTS_State?.CACHE;
+    const voices = [...(cache?.elevenlabs_voices || [])];
+    const id = cache?.settings?.elevenlabs_tts?.default_voice_id;
+    if (id && !voices.some(voice => voice.id === id)) voices.push({ id, name: 'ElevenLabs 默认音色' });
+    return voices;
+}
+
 export function getVoiceDisplayName(voiceId) {
+    if (voiceId?.startsWith('elevenlabs:')) {
+        const id = voiceId.slice(11);
+        const voice = getAllElevenLabsVoices().find(v => v.id === id);
+        return `ElevenLabs · ${voice?.name || id}`;
+    }
     if (!voiceId) return '';
     if (voiceId.startsWith('minimax:') || voiceId.startsWith('minimax_')) {
         const cleanId = voiceId.startsWith('minimax:') ? voiceId.slice(8) : voiceId.slice(8);

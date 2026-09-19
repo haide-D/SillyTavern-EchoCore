@@ -97,7 +97,9 @@ def get_data():
     from services.fish_audio_service import fish_audio_service
     fish_audio_voices = fish_audio_service.get_preset_voices()
 
+    from services.elevenlabs_service import elevenlabs_service
     return { 
+        "elevenlabs_voices": elevenlabs_service.voices(),
         "models": models_data, 
         "mappings": mappings, 
         "settings": settings,

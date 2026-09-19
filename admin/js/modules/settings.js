@@ -1,3 +1,8 @@
+import { organizeProviderFields, initStudioNavigation, renderStudioRoute } from './studio_navigation.js';
+import { API_BASE } from '../core/api.js';
+import { showNotification } from '../core/ui.js';
+let settingsLoaded = false;
+
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
     "happy": "心情愉悦、开朗、赞许或微笑时使用",
@@ -108,16 +113,13 @@ export function collectEmotionRulesFromUI() {
  * 绑定设置页面的标签页切换事件
  */
 export function bindSettingsTabs() {
+    organizeProviderFields();
+    initStudioNavigation();
     document.querySelectorAll('.settings-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-
-            tab.classList.add('active');
-            const tabId = 'settings-tab-' + tab.dataset.tab;
-            const targetContent = document.getElementById(tabId);
-            if (targetContent) targetContent.classList.add('active');
-        });
+        tab.onclick = () => {
+            location.hash = `${tab.closest('.page').id}/${tab.dataset.tab}`;
+            renderStudioRoute();
+        };
     });
 }
 
@@ -127,6 +129,7 @@ export function bindSettingsTabs() {
 export async function loadSettings() {
     try {
         const response = await fetch(`${API_BASE}/settings`);
+        if (!response.ok) throw new Error('配置读取失败');
         const settings = await response.json();
 
         // 基础配置
@@ -143,14 +146,6 @@ export async function loadSettings() {
         if (managerPortEl) managerPortEl.value = settings.manager_port || 3000;
         if (defaultLangEl) defaultLangEl.value = settings.default_lang || 'Chinese';
         if (devModeEl) devModeEl.value = String(settings.developer_mode || false);
-
-        // 提示词与情感
-        const promptInjector = settings.prompt_injector || {};
-        const promptTemplateEl = document.getElementById('setting-prompt-template');
-        if (promptTemplateEl) {
-            promptTemplateEl.value = promptInjector.custom_template || '';
-        }
-        renderEmotionRulesUI(promptInjector.emotion_annotations || DEFAULT_EMOTION_ANNOTATIONS);
 
         if (baseDirEl) baseDirEl.value = settings.base_dir || '';
         if (cacheDirEl) cacheDirEl.value = settings.cache_dir || '';
@@ -259,6 +254,11 @@ export async function loadSettings() {
         if (mmVolEl) mmVolEl.value = mm.vol !== undefined ? mm.vol : 1.0;
 
         // Fish.audio TTS 配置
+        const eleven = { api_key: '', api_base: 'https://api.elevenlabs.io', default_voice_id: '', stability: 0.5, audio_tags: true, ...settings.elevenlabs_tts };
+        for (const key of ['api_key', 'api_base', 'default_voice_id', 'stability', 'audio_tags']) {
+            const input = document.getElementById(`setting-elevenlabs-${key}`);
+            if (input) input.value = String(eleven[key]);
+        }
         const fa = settings.fish_audio_tts || {};
         const faEnabledEl = document.getElementById('setting-fish_audio-enabled');
         const faApiKeyEl = document.getElementById('setting-fish_audio-api-key');
@@ -285,6 +285,7 @@ export async function loadSettings() {
             ? msgProcessing.text_replacements
             : DEFAULT_TEXT_REPLACEMENTS;
         renderTextReplacementsUI(replacements);
+        settingsLoaded = true;
     } catch (error) {
         console.error('加载系统配置失败:', error);
     }
@@ -293,7 +294,8 @@ export async function loadSettings() {
 /**
  * 保存系统配置数据
  */
-export async function saveSettings() {
+export async function saveSettings(scope = 'system') {
+    if (!settingsLoaded) { showNotification('配置尚未加载，请刷新后重试', 'error'); return; }
     const baseDirEl = document.getElementById('setting-base-dir');
     const cacheDirEl = document.getElementById('setting-cache-dir');
     const sovitsHostEl = document.getElementById('setting-sovits-host');
@@ -351,9 +353,6 @@ export async function saveSettings() {
     const ttsTextSplitEl = document.getElementById('setting-tts-text-split-method');
     const ttsAuxRefEl = document.getElementById('setting-tts-use-aux-ref-audio');
 
-    // 提示词与情感规则
-    const promptTemplateEl = document.getElementById('setting-prompt-template');
-    const emotionAnnotations = collectEmotionRulesFromUI();
 
     const settings = {
         base_dir: baseDirEl ? baseDirEl.value.trim() : '',
@@ -382,6 +381,14 @@ export async function saveSettings() {
             pitch: mmPitchEl ? parseInt(mmPitchEl.value) || 0 : 0,
             vol: mmVolEl ? parseFloat(mmVolEl.value) || 1.0 : 1.0
         },
+        elevenlabs_tts: {
+            model: 'eleven_v3',
+            api_key: document.getElementById('setting-elevenlabs-api_key')?.value.trim() || '',
+            api_base: document.getElementById('setting-elevenlabs-api_base')?.value.trim() || 'https://api.elevenlabs.io',
+            default_voice_id: document.getElementById('setting-elevenlabs-default_voice_id')?.value.trim() || '',
+            stability: Number(document.getElementById('setting-elevenlabs-stability')?.value ?? 0.5),
+            audio_tags: document.getElementById('setting-elevenlabs-audio_tags')?.value !== 'false',
+        },
         fish_audio_tts: {
             enabled: faEnabledEl ? faEnabledEl.value === 'true' : false,
             api_key: faApiKeyEl ? faApiKeyEl.value.trim() : '',
@@ -390,12 +397,6 @@ export async function saveSettings() {
             default_voice_id: faDefaultVoiceEl ? faDefaultVoiceEl.value.trim() : '',
             speed: faSpeedEl ? parseFloat(faSpeedEl.value) || 1.0 : 1.0,
             vol: faVolEl ? parseFloat(faVolEl.value) || 1.0 : 1.0
-        },
-
-        prompt_injector: {
-            enabled: true,
-            custom_template: promptTemplateEl ? promptTemplateEl.value.trim() : '',
-            emotion_annotations: emotionAnnotations
         },
 
         analysis_engine: {
@@ -437,23 +438,36 @@ export async function saveSettings() {
         }
     };
 
+    const providerFields = { gpt_sovits: 'sovits_host', minimax: 'minimax_tts', elevenlabs: 'elevenlabs_tts', fish_audio: 'fish_audio_tts' };
+    let payload = settings;
+    if (scope === 'provider') {
+        const selected = document.querySelector('#providers .settings-tab.active')?.dataset.tab;
+        const key = providerFields[selected];
+        if (!key) return;
+        payload = { [key]: settings[key] };
+    } else {
+        for (const key of Object.values(providerFields)) delete payload[key];
+    }
+    const button = document.getElementById(scope === 'provider' ? 'btn-save-provider' : 'btn-save-system');
+    if (button.disabled) return;
+    button.disabled = true;
     try {
         const response = await fetch(`${API_BASE}/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings)
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
         if (response.ok) {
-            showNotification('系统配置保存成功！', 'success');
+            showNotification(scope === 'provider' ? '当前供应商已保存' : '系统配置已保存', 'success');
         } else {
             showNotification(data.detail || '保存失败', 'error');
         }
     } catch (error) {
         console.error('保存配置失败:', error);
         showNotification('保存失败，请检查服务连接', 'error');
-    }
+    } finally { button.disabled = false; }
 }
 
 /**
@@ -699,32 +713,6 @@ export function bindAnalysisLLMButtons() {
  * 绑定提示词与情感规则 Tab 按钮与交互
  */
 export function bindPromptAndEmotionControls() {
-    // 1. 恢复默认提示词模板
-    const resetPromptBtn = document.getElementById('btn-reset-prompt-template');
-    const promptTemplateEl = document.getElementById('setting-prompt-template');
-    if (resetPromptBtn && promptTemplateEl) {
-        resetPromptBtn.addEventListener('click', () => {
-            promptTemplateEl.value = DEFAULT_PROMPT_TEMPLATE;
-            showNotification('已恢复官方标准 ElevenLabs V3 提示词模板', 'info');
-        });
-    }
-
-    // 2. 插入插槽变量按钮
-    document.querySelectorAll('.btn-slot-insert').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const slot = btn.dataset.slot;
-            if (slot && promptTemplateEl) {
-                const start = promptTemplateEl.selectionStart || 0;
-                const end = promptTemplateEl.selectionEnd || 0;
-                const val = promptTemplateEl.value;
-                promptTemplateEl.value = val.substring(0, start) + slot + val.substring(end);
-                promptTemplateEl.focus();
-                promptTemplateEl.selectionStart = promptTemplateEl.selectionEnd = start + slot.length;
-                showNotification(`已插入插槽变量: ${slot}`, 'info');
-            }
-        });
-    });
-
     // 3. 添加新情感规则
     const addEmotionBtn = document.getElementById('btn-add-emotion-rule');
     const container = document.getElementById('emotion-rules-container');

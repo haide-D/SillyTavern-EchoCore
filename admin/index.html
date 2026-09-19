@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SillyTavern GPT-SoVITS 管理面板</title>
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/prompt_presets.css">
+    <link rel="stylesheet" href="css/studio.css">
 </head>
 
 <body>
@@ -14,7 +16,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>🎙️ TTS 管理</h1>
-                <p class="version">v3.3.2</p>
+                <p class="version">v3.4.0</p>
             </div>
 
             <nav class="nav">
@@ -38,6 +40,10 @@
                 <a href="#workshop" class="nav-item" data-page="workshop">
                     <span class="icon">🎨</span>
                     <span>创作者工坊</span>
+                </a>
+                <a href="#providers/gpt_sovits" class="nav-item" data-page="providers">
+                    <span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3v5m8-5v5M6 8h12v3a6 6 0 0 1-6 6v4m-6-13v3a6 6 0 0 0 6 6"/></svg></span>
+                    <span>语音供应商</span>
                 </a>
                 <a href="#settings" class="nav-item" data-page="settings">
                     <span class="icon">⚙️</span>
@@ -354,22 +360,28 @@
             <!-- 提示词与模型情感独立一级页面 -->
             <section id="prompt_emotions" class="page">
                 <header class="page-header">
-                    <h2>🎭 提示词与模型情感配置</h2>
-                    <button class="btn btn-success" id="btn-save-prompt-emotions">💾 保存全部配置</button>
+                    <div><span class="eyebrow">PROMPT STUDIO</span><h2>提示词与情感</h2></div>
+                    <button class="btn btn-success" id="btn-save-prompt-emotions" hidden>保存情绪配置</button>
                 </header>
 
-                <!-- 模块 1: 系统级 ElevenLabs V3 提示词模板 -->
+                <nav class="studio-tabs" aria-label="提示词与情感">
+                    <a href="#prompt_emotions/presets" data-prompt-view="presets" class="active">提示词预设</a>
+                    <a href="#prompt_emotions/models" data-prompt-view="models">模型情绪</a>
+                </nav>
+                <div id="prompt-presets-view">
+                <!-- 供应商预设 -->
                 <div class="card" style="margin-bottom: 24px; padding: 20px; background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(196, 155, 79, 0.25); border-radius: 12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <h3 style="font-size:16px; color:#fde047; margin:0; display:flex; align-items:center; gap:8px;">
-                            <span>📝</span> 系统级 ElevenLabs V3 提示词模板
+                            <span>📝</span> 供应商提示词预设
                         </h3>
                         <button type="button" id="btn-reset-prompt-template" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">🔄 恢复默认模板</button>
                     </div>
                     <p style="font-size:12px; color:#9ca3af; margin-top:0; margin-bottom:12px; line-height:1.5;">
-                        此提示词会自动注入到 SillyTavern 主模型（LLM）的上下文底部，规范模型严格按情绪标签对白输出。支持在下方点击插入动态占位符。
+                        每个供应商独立选择预设，保存后刷新酒馆生效。
                     </p>
-
+                    <div id="admin-prompt-presets"></div>
+                    <details class="studio-fold" id="prompt-template-fold"><summary>模板正文 <span>编辑提示词与插槽</span></summary>
                     <div class="form-group" style="margin-bottom:0;">
                         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
                             <span style="font-size:12px; color:#cbd5e1; align-self:center;">可用插槽:</span>
@@ -379,175 +391,52 @@
                         </div>
                         <textarea id="setting-prompt-template" class="input" rows="12" style="font-family:monospace; font-size:12px; line-height:1.45; color:#a7f3d0; width:100%;"></textarea>
                     </div>
+                    </details>
                 </div>
 
-                <!-- 模块 2: 模型情感场景与专属语速设置 -->
+                </div>
+                <div id="prompt-models-view" hidden>
+                <div class="model-breadcrumb" id="model-emotion-breadcrumb" hidden><a href="#prompt_emotions/models">← 模型情绪</a><span aria-hidden="true">/</span><strong id="model-emotion-detail-title"></strong></div>
+                <!-- 模型情绪 -->
                 <div class="card" style="padding: 20px; background: rgba(13, 17, 23, 0.7); border: 1px solid rgba(196, 155, 79, 0.25); border-radius: 12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
                         <h3 style="font-size:16px; color:#fde047; margin:0; display:flex; align-items:center; gap:8px;">
-                            <span>🎙️</span> 模型情感场景与专属语速设置 (按模型划分)
+                            <span>🎙️</span> 模型情绪
                         </h3>
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                             <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:#cbd5e1; cursor:pointer; user-select:none; background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px;">
                                 <input type="checkbox" id="checkbox-select-all-models" style="cursor:pointer;"> 全选
                             </label>
-                            <button type="button" id="btn-batch-ai-summarize" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">🤖 AI 批量生成选中模型场景</button>
-                            <button type="button" id="btn-refresh-models-emotions" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">🔄 刷新模型与情绪</button>
+                            <button type="button" id="btn-batch-ai-summarize" class="btn btn-primary" style="padding:4px 12px; font-size:12px;">AI 批量生成</button>
+                            <button type="button" id="btn-refresh-models-emotions" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">刷新列表</button>
                         </div>
                     </div>
                     <p style="font-size:12px; color:#9ca3af; margin-top:0; margin-bottom:16px; line-height:1.5;">
-                        已自动从模型库扫描识别所有模型。你可以点击 <strong>「🤖 AI 自动生成场景」</strong>（将发送该模型全部音频台词与前缀，由 AI 自动推断并提炼精炼短小的场景规则），也可为每个模型配置<strong>专属语速倍率</strong>。
+                        选择模型，编辑它的情绪场景与语速。
                     </p>
 
+                    <div id="model-emotion-overview"><input type="search" id="model-emotion-search" class="input" aria-label="搜索模型" placeholder="搜索模型…"><div id="model-emotion-list"></div><p id="model-emotion-empty" hidden>没有匹配的模型</p></div>
                     <div id="model-emotion-cards-container" style="display:flex; flex-direction:column; gap:16px;">
                         <div style="text-align:center; padding:20px; color:#9ca3af;">正在加载已扫描模型及情绪列表...</div>
                     </div>
                 </div>
+                </div>
             </section>
 
-            <!-- 系统配置页面 -->
-            <section id="settings" class="page">
-                <header class="page-header">
-                    <h2>系统配置</h2>
-                    <button class="btn btn-success" onclick="saveSettings()">💾 保存配置</button>
-                </header>
-
-                <!-- Tab 标签栏 -->
-                <div class="settings-tabs">
-                    <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
-                    <button class="settings-tab" data-tab="security">🔒 安全与鉴权</button>
-                    <button class="settings-tab" data-tab="minimax">☁️ MiniMax 云端 TTS</button>
-                    <button class="settings-tab" data-tab="fish_audio">🐟 Fish.audio 云端 TTS</button>
-                    <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
-                    <button class="settings-tab" data-tab="phone">📞 电话功能</button>
-                    <button class="settings-tab" data-tab="remote">🌐 远程与穿透</button>
-                </div>
-
-                <!-- 基础配置 Tab -->
-                <div id="settings-tab-basic" class="settings-tab-content active">
-                    <div class="settings-form">
-                        <div class="form-group">
-                            <label>模型目录路径</label>
-                            <input type="text" id="setting-base-dir" class="input"
-                                placeholder="例: G:\Models\MyCharacters">
-                            <small>存放 GPT-SoVITS 模型的根目录</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>缓存目录路径</label>
-                            <input type="text" id="setting-cache-dir" class="input" placeholder="例: G:\Cache">
-                            <small>存放生成音频缓存的目录</small>
-                        </div>
-
-                        <div class="form-group">
+            <section id="providers" class="page">
+                <header class="page-header"><div><span class="eyebrow">VOICE SERVICES</span><h2>语音供应商</h2></div><button class="btn btn-success" id="btn-save-provider" onclick="saveSettings('provider')">保存当前供应商</button></header>
+                <nav class="settings-tabs provider-tabs" aria-label="语音供应商">
+                    <button class="settings-tab active" data-tab="gpt_sovits">GPT-SoVITS <span>本地</span></button>
+                    <button class="settings-tab" data-tab="elevenlabs">ElevenLabs <span>V3</span></button>
+                    <button class="settings-tab" data-tab="minimax">MiniMax</button>
+                    <button class="settings-tab" data-tab="fish_audio">Fish.audio</button>
+                </nav>
+                <div id="settings-tab-gpt_sovits" class="settings-tab-content active"><div class="settings-form"><h3 class="settings-section-title">GPT-SoVITS</h3><div class="form-group">
                             <label>GPT-SoVITS API 地址</label>
                             <input type="text" id="setting-sovits-host" class="input" value="http://127.0.0.1:9880">
                             <small>GPT-SoVITS 推理服务的 API 地址</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>后台服务端口 (Manager Port)</label>
-                            <input type="number" id="setting-manager-port" class="input" value="3000" min="1" max="65535" placeholder="默认: 3000">
-                            <small>直接语音插件后端 Manager 服务的监听端口（修改后需重启后端生效）</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>默认语言</label>
-                            <select id="setting-default-lang" class="select">
-                                <option value="Chinese">中文</option>
-                                <option value="Japanese">日语</option>
-                                <option value="English">英语</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>主题开发者模式</label>
-                            <select id="setting-developer-mode" class="select">
-                                <option value="false">关闭</option>
-                                <option value="true">开启 (显示测试浮窗)</option>
-                            </select>
-                            <small>在酒馆页面显示一个用于测试各个主题、触发来电与窃听的小组件。</small>
-                        </div>
-
-                        <h3 class="settings-section-title">📄 消息处理（共享）</h3>
-
-                        <div class="form-group">
-                            <label>消息提取标签</label>
-                            <input type="text" id="setting-extract-tag" class="input" placeholder="例: conxt">
-                            <small>提取特定标签内的内容(如 &lt;conxt&gt;...&lt;/conxt&gt;),留空则不提取</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>消息过滤标签</label>
-                            <textarea id="setting-filter-tags" class="input" rows="3"
-                                placeholder="例: <small>, [statbar], <thought target=|</thought>"></textarea>
-                            <small>
-                                过滤 chat 消息中的标签内容,支持三种格式:<br>
-                                1. &lt;xxx&gt; - 过滤 HTML 风格标签<br>
-                                2. [xxx] - 过滤方括号风格标签<br>
-                                3. 前缀|后缀 - 过滤自定义前后缀包裹的内容<br>
-                                多个标签用逗号分隔
-                            </small>
-                        </div>
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:8px;">
-                            <label style="font-weight:600; color:#fde047; margin:0; display:flex; align-items:center; gap:6px;">
-                                <span>🔄</span> TTS 文本发音替换与过滤词库
-                            </label>
-                            <div style="display:flex; gap:8px;">
-                                <button type="button" id="btn-add-replacement-rule" class="btn btn-primary" style="padding:2px 10px; font-size:11px;">➕ 添加替换词</button>
-                                <button type="button" id="btn-reset-replacements" class="btn btn-secondary" style="padding:2px 10px; font-size:11px;">🔄 恢复常用词库</button>
-                            </div>
-                        </div>
-                        <small style="display:block; margin-bottom:10px; color:#94a3b8;">
-                            在送入 GPT-SoVITS 推理合成前自动执行词汇替换，专门用于纠正多音字误读（如把“操我”自动替换为四声“肏我”）、敏感字拟声或口语谐音。
-                        </small>
-
-                        <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
-                            <!-- 动态渲染替换列表 -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 安全与鉴权 Tab -->
-                <div id="settings-tab-security" class="settings-tab-content">
-                    <div class="settings-form">
-                        <h3 class="settings-section-title">🔒 公网安全与 API 防盗刷保护</h3>
-                        <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
-                            在 VPS 或公网环境下部署时，强烈建议配置管理员密码与 API Token，未提供凭证的外部请求将直接被 401 拦截。
-                        </small>
-
-                        <div class="form-group">
-                            <label>启用安全鉴权拦截</label>
-                            <select id="setting-security-enabled" class="select">
-                                <option value="false">禁用 (内网免密公开)</option>
-                                <option value="true">启用 (强力拦截未授权请求)</option>
-                            </select>
-                            <small>开启后，访问管理面板需验证管理员密码，酒馆调用需携带 API Token</small>
-                        </div>
-
-                        <div class="form-group">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
-                                <label>管理员登录密码 (Admin Password)</label>
-                                <button type="button" id="btn-gen-admin-pass" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成随机密码</button>
-                            </div>
-                            <input type="password" id="setting-security-admin-password" class="input" placeholder="留空则不设控制台密码">
-                            <small>用于登录此管理控制台 (/admin) 的专属密码</small>
-                        </div>
-
-                        <div class="form-group">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
-                                <label>酒馆客户端 API Token (防盗刷)</label>
-                                <button type="button" id="btn-gen-api-token" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成高强度 Token</button>
-                            </div>
-                            <input type="text" id="setting-security-api-token" class="input" placeholder="例: st_sec_xxxx (留空则不校验 Token)">
-                            <small>用于在 SillyTavern 插件设置中填入的访问密钥，只有携带正确 Token 才能调用 TTS 与电话接口</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MiniMax 云端 TTS Tab -->
-                <div id="settings-tab-minimax" class="settings-tab-content">
+                        </div><a class="subtle-link" href="#dashboard">前往仪表盘管理推理服务 →</a></div></div>
+<div id="settings-tab-minimax" class="settings-tab-content">
                     <div class="settings-form">
                         <h3 class="settings-section-title">☁️ MiniMax 商业级云端 TTS 服务</h3>
                         <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
@@ -653,9 +542,16 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Fish.audio 云端 TTS Tab -->
-                <div id="settings-tab-fish_audio" class="settings-tab-content">
+<div id="settings-tab-elevenlabs" class="settings-tab-content">
+                    <h3>ElevenLabs V3 · 高级 Audio Tags</h3>
+                    <p>固定使用 eleven_v3；音色可在酒馆扩展设置同步或手动录入。</p>
+                    <div class="form-group"><label>API Key</label><input type="password" class="input" id="setting-elevenlabs-api_key" autocomplete="off"></div>
+                    <div class="form-group"><label>API 根地址</label><input class="input" id="setting-elevenlabs-api_base" value="https://api.elevenlabs.io"></div>
+                    <div class="form-group"><label>默认 Voice ID</label><input class="input" id="setting-elevenlabs-default_voice_id"></div>
+                    <div class="form-group"><label>表现力</label><select class="select" id="setting-elevenlabs-stability"><option value="0">创意</option><option value="0.5" selected>自然 · 推荐</option><option value="1">稳健</option></select></div>
+                    <div class="form-group"><label>高级 Audio Tags</label><select class="select" id="setting-elevenlabs-audio_tags"><option value="true">启用</option><option value="false">关闭</option></select><small>支持 [whispers]、[laughs]、[sighs] 等台词内标签。</small></div>
+                </div>
+<div id="settings-tab-fish_audio" class="settings-tab-content">
                     <div class="settings-form">
                         <h3 class="settings-section-title">🐟 Fish.audio 开放平台云端 TTS 服务</h3>
                         <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
@@ -723,7 +619,150 @@
                             </div>
                         </div>
                     </div>
+                </div>            </section>
+
+            <!-- 系统配置页面 -->
+            <section id="settings" class="page">
+                <header class="page-header">
+                    <h2>系统配置</h2>
+                    <button class="btn btn-success" id="btn-save-system" onclick="saveSettings()">保存系统配置</button>
+                </header>
+
+                <!-- Tab 标签栏 -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="basic">📁 基础配置</button>
+                    <button class="settings-tab" data-tab="security">🔒 安全与鉴权</button>
+                    <button class="settings-tab" data-tab="analysis">🧠 分析引擎</button>
+                    <button class="settings-tab" data-tab="phone">📞 电话功能</button>
+                    <button class="settings-tab" data-tab="remote">🌐 远程与穿透</button>
                 </div>
+
+                <!-- 基础配置 Tab -->
+                <div id="settings-tab-basic" class="settings-tab-content active">
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>模型目录路径</label>
+                            <input type="text" id="setting-base-dir" class="input"
+                                placeholder="例: G:\Models\MyCharacters">
+                            <small>存放 GPT-SoVITS 模型的根目录</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>缓存目录路径</label>
+                            <input type="text" id="setting-cache-dir" class="input" placeholder="例: G:\Cache">
+                            <small>存放生成音频缓存的目录</small>
+                        </div>
+
+
+
+                        <div class="form-group">
+                            <label>后台服务端口 (Manager Port)</label>
+                            <input type="number" id="setting-manager-port" class="input" value="3000" min="1" max="65535" placeholder="默认: 3000">
+                            <small>直接语音插件后端 Manager 服务的监听端口（修改后需重启后端生效）</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>默认语言</label>
+                            <select id="setting-default-lang" class="select">
+                                <option value="Chinese">中文</option>
+                                <option value="Japanese">日语</option>
+                                <option value="English">英语</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>主题开发者模式</label>
+                            <select id="setting-developer-mode" class="select">
+                                <option value="false">关闭</option>
+                                <option value="true">开启 (显示测试浮窗)</option>
+                            </select>
+                            <small>在酒馆页面显示一个用于测试各个主题、触发来电与窃听的小组件。</small>
+                        </div>
+
+                        <h3 class="settings-section-title">📄 消息处理（共享）</h3>
+
+                        <div class="form-group">
+                            <label>消息提取标签</label>
+                            <input type="text" id="setting-extract-tag" class="input" placeholder="例: conxt">
+                            <small>提取特定标签内的内容(如 &lt;conxt&gt;...&lt;/conxt&gt;),留空则不提取</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>消息过滤标签</label>
+                            <textarea id="setting-filter-tags" class="input" rows="3"
+                                placeholder="例: <small>, [statbar], <thought target=|</thought>"></textarea>
+                            <small>
+                                过滤 chat 消息中的标签内容,支持三种格式:<br>
+                                1. &lt;xxx&gt; - 过滤 HTML 风格标签<br>
+                                2. [xxx] - 过滤方括号风格标签<br>
+                                3. 前缀|后缀 - 过滤自定义前后缀包裹的内容<br>
+                                多个标签用逗号分隔
+                            </small>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:8px;">
+                            <label style="font-weight:600; color:#fde047; margin:0; display:flex; align-items:center; gap:6px;">
+                                <span>🔄</span> TTS 文本发音替换与过滤词库
+                            </label>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" id="btn-add-replacement-rule" class="btn btn-primary" style="padding:2px 10px; font-size:11px;">➕ 添加替换词</button>
+                                <button type="button" id="btn-reset-replacements" class="btn btn-secondary" style="padding:2px 10px; font-size:11px;">🔄 恢复常用词库</button>
+                            </div>
+                        </div>
+                        <small style="display:block; margin-bottom:10px; color:#94a3b8;">
+                            在送入 GPT-SoVITS 推理合成前自动执行词汇替换，专门用于纠正多音字误读（如把“操我”自动替换为四声“肏我”）、敏感字拟声或口语谐音。
+                        </small>
+
+                        <div id="text-replacements-container" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                            <!-- 动态渲染替换列表 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 安全与鉴权 Tab -->
+                <div id="settings-tab-security" class="settings-tab-content">
+                    <div class="settings-form">
+                        <h3 class="settings-section-title">🔒 公网安全与 API 防盗刷保护</h3>
+                        <small style="display:block; margin-bottom: 12px; color: var(--text-secondary);">
+                            在 VPS 或公网环境下部署时，强烈建议配置管理员密码与 API Token，未提供凭证的外部请求将直接被 401 拦截。
+                        </small>
+
+                        <div class="form-group">
+                            <label>启用安全鉴权拦截</label>
+                            <select id="setting-security-enabled" class="select">
+                                <option value="false">禁用 (内网免密公开)</option>
+                                <option value="true">启用 (强力拦截未授权请求)</option>
+                            </select>
+                            <small>开启后，访问管理面板需验证管理员密码，酒馆调用需携带 API Token</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                                <label>管理员登录密码 (Admin Password)</label>
+                                <button type="button" id="btn-gen-admin-pass" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成随机密码</button>
+                            </div>
+                            <input type="password" id="setting-security-admin-password" class="input" placeholder="留空则不设控制台密码">
+                            <small>用于登录此管理控制台 (/admin) 的专属密码</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                                <label>酒馆客户端 API Token (防盗刷)</label>
+                                <button type="button" id="btn-gen-api-token" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">🎲 生成高强度 Token</button>
+                            </div>
+                            <input type="text" id="setting-security-api-token" class="input" placeholder="例: st_sec_xxxx (留空则不校验 Token)">
+                            <small>用于在 SillyTavern 插件设置中填入的访问密钥，只有携带正确 Token 才能调用 TTS 与电话接口</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MiniMax 云端 TTS Tab -->
+
+
+                <!-- Fish.audio 云端 TTS Tab -->
+
+
+
 
                 <!-- 分析引擎 Tab -->
                 <div id="settings-tab-analysis" class="settings-tab-content">

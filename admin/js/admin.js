@@ -1,3 +1,4 @@
+import { renderStudioRoute } from './modules/studio_navigation.js';
 // ==========================================================================
 // ST-Direct-TTS Modern Admin Console - Main Modular Entry
 // Version: 3.0.1 (Modularized)
@@ -97,7 +98,10 @@ import {
 } from './modules/prompt_emotions.js';
 
 // ==================== 页面导航 ====================
-export function switchPage(pageName) {
+export function switchPage(route) {
+    const pageName = route.split('/')[0];
+    if (!document.getElementById(pageName)?.classList.contains('page')) return;
+    if (location.hash !== `#${route}`) location.hash = route;
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     const targetNav = document.querySelector(`[data-page="${pageName}"]`);
     if (targetNav) targetNav.classList.add('active');
@@ -110,9 +114,8 @@ export function switchPage(pageName) {
         populateModelSelect();
     } else if (pageName === 'workshop') {
         loadWorkshopPresets();
-    } else if (pageName === 'prompt_emotions') {
-        loadPromptEmotionsData();
     }
+    renderStudioRoute();
 }
 
 // ==================== 全局桥接挂载 (保持 HTML inline 事件 100% 兼容) ====================
@@ -310,9 +313,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 导航切换
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
+            if (!item.dataset.page) return;
             e.preventDefault();
-            const page = item.dataset.page;
-            switchPage(page);
+            switchPage(item.hash.slice(1));
         });
     });
 
@@ -335,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindTunnelAndNginxControls();
     bindSecurityControls();
     bindSettingsTabs();
+    switchPage(location.hash.slice(1) || 'dashboard');
 
     // 显示通告弹窗
     showDialog('notice-dialog');

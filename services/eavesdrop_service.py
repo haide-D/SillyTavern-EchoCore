@@ -238,17 +238,17 @@ class EavesdropService:
         
         print(f"[EavesdropService] Grouped speakers: {', '.join(f'{s}({len(items)})' for s, items in speaker_groups.items())}")
         
-        # 3. 按说话人批量生成音频（MiniMax 免 GPU 锁，SoVITS 独占切换）
+        # 3. 按说话人批量生成音频（云端免 GPU 锁，SoVITS 独占切换）
         # 格式: {original_index: audio_bytes}
         audio_results = {}
-        from config import is_minimax_character
+        from config import is_minimax_character, get_character_provider
         
         for speaker, items in speaker_groups.items():
             print(f"[EavesdropService] Synthesizing {len(items)} segments for {speaker}")
-            is_mm = is_minimax_character(speaker)
+            is_cloud = is_minimax_character(speaker) or get_character_provider(speaker) == "elevenlabs"
 
-            if is_mm:
-                # MiniMax 云端说话人：直调生成
+            if is_cloud:
+                # 云端说话人：直调生成
                 for original_index, seg, ref_audio in items:
                     try:
                         emotion_segment = EmotionSegment(
@@ -263,9 +263,9 @@ class EavesdropService:
                             previous_ref_audio=None
                         )
                         audio_results[original_index] = audio_bytes
-                        print(f"[EavesdropService] [SUCCESS] MiniMax Segment {original_index} ({speaker}) synthesized")
+                        print(f"[EavesdropService] [SUCCESS] Cloud Segment {original_index} ({speaker}) synthesized")
                     except Exception as e:
-                        print(f"[EavesdropService] [WARN] MiniMax Segment {original_index} ({speaker}) TTS failed: {e}")
+                        print(f"[EavesdropService] [WARN] Cloud Segment {original_index} ({speaker}) TTS failed: {e}")
                         continue
             else:
                 # GPT-SoVITS 本地说话人：使用 ModelWeightService 切换并加锁

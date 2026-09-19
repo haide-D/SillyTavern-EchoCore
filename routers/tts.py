@@ -11,6 +11,8 @@ from config import get_current_dirs, get_sovits_host, apply_text_replacements
 from utils import maintain_cache_size
 
 router = APIRouter()
+from routers.elevenlabs import router as elevenlabs_router
+router.include_router(elevenlabs_router)
 
 
 class TTSRequest(BaseModel):
@@ -432,6 +434,21 @@ async def tts_proxy(
         except Exception as mm_err:
             print(f"[TTS Proxy] ❌ MiniMax 语音生成失败: {mm_err}")
             raise HTTPException(status_code=500, detail=f"MiniMax 语音生成失败: {str(mm_err)}")
+
+    if provider == "elevenlabs" or ref_audio_path.startswith("elevenlabs:"):
+        from services.elevenlabs_service import elevenlabs_service
+        target_voice = voice_id or ref_audio_path.removeprefix("elevenlabs:")
+        try:
+            if check_only == "true":
+                cached, filename, _ = elevenlabs_service.check_cache(text, target_voice, emotion, actual_speed)
+                return {"cached": cached, "filename": filename}
+            result = await elevenlabs_service.generate_audio(text, target_voice, emotion, actual_speed, force_regenerate)
+            return FileResponse(result["file_path"], media_type="audio/wav", filename=result["filename"],
+                headers={"X-Audio-Filename": result["filename"], "Access-Control-Expose-Headers": "X-Audio-Filename"})
+        except ValueError as error:
+            raise HTTPException(400, str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(502, str(error)) from error
 
     # ========== 识别是否为 Fish.audio 云端供应商 ==========
     is_fish_audio = (

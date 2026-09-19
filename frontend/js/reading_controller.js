@@ -1,6 +1,9 @@
 import { readingIcon, readingWave, readingButton, readingDialog, installReadingStyles } from './reading_ui.js';
 import { FulltextRecording, recordingKey } from './fulltext_recording.js';
 import { getReadingSettings, validateReadingSettings, extractBody, cleanBody, parseFulltext } from './reading_text.js';
+import { mountReadingControls, updateReadingControls, highlightReading, clearReadingHighlight } from './reading_controls.js';
+import { BGM } from './bgm_player.js';
+import { closeMusic } from './bgm_ui.js';
 
 export const TTS_Reading = {
     session: null,
@@ -26,21 +29,11 @@ export const TTS_Reading = {
     },
 
     setStatus(text = '') {
-        const session = this.session;
-        $('.tts-reading-bar').each((_, bar) => {
-            const active = Number($(bar).closest('.mes').attr('mesid')) === this.activeMessageId;
-            const playing = active && session?.phase === '播放' && !session.paused;
-            $(bar).toggleClass('is-playing', !!playing);
-            $(bar).find('.tts-r-meter').prop('hidden', !active || !text);
-            $(bar).find('.tts-reading-status').text(active ? text : '');
-            $(bar).find('.tts-reading-pause').prop('disabled', !active || !session)
-                .attr({ title: session?.paused ? '继续' : '暂停', 'aria-label': session?.paused ? '继续' : '暂停' })
-                .html(readingIcon(session?.paused ? 'play' : 'pause'));
-            $(bar).find('.tts-reading-stop').prop('disabled', !active || !session);
-        });
+        updateReadingControls(this, text);
     },
 
     stop() {
+        clearReadingHighlight();
         document.querySelectorAll('.tts-fulltext-player audio').forEach(audio => audio.pause());
         const session = this.session;
         this.session = null;
@@ -62,6 +55,14 @@ export const TTS_Reading = {
         session.progress?.();
     },
 
+    seekSegment(index) {
+        const session = this.session;
+        if (!session || session.phase !== '播放' || !session.readyIndices.has(index)) return;
+        session.seekTo = index; session.paused = false; session.highlightOffset = 0;
+        session.resume?.();
+        window.TTS_Events.stopAudio();
+    },
+
     async start(snapshot, segments, label, recording = null) {
         if (!this.valid(snapshot)) { this.notify('消息已改变，请重新打开朗读。'); return; }
         if (window.TTS_State.CACHE.settings.enabled === false) { this.notify('请先开启 TTS。'); return; }
@@ -70,8 +71,11 @@ export const TTS_Reading = {
         if (missing.length) { this.notify(`请先绑定音色：${missing.join('、')}。旁白在朗读设置中选择。`); return; }
         this.stop();
         const scheduler = window.TTS_Scheduler;
-        const batch = getReadingSettings().localStrategy === 'batch' && segments.some(segment => scheduler.isLocalCharacter(segment.charName));
-        const session = { abort: new AbortController(), paused: false, snapshot, prepared: 0, index: 0, phase: batch ? '批量准备' : '准备第一段' };
+        const readingSettings = getReadingSettings();
+        const batch = (recording ? readingSettings.paragraphPlayback === false : true) && readingSettings.localStrategy === 'batch' && segments.some(segment => scheduler.isLocalCharacter(segment.charName));
+        const session = { abort: new AbortController(), paused: false, snapshot, prepared: 0, index: 0,
+            total: segments.length, readyIndices: new Set(), seekTo: null, highlightOffset: 0,
+            phase: batch ? '批量准备' : '准备第一段' };
         this.session = session;
         this.activeMessageId = snapshot.id;
         const progress = () => {
@@ -93,6 +97,7 @@ export const TTS_Reading = {
             // 立即挂错误处理，预取失败也不会产生未处理的 Promise 拒绝。
             pending.set(index, scheduler.requestAudio(segments[index], session.abort.signal, { batch, deferRun: true }).then(audio => {
                 session.prepared++;
+                session.readyIndices.add(index);
                 progress();
                 queueMicrotask(saveCompleteAudio);
                 return { audio };
@@ -128,9 +133,16 @@ export const TTS_Reading = {
                 if (session.paused) await new Promise(resolve => { session.resume = resolve; });
                 session.resume = null;
                 if (session.abort.signal.aborted || !this.valid(snapshot)) break;
+                if (!batch) { prepare(i + 2); scheduler.run(); }
                 session.phase = '播放';
+                session.speaker = segments[i].sourceName || segments[i].charName;
+                const messageNode = [...document.querySelectorAll('#chat .mes')].find(node => Number(node.getAttribute('mesid')) === snapshot.id);
+                session.highlightOffset = highlightReading(messageNode, segments[i].text, session.highlightOffset);
                 progress();
                 const ended = await window.TTS_Events.playAudio(audio.key, audio.audioUrl, { signal: session.abort.signal, managed: true });
+                if (session.seekTo !== null && !session.abort.signal.aborted) {
+                    i = session.seekTo - 1; session.seekTo = null; continue;
+                }
                 if (!ended && !session.abort.signal.aborted) throw new Error('播放未能完成。若浏览器拦截自动播放，请点击“连续读”后重试。');
                 if (i === segments.length - 1 && ended) completed = true;
             }
@@ -230,10 +242,10 @@ export const TTS_Reading = {
         if (!node) return;
         $(node).find('.tts-fulltext-player audio').each((_, audio) => audio.pause());
         $(node).find('.tts-fulltext-player').remove();
-        const $player = $('<div class="tts-fulltext-player">').data('snapshot', snapshot);
-        $('<small>').text('全文音频已保存 · 可重播 / 拖动进度').appendTo($player);
-        const $audio = $('<audio controls preload="metadata">').attr({ src: FulltextRecording.url(key), 'aria-label': '全文朗读完整音频' }).appendTo($player);
-        $audio.on('error', () => $player.find('> small').text('完整音频暂时不可读取，请检查后端连接；不会自动重新合成。'));
+        const $player = $('<div class="tts-fulltext-player" hidden>').data('snapshot', snapshot);
+        const $audio = $('<audio preload="metadata">').attr({ src: FulltextRecording.url(key), 'aria-label': '全文朗读完整音频' }).appendTo($player);
+        $audio.on('error', () => this.notify('完整音频暂时不可读取，请检查后端连接。'));
+        $audio.on('pause ended timeupdate loadedmetadata', () => this.setStatus());
         $audio.on('play', () => {
             if (!this.valid(snapshot)) { $audio[0].pause(); $player.remove(); return; }
             // 停止片段队列与其他成品播放器，随后继续当前原生播放器。
@@ -241,17 +253,12 @@ export const TTS_Reading = {
             document.querySelectorAll('.tts-fulltext-player audio').forEach(other => { if (other !== audio) other.pause(); });
             const session = this.session;
             if (session) { this.session = null; session.abort.abort(); clearInterval(session.watch); session.resume?.(); }
+            clearReadingHighlight();
             window.TTS_Events.stopAudio();
             this.setStatus();
         });
-        const $actions = $('<div>').appendTo($player);
-        readingButton('play', '重播全文').on('click', () => { $audio[0].currentTime = 0; $audio[0].play().catch(() => this.notify('请点击播放器播放按钮')); }).appendTo($actions);
-        readingButton('check', '下载音频').on('click', () => window.TTS_Events.downloadAudio(FulltextRecording.url(key), '全文朗读', '完整音频')).appendTo($actions);
-        readingButton('bolt', '重新生成').on('click', () => {
-            this.stop();
-            this.previewFulltext(snapshot.id, true);
-        }).appendTo($actions);
         $(node).find('.tts-reading-bar').after($player);
+        this.setStatus();
         if (autoplay) $audio[0].play().catch(() => this.notify('完整音频已恢复，请点击播放'));
     },
 
@@ -286,6 +293,7 @@ export const TTS_Reading = {
         const $modes = section('play', '朗读方式');
         const auto = toggle($modes, 'play', '自动连播对白', '新回复完成后，自动播放已有对白气泡。', settings.autoDialogue);
         const template = toggle($modes, 'book', '全文朗读模板', '让后续回复包含可提取的人物对白与旁白。', settings.fulltextTemplate);
+        const paragraphs = toggle($modes, 'bolt', '段落接力播放', '首段就绪立即播放，同时准备后两段；每段都是完整音频。', settings.paragraphPlayback);
         const emotional = toggle($modes, 'voice', '启用有感情的旁白', '全文模板为旁白添加情绪；未标注时使用默认语气。', settings.enableEmotionalNarration);
         const $voices = section('voice', '旁白声音');
         const narrator = field($voices, '使用已绑定的音色', $('<select>').append($('<option value="">').text('选择旁白音色')));
@@ -305,7 +313,7 @@ export const TTS_Reading = {
                 $('<input type="radio" name="tts-r-strategy">').val(value).prop('checked', settings.localStrategy === value),
                 readingIcon(icon), copy(title, description)).appendTo($options);
         }
-        $('<p class="tts-r-note">').text('本地与混合音色使用此选择；尽快开播可能更频繁切换模型。').appendTo($generation);
+        $('<p class="tts-r-note">').text('开启段落接力后，全文优先尽快开播；关闭后按此策略准备本地音频。').appendTo($generation);
         const $advanced = $('<details>').append($('<summary>').append(readingIcon('chevron'), $('<span>').text('高级 · 正文提取规则'))).appendTo($body);
         const start = field($advanced, '正文开始标记', $('<input type="text">').val(settings.startMarker));
         const end = field($advanced, '正文结束标记', $('<input type="text">').val(settings.endMarker));
@@ -315,7 +323,7 @@ export const TTS_Reading = {
         $('<small>').text('设置保存在当前浏览器').appendTo($footer);
         readingButton('check', '保存设置').addClass('tts-r-primary').on('click', () => {
             try {
-                const next = { enableEmotionalNarration: emotional.prop('checked'), autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
+                const next = { ...settings, paragraphPlayback: paragraphs.prop('checked'), enableEmotionalNarration: emotional.prop('checked'), autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
                     startMarker: start.val().trim(), endMarker: end.val().trim(), excludeTags: exclude.val().trim() };
                 validateReadingSettings(next);
                 localStorage.setItem('tts_reading_settings', JSON.stringify(next));
@@ -328,6 +336,7 @@ export const TTS_Reading = {
     },
 
     mount() {
+        BGM.setContext(this.context());
         for (const node of document.querySelectorAll('#chat .mes')) {
             const messageId = Number(node.getAttribute('mesid'));
             const currentMessage = this.context()?.chat?.[messageId];
@@ -342,34 +351,31 @@ export const TTS_Reading = {
             const id = Number(node.getAttribute('mesid'));
             const message = this.context()?.chat?.[id];
             if (!message || message.is_user || message.is_system) continue;
-            const $bar = $('<div class="tts-reading-bar" role="group" aria-label="消息朗读">');
-            // 点击时读取当前 mesid，避免删除消息后楼层重排读取错误消息。
-            const currentId = () => Number(node.getAttribute('mesid'));
-            readingButton('book', '全文朗读').on('click', () => this.previewFulltext(currentId())).appendTo($bar);
-            readingButton('play', '对白连播').addClass('tts-r-primary').on('click', () => this.readDialogue(currentId())).appendTo($bar);
-            readingButton('pause', '暂停', true).addClass('tts-reading-pause').prop('disabled', true).on('click', () => this.togglePause()).appendTo($bar);
-            readingButton('stop', '停止', true).addClass('tts-reading-stop').prop('disabled', true).on('click', () => { this.generation = null; this.stop(); }).appendTo($bar);
-            readingButton('settings', '朗读设置', true).on('click', () => this.openSettings()).appendTo($bar);
-            const $meter = $('<div class="tts-r-meter" hidden>').append(readingWave()).appendTo($bar);
-            $('<small class="tts-reading-status" role="status">').appendTo($meter);
-            // 放在正文容器外，避免原解析器重写正文时销毁控件。
-            $(node).find('.mes_block').first().length ? $(node).find('.mes_block').first().append($bar) : $(node).append($bar);
+            mountReadingControls(node, this);
         }
     },
 
     init(eventSource, eventTypes) {
         installReadingStyles();
+        BGM.setContext(this.context());
+        void BGM.init();
+        document.addEventListener('pointerdown', event => {
+            document.querySelectorAll('.tts-reading-more[open]').forEach(menu => {
+                if (!menu.contains(event.target)) menu.open = false;
+            });
+        });
         const on = (name, handler) => { if (eventTypes[name]) eventSource.on(eventTypes[name], handler); };
         this.recordingWatch = setInterval(() => {
             $('.tts-fulltext-player').each((_, node) => {
                 if (!this.valid($(node).data('snapshot'))) {
                     $(node).find('audio').each((_, audio) => audio.pause());
                     $(node).remove();
+                    this.setStatus();
                 }
             });
         }, 250);
         for (const name of ['CHAT_CHANGED', 'MESSAGE_SWIPED', 'MESSAGE_UPDATED', 'MESSAGE_EDITED', 'MESSAGE_DELETED', 'GENERATION_STOPPED']) {
-            on(name, () => { this.generation = null; this.stop(); if (name === 'CHAT_CHANGED') this.seen.clear(); });
+            on(name, () => { this.generation = null; this.stop(); if (name === 'CHAT_CHANGED') { this.seen.clear(); closeMusic(); BGM.setContext(this.context()); } });
         }
         on('GENERATION_STARTED', (type, options, dryRun) => {
             if (dryRun || type === 'quiet') return;

@@ -16,9 +16,10 @@ export const TTS_Scheduler = {
 
     requestAudio(segment, signal, { batch = false, deferRun = false } = {}) {
         const CACHE = window.TTS_State.CACHE;
+        const identity = ProviderManager.getProviderForCharacter(segment.charName).getCacheIdentity?.(segment.charName);
         const key = segment.key || JSON.stringify(['reading', segment.charName, segment.text, segment.emotion,
             CACHE.mappings[segment.charName], CACHE.settings.default_lang,
-            window.TTS_PromptInjector?.getModelSpeed(segment.charName)]);
+            window.TTS_PromptInjector?.getModelSpeed(segment.charName), ...(identity ? [identity] : [])]);
         if (signal.aborted) return Promise.reject(new DOMException('已停止', 'AbortError'));
         if (CACHE.audioMemory[key]) return Promise.resolve({ key, audioUrl: CACHE.audioMemory[key] });
         return new Promise((resolve, reject) => {
@@ -73,7 +74,9 @@ export const TTS_Scheduler = {
         }
     },
 
-    getTaskKey(charName, text) {
+    getTaskKey(charName, text, emotion = 'default') {
+        const identity = ProviderManager.getProviderForCharacter(charName).getCacheIdentity?.(charName);
+        if (identity) return JSON.stringify([charName, text, emotion || 'default', identity]);
         return `${charName}_${text}`;
     },
 
@@ -107,7 +110,7 @@ export const TTS_Scheduler = {
         const CACHE = window.TTS_State.CACHE;
         const charName = $btn.data('voice-name');
         const text = $btn.data('text');
-        const key = $btn.data('generation-key') || this.getTaskKey(charName, text);
+        const key = $btn.data('generation-key') || this.getTaskKey(charName, text, $btn.data('voice-emotion'));
         $btn.attr('data-key', key);
 
         // 【修复】规范化情绪参数：空字符串、null、undefined 统一转为 'default'

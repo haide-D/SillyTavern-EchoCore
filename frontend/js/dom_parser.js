@@ -116,7 +116,8 @@ export const TTS_Parser = {
             ? window.TTS_Utils.getAllFishAudioVoices()
             : { presetVoices: [], customVoices: [] };
 
-        if (modelKeys.length === 0 && presetVoices.length === 0 && customVoices.length === 0 && fishPresets.length === 0 && fishCustoms.length === 0) {
+        const elevenVoices = window.TTS_Utils?.getAllElevenLabsVoices?.() || [];
+        if (!elevenVoices.length && modelKeys.length === 0 && presetVoices.length === 0 && customVoices.length === 0 && fishPresets.length === 0 && fishCustoms.length === 0) {
             if (window.TTS_Utils && window.TTS_Utils.showNotification) {
                 window.TTS_Utils.showNotification("未发现可用的语音模型或音色", "error");
             }
@@ -173,6 +174,13 @@ export const TTS_Parser = {
             }).join('');
             optionsHtml += '<option value="__custom_fish_audio__">✏️ 新增自定义 Fish.audio 音色 (输入 Model ID)...</option>';
             optionsHtml += '</optgroup>';
+        }
+
+        if (elevenVoices.length) {
+            optionsHtml += '<optgroup label="ElevenLabs V3">' + elevenVoices.map(voice => {
+                const value = `elevenlabs:${voice.id}`;
+                return `<option value="${escapeHtmlAttr(value)}" ${currentBound === value ? 'selected' : ''}>${escapeHtmlAttr(voice.name)}</option>`;
+            }).join('') + '</optgroup>';
         }
 
         const modalHtml = `
@@ -339,7 +347,7 @@ export const TTS_Parser = {
         // 辅助函数：构建语音条 HTML
         const buildBubbleHtml = (cleanName, cleanEmotion, cleanText) => {
             const isBound = Boolean(CACHE.mappings && CACHE.mappings[cleanName]);
-            const key = Scheduler.getTaskKey(cleanName, cleanText);
+            const key = Scheduler.getTaskKey(cleanName, cleanText, cleanEmotion);
             let status = 'waiting';
             let dataUrlAttr = '';
             let loadingClass = '';

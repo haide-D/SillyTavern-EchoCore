@@ -1,0 +1,13 @@
+#admin-prompt-presets { margin-bottom: 16px; }
+.prompt-preset-fields { display: grid; grid-template-columns: 1fr 1.4fr 1.4fr; gap: 12px; }
+#admin-prompt-presets label { display: grid; gap: 6px; color: #a8b5c5; font-size: 12px; min-width: 0; }
+#admin-prompt-presets .input { width: 100%; min-width: 0; box-sizing: border-box; }
+.prompt-preset-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.prompt-preset-actions .btn { padding: 6px 14px; font-size: 12px; }
+#admin-prompt-presets details { color: #a8b5c5; font-size: 12px; }
+#admin-prompt-presets details label { margin-top: 10px; }
+#admin-prompt-presets summary { cursor: pointer; }
+#admin-prompt-presets [role="status"] { min-height: 18px; margin: 8px 0 0; font-size: 12px; color: #83c9b2; }
+#admin-prompt-presets [role="status"][data-error="true"] { color: #fca5a5; }
+#admin-prompt-presets .preset-overwrite { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+@media(max-width: 640px) { .prompt-preset-fields { grid-template-columns: 1fr; } }

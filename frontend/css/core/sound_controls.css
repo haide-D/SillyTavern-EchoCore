@@ -1,0 +1,95 @@
+/* Message-local sound controls. No floating trigger or fixed status bar. */
+.tts-reading-bar.tts-inline-sound {
+    --r-accent: #c3d6b5; --r-line: #a4b39724;
+    position: relative; display: flex; flex-wrap: nowrap; gap: 10px;
+    margin: 10px 0 18px; padding: 12px 0; border-block: 1px solid var(--r-line);
+    font-size: 12px; min-width: 0; width: 100%;
+}
+.tts-inline-sound *, .tts-sound-popover * { box-sizing: border-box; }
+.tts-inline-sound .tts-reading-group { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.tts-inline-sound .tts-reading-copy { flex: 1; min-width: 65px; }
+.tts-inline-sound .tts-reading-copy > strong { font-size: 12px; font-weight: 500; }
+.tts-inline-sound .tts-r-meter { display: block; padding: 0; margin-top: 3px; min-width: 0; }
+.tts-inline-sound .tts-reading-status { display: block; font-size: 10px; opacity: .72; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 160px; }
+.tts-reading-bar.tts-inline-sound .tts-r-button, .tts-sound-popover .tts-r-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 40px; padding: 9px; margin: 0; border: 0; border-radius: 8px;
+    background: transparent; color: inherit; font: inherit; cursor: pointer; box-shadow: none;
+}
+.tts-reading-bar.tts-inline-sound .tts-r-icon-button, .tts-sound-popover .tts-r-icon-button { width: 40px; flex-shrink: 0; }
+.tts-reading-bar.tts-inline-sound .tts-r-button:hover, .tts-sound-popover button:hover { background: #aebda014; }
+.tts-reading-bar.tts-inline-sound .tts-reading-main, .tts-sound-popover .tts-bgm-play {
+    width: 42px; height: 42px; min-height: 42px; border-radius: 50%; background: #c3d6b5; color: #203022;
+}
+.tts-reading-bar.tts-inline-sound .tts-reading-main:hover, .tts-sound-popover .tts-bgm-play:hover { background: #d3e2c8; }
+.tts-inline-sound .tts-reading-main svg { width: 19px; }
+.tts-inline-sound.is-playing .tts-reading-main { box-shadow: 0 0 0 4px #c3d6b50a; }
+.tts-reading-steps { display: flex; }
+.tts-inline-sound .tts-reading-steps .tts-r-button { width: 32px; padding: 6px; opacity: .7; }
+.tts-inline-sound .tts-reading-steps .tts-r-button:disabled { opacity: .2; }
+.tts-inline-sound .tts-reading-seek { width: calc(100% - 52px); margin: -4px 0 0 52px; height: 15px; accent-color: var(--r-accent); }
+.tts-inline-sound [hidden], .tts-fulltext-player[hidden], .tts-sound-popover [hidden] { display: none !important; }
+.tts-bgm-entry { display: flex; align-items: center; gap: 3px; border-left: 1px solid var(--r-line); padding-left: 12px; min-width: 0; max-width: 45%; }
+.tts-bgm-open { border: 0; background: none; color: inherit; display: flex; align-items: center; gap: 9px; min-width: 0; padding: 3px 0; cursor: pointer; text-align: left; font: inherit; }
+.tts-bgm-art { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 40px; border: 1px solid #afc89c27; border-radius: 5px; background: linear-gradient(145deg,#56724b30,#20322725); color: #a6c29d; }
+.tts-bgm-art svg { width: 19px; height: 19px; }
+.tts-bgm-copy { display: block; min-width: 0; text-align: left; }
+.tts-bgm-copy strong { display: block; max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 400; }
+.tts-bgm-copy small { display: block; opacity: .65; font-size: 9px; margin-top: 3px; white-space: nowrap; }
+.tts-inline-sound .tts-bgm-toggle { opacity: .7; }
+.tts-inline-sound .tts-bgm-toggle[aria-pressed=true] { color: var(--r-accent); opacity: 1; }
+.tts-reading-more { position: relative; flex-shrink: 0; }
+.tts-reading-more > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 28px; min-height: 40px; opacity: .6; }
+.tts-reading-more > summary::-webkit-details-marker { display: none; }
+.tts-reading-more[open] > summary { opacity: 1; }
+.tts-reading-menu { position: absolute; top: 100%; right: 0; z-index: 20; display: flex; flex-direction: column; min-width: 165px; padding: 6px; background: #252e28; color: #e3e7dc; border: 1px solid #afc89c35; border-radius: 10px; box-shadow: 0 12px 40px #0005; }
+.tts-reading-bar.tts-inline-sound .tts-reading-menu .tts-r-button { justify-content: flex-start; white-space: nowrap; }
+.tts-sound-popover {
+    box-sizing: border-box;
+    position: fixed; z-index: 2147483646; width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - 16px);
+    overflow-y: auto; overscroll-behavior: contain; padding: 17px; border: 1px solid #a7baa335; border-radius: 14px;
+    background: #252e28; color: #e3e7dc; font: 12px/1.5 'Segoe UI','Microsoft YaHei',sans-serif;
+    box-shadow: 0 20px 65px #050c0870; color-scheme: dark;
+}
+.tts-sound-popover header { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; }
+.tts-sound-popover header > strong { font-weight: 500; letter-spacing: .1em; }
+.tts-sound-popover button:focus-visible, .tts-sound-popover input:focus-visible, .tts-inline-sound :is(button,summary,input):focus-visible { outline: 2px solid #c3d6b5; outline-offset: 2px; }
+.tts-bgm-tracks { max-height: 240px; overflow: auto; scrollbar-width: thin; }
+.tts-bgm-row { display: flex; align-items: center; gap: 2px; }
+.tts-bgm-track { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; padding: 9px 8px; border: 1px solid transparent; border-radius: 9px; background: none; color: inherit; text-align: left; cursor: pointer; }
+.tts-bgm-track[aria-pressed=true] { background: #b9cdb309; border-color: #bacfa82b; }
+.tts-bgm-track-copy { flex: 1; min-width: 0; }
+.tts-bgm-track-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.tts-bgm-track-copy small { display: block; color: #9ba99c; font-size: 10px; margin-top: 4px; }
+.tts-bgm-check { opacity: 0; color: #c3d6b5; }
+.tts-bgm-check svg { width: 14px; height: 14px; }
+.tts-bgm-track[aria-pressed=true] .tts-bgm-check { opacity: 1; }
+.tts-sound-popover .tts-bgm-remove { width: 28px; padding: 6px; opacity: .55; }
+.tts-sound-popover .tts-bgm-remove:hover { opacity: 1; }
+.tts-bgm-transport { display: flex; gap: 16px; align-items: center; justify-content: center; border-top: 1px solid #ffffff12; padding-top: 13px; margin-top: 13px; }
+.tts-bgm-transport button:disabled { opacity: .35; cursor: default; }
+.tts-bgm-volume { display: flex; align-items: center; gap: 10px; padding: 10px 4px; color: #a1b09e; }
+.tts-bgm-volume input { appearance: none; min-width: 0; flex: 1; height: 24px; padding: 0; margin: 0; background: none; cursor: pointer; }
+.tts-bgm-volume input::-webkit-slider-runnable-track { height: 2px; border-radius: 2px; background: #75856e; }
+.tts-bgm-volume input::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; background: #c3d6b5; border-radius: 50%; margin-top: -4px; }
+.tts-bgm-volume input::-moz-range-track { height: 2px; background: #75856e; }
+.tts-bgm-volume input::-moz-range-thumb { border: 0; width: 10px; height: 10px; background: #c3d6b5; border-radius: 50%; }
+.tts-bgm-volume output { min-width: 23px; font-size: 10px; font-variant-numeric: tabular-nums; text-align: right; }
+.tts-sound-popover .tts-bgm-import { width: 100%; font-size: 11px; color: #c3d6b5; border-top: 1px solid #ffffff10; border-radius: 0; }
+.tts-sound-empty { text-align: center; color: #a1b09e; font-size: 12px; padding: 25px 8px; }
+.tts-bgm-error { display: block; color: #e9b6a4; white-space: pre-line; overflow-wrap: anywhere; padding: 8px 3px 0; }
+::highlight(echocore-reading) { background: #c3d6b522; color: inherit; }
+@media(max-width:600px) {
+    .tts-reading-bar.tts-inline-sound { gap: 5px; }
+    .tts-inline-sound .tts-reading-group { gap: 8px; }
+    .tts-inline-sound .tts-reading-copy > strong { font-size: 11px; }
+    .tts-inline-sound .tts-reading-status { max-width: 105px; font-size: 9px; }
+    .tts-inline-sound .tts-reading-steps { display: none; }
+    .tts-bgm-entry { padding-left: 7px; max-width: 42%; }
+    .tts-bgm-art { flex-basis: 26px; width: 26px; height: 33px; }
+    .tts-bgm-open { gap: 6px; }
+    .tts-bgm-copy strong { max-width: 76px; font-size: 10px; }
+    .tts-reading-bar.tts-inline-sound .tts-bgm-toggle { width: 28px; padding: 5px; }
+    .tts-reading-more > summary { width: 22px; }
+}
+@media(prefers-reduced-motion:reduce) { .tts-inline-sound * { transition: none !important; } }

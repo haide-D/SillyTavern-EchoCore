@@ -81,6 +81,12 @@ class TTSService:
         Returns:
             音频字节数据 (标准 WAV)
         """
+        if str(ref_audio.get("path", "")).startswith("elevenlabs:"):
+            from services.elevenlabs_service import elevenlabs_service
+            result = await elevenlabs_service.generate_audio(segment.text,
+                ref_audio["path"].split(":", 1)[1], segment.emotion, segment.speed)
+            return result["audio_bytes"]
+
         # ========== MiniMax 云端引擎快速通道 ==========
         is_minimax = (
             ref_audio.get("is_minimax") is True or
