@@ -36,6 +36,25 @@ DEFAULT_CACHE_DIR = os.path.join(PLUGIN_ROOT, "Cache")
 MAX_CACHE_SIZE_MB = 500
 SOVITS_HOST = "http://127.0.0.1:9880"
 DEFAULT_MANAGER_PORT = 3000
+ELEVENLABS_MODELS = {"eleven_v3": 5000, "eleven_v4": 10000}
+
+
+def prepare_elevenlabs_settings_update(current_settings, update):
+    """Drop account-scoped synced voices when ElevenLabs credentials change."""
+    if not isinstance(update, dict):
+        return update
+    current = current_settings.get("elevenlabs_tts", {}) if isinstance(current_settings, dict) else {}
+    credentials_changed = any(
+        field in update and str(update.get(field, "")).strip() != str(current.get(field, "")).strip()
+        for field in ("api_key", "api_base")
+    )
+    if not credentials_changed:
+        return update
+    prepared = dict(update)
+    existing = update.get("voices", current.get("voices", []))
+    prepared["voices"] = [dict(voice) for voice in existing
+                          if isinstance(voice, dict) and voice.get("source") == "manual"]
+    return prepared
 
 # Fish.audio 默认配置
 fish_audio_tts_defaults = {
@@ -319,8 +338,11 @@ def init_settings():
         if deep_merge(minimax_tts_defaults, settings["minimax_tts"]):
             dirty = True
 
+    elevenlabs_defaults = {"api_key": "", "api_base": "https://api.elevenlabs.io", "model": "eleven_v3", "default_voice_id": "", "stability": 0.5, "audio_tags": True, "voices": []}
     if not isinstance(settings.get("elevenlabs_tts"), dict):
-        settings["elevenlabs_tts"] = {"api_key": "", "api_base": "https://api.elevenlabs.io", "model": "eleven_v3", "default_voice_id": "", "stability": 0.5, "audio_tags": True, "voices": []}
+        settings["elevenlabs_tts"] = elevenlabs_defaults
+        dirty = True
+    elif deep_merge(elevenlabs_defaults, settings["elevenlabs_tts"]):
         dirty = True
 
     # fish_audio_tts 默认配置 - Fish.audio 云端/自建 TTS 引擎

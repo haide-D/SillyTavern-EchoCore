@@ -10,7 +10,7 @@ const root = process.cwd();
 const html = await fs.readFile('admin/index.html', 'utf8');
 const fixture = html.replace(/<script\b[\s\S]*?<\/script>/g, '').replaceAll('href="css/', 'href="/admin/css/');
 let settings = { analysis_engine: { llm: { api_url: 'https://fixture.invalid/v1', api_key: 'fixture-only', model: 'fixture' } }, prompt_injector: { custom_template: 'Legacy {{bound_characters_section}}', models: { Voice: { speed: 1.2, emotions: { default: 'fixture' } } } } };
-let fail = false, writes = 0, lastPayload;
+let fail = false, writes = 0, syncs = 0, lastPayload;
 const server = http.createServer(async (req, res) => {
     try {
         const url = new URL(req.url, 'http://fixture');
@@ -25,6 +25,10 @@ const server = http.createServer(async (req, res) => {
                 settings = { ...settings, ...update, prompt_injector: { ...settings.prompt_injector, ...update.prompt_injector } };
             }
             res.end(JSON.stringify(settings)); return;
+        }
+        if (url.pathname === '/api/admin/tts/elevenlabs/sync') {
+            syncs++;
+            res.end(JSON.stringify({ voices: [{ id: 'fixture-voice', name: 'Fixture' }], message: '已同步 1 个音色' })); return;
         }
         if (url.pathname === '/api/admin/models') { res.end(JSON.stringify({ models: [{ name: 'Voice' }, { name: 'Rain / ☔' }] })); return; }
         if (url.pathname === '/api/admin/status' || url.pathname === '/api/admin/version/check') { res.end('{}'); return; }
@@ -161,6 +165,7 @@ try {
     await page.locator('#providers [data-tab="elevenlabs"]').click();
     await page.locator('#setting-elevenlabs-default_voice_id').fill('fixture-voice');
     await page.locator('#setting-elevenlabs-api_key').fill('fixture-only');
+    await page.locator('#setting-elevenlabs-model').selectOption('eleven_v4');
     await page.locator('.nav-item[data-page="settings"]').click();
     assert.equal(await page.locator('#settings #setting-elevenlabs-api_key').count(), 0);
     await page.locator('#setting-base-dir').fill('fixture-draft-dir');
@@ -170,6 +175,8 @@ try {
     await page.locator('#btn-save-provider').click();
     await page.waitForFunction(() => !document.getElementById('btn-save-provider').disabled);
     assert.deepEqual(Object.keys(lastPayload), ['elevenlabs_tts']);
+    assert.equal(lastPayload.elevenlabs_tts.model, 'eleven_v4');
+    assert.equal(syncs, 1, 'saving ElevenLabs automatically syncs the new account voices');
     assert.equal(settings.base_dir, undefined, 'provider save leaves system draft untouched');
     await page.locator('.nav-item[data-page="settings"]').click();
     await page.locator('#btn-save-system').click();

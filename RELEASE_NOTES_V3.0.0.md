@@ -161,5 +161,5 @@ git pull origin main
 
 ## 💬 官方交流社区
 
-* **Discord 交流频道**：[https://discord.gg/usSz6XPdK](https://discord.gg/usSz6XPdK)
+* **Discord 交流频道**：[https://discord.gg/eVYQk6BvSC](https://discord.gg/eVYQk6BvSC)
 * **欢迎分享你的创作者预设、高定主题体验与模型资源！**

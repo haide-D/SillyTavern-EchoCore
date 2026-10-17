@@ -33,7 +33,7 @@ export const TTS_Parser = {
     },
 
     init() {
-        console.log("✅ [Parser] DOM 解析器已加载 (ElevenLabs V3 + Observer 模式)");
+        console.log("✅ [Parser] DOM 解析器已加载 (ElevenLabs v3/v4 + Observer 模式)");
         this.startObserver();
         this.bindQuickActionEvents();
     },
@@ -177,7 +177,7 @@ export const TTS_Parser = {
         }
 
         if (elevenVoices.length) {
-            optionsHtml += '<optgroup label="ElevenLabs V3">' + elevenVoices.map(voice => {
+            optionsHtml += '<optgroup label="ElevenLabs">' + elevenVoices.map(voice => {
                 const value = `elevenlabs:${voice.id}`;
                 return `<option value="${escapeHtmlAttr(value)}" ${currentBound === value ? 'selected' : ''}>${escapeHtmlAttr(voice.name)}</option>`;
             }).join('') + '</optgroup>';
@@ -613,7 +613,9 @@ export const TTS_Parser = {
                     }
 
                     if (!body.data('tts-event-bound')) {
+                        window.TTS_Events?.bindBubbleMenuGestures?.(body, this);
                         body.on('click', '.voice-bubble', function (e) {
+                            if (window.TTS_Events?.consumeBubbleLongPressClick?.(this, e)) return;
                             e.stopPropagation();
                             const $this = $(this);
                             window.top.postMessage({

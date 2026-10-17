@@ -2,6 +2,7 @@ import { organizeProviderFields, initStudioNavigation, renderStudioRoute } from 
 import { API_BASE } from '../core/api.js';
 import { showNotification } from '../core/ui.js';
 let settingsLoaded = false;
+let loadedElevenLabsApiKey = '';
 
 export const DEFAULT_EMOTION_ANNOTATIONS = {
     "default": "日常、平和对话基准语调",
@@ -254,8 +255,9 @@ export async function loadSettings() {
         if (mmVolEl) mmVolEl.value = mm.vol !== undefined ? mm.vol : 1.0;
 
         // Fish.audio TTS 配置
-        const eleven = { api_key: '', api_base: 'https://api.elevenlabs.io', default_voice_id: '', stability: 0.5, audio_tags: true, ...settings.elevenlabs_tts };
-        for (const key of ['api_key', 'api_base', 'default_voice_id', 'stability', 'audio_tags']) {
+        const eleven = { api_key: '', api_base: 'https://api.elevenlabs.io', model: 'eleven_v3', default_voice_id: '', stability: 0.5, audio_tags: true, ...settings.elevenlabs_tts };
+        loadedElevenLabsApiKey = eleven.api_key || '';
+        for (const key of ['api_key', 'api_base', 'model', 'default_voice_id', 'stability', 'audio_tags']) {
             const input = document.getElementById(`setting-elevenlabs-${key}`);
             if (input) input.value = String(eleven[key]);
         }
@@ -382,7 +384,7 @@ export async function saveSettings(scope = 'system') {
             vol: mmVolEl ? parseFloat(mmVolEl.value) || 1.0 : 1.0
         },
         elevenlabs_tts: {
-            model: 'eleven_v3',
+            model: document.getElementById('setting-elevenlabs-model')?.value || 'eleven_v3',
             api_key: document.getElementById('setting-elevenlabs-api_key')?.value.trim() || '',
             api_base: document.getElementById('setting-elevenlabs-api_base')?.value.trim() || 'https://api.elevenlabs.io',
             default_voice_id: document.getElementById('setting-elevenlabs-default_voice_id')?.value.trim() || '',
@@ -440,9 +442,10 @@ export async function saveSettings(scope = 'system') {
 
     const providerFields = { gpt_sovits: 'sovits_host', minimax: 'minimax_tts', elevenlabs: 'elevenlabs_tts', fish_audio: 'fish_audio_tts' };
     let payload = settings;
+    let selectedProvider = null;
     if (scope === 'provider') {
-        const selected = document.querySelector('#providers .settings-tab.active')?.dataset.tab;
-        const key = providerFields[selected];
+        selectedProvider = document.querySelector('#providers .settings-tab.active')?.dataset.tab;
+        const key = providerFields[selectedProvider];
         if (!key) return;
         payload = { [key]: settings[key] };
     } else {
@@ -460,7 +463,20 @@ export async function saveSettings(scope = 'system') {
 
         const data = await response.json();
         if (response.ok) {
-            showNotification(scope === 'provider' ? '当前供应商已保存' : '系统配置已保存', 'success');
+            if (selectedProvider === 'elevenlabs') {
+                const keyChanged = payload.elevenlabs_tts.api_key !== loadedElevenLabsApiKey;
+                loadedElevenLabsApiKey = payload.elevenlabs_tts.api_key;
+                try {
+                    const syncResponse = await fetch(`${API_BASE}/tts/elevenlabs/sync`, { method: 'POST' });
+                    const syncData = await syncResponse.json();
+                    if (!syncResponse.ok) throw new Error(syncData.detail || '音色同步失败');
+                    showNotification(`ElevenLabs 已保存，${syncData.message}${keyChanged ? '；请到酒馆重新绑定旧角色音色' : ''}`, 'success');
+                } catch (syncError) {
+                    showNotification(`ElevenLabs 配置已保存，但音色同步失败：${syncError.message}`, 'error');
+                }
+            } else {
+                showNotification(scope === 'provider' ? '当前供应商已保存' : '系统配置已保存', 'success');
+            }
         } else {
             showNotification(data.detail || '保存失败', 'error');
         }

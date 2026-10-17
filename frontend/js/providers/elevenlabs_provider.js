@@ -1,5 +1,14 @@
 import { BaseTTSProvider } from './base_provider.js';
 
+export function elevenLabsCredentialFingerprint(value) {
+    let fingerprint = 2166136261;
+    for (const char of String(value || '')) {
+        fingerprint ^= char.charCodeAt(0);
+        fingerprint = Math.imul(fingerprint, 16777619);
+    }
+    return (fingerprint >>> 0).toString(16);
+}
+
 export class ElevenLabsProvider extends BaseTTSProvider {
     constructor(config) { super(config || {}); this.name = 'ElevenLabs'; }
     validateConfig() { return true; }
@@ -7,7 +16,7 @@ export class ElevenLabsProvider extends BaseTTSProvider {
     getCacheIdentity(charName) {
         const cfg = window.TTS_State?.CACHE?.settings?.elevenlabs_tts || {};
         return [this.name, window.TTS_State?.CACHE?.mappings?.[charName], cfg.default_voice_id,
-            cfg.api_base, cfg.stability ?? 0.5, cfg.audio_tags !== false,
+            cfg.api_base, cfg.model || 'eleven_v3', elevenLabsCredentialFingerprint(cfg.api_key), cfg.stability ?? 0.5, cfg.audio_tags !== false,
             window.TTS_PromptInjector?.getModelSpeed?.(charName) || 1];
     }
     params(task) {

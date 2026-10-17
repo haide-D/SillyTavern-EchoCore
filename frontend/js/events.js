@@ -1,6 +1,8 @@
 // static/js/events.js
 let currentAudio = null;
 let finishCurrentAudio = null;
+const BUBBLE_LONG_PRESS_MS = 550;
+const BUBBLE_LONG_PRESS_MOVE_PX = 12;
 
 export const TTS_Events = {
     // 事件监听器存储
@@ -124,32 +126,94 @@ export const TTS_Events = {
         });
     },
 
-    handleContextMenu(e, $btn) {
-        e.preventDefault();
-
+    openBubbleMenu($btn, clientX, clientY) {
         if ($btn.attr('data-status') !== 'ready') return;
 
         const $menu = $('#tts-bubble-menu');
+        if (!$menu.length) return;
         $menu.data('target', $btn);
 
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-
-        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length > 0) {
-            clientX = e.originalEvent.touches[0].clientX;
-            clientY = e.originalEvent.touches[0].clientY;
-        }
-
-        let left = clientX + 10;
-        let top = clientY + 10;
+        let left = Number(clientX) + 10;
+        let top = Number(clientY) + 10;
+        if (!Number.isFinite(left)) left = 10;
+        if (!Number.isFinite(top)) top = 10;
         if (left + 150 > $(window).width()) left = $(window).width() - 160;
         if (top + 160 > $(window).height()) top = $(window).height() - 170;
+        left = Math.max(8, left);
+        top = Math.max(8, top);
 
         $menu.css({ top: top + 'px', left: left + 'px' }).fadeIn(150);
     },
 
+    handleContextMenu(e, $btn, frameElement = null) {
+        e.preventDefault();
+        const original = e.originalEvent || e;
+        const rect = frameElement?.getBoundingClientRect?.() || { left: 0, top: 0 };
+        this.openBubbleMenu($btn, (original.clientX || 0) + rect.left, (original.clientY || 0) + rect.top);
+    },
+
+    consumeBubbleLongPressClick(element, event) {
+        if (!element || Number(element.__ttsLongPressSuppressUntil || 0) < Date.now()) return false;
+        element.__ttsLongPressSuppressUntil = 0;
+        event?.preventDefault?.();
+        event?.stopImmediatePropagation?.();
+        event?.stopPropagation?.();
+        return true;
+    },
+
+    bindBubbleMenuGestures($root, frameElement = null) {
+        if (!$root?.length) return;
+        $root.off('.ttsBubbleMenuGesture', '.voice-bubble');
+        let press = null;
+        const cancel = () => {
+            if (press?.timer) clearTimeout(press.timer);
+            press = null;
+        };
+        const framePoint = (x, y) => {
+            const rect = frameElement?.getBoundingClientRect?.() || { left: 0, top: 0 };
+            return { x: x + rect.left, y: y + rect.top };
+        };
+
+        $root.on('pointerdown.ttsBubbleMenuGesture', '.voice-bubble', (e) => {
+            const original = e.originalEvent || e;
+            if (original.pointerType === 'mouse' || original.isPrimary === false || original.button !== 0) return;
+            const $btn = $(e.currentTarget);
+            if ($btn.attr('data-status') !== 'ready') return;
+            cancel();
+            press = { pointerId: original.pointerId, x: original.clientX, y: original.clientY, $btn };
+            press.timer = setTimeout(() => {
+                if (!press) return;
+                const point = framePoint(press.x, press.y);
+                press.triggered = true;
+                press.$btn[0].__ttsLongPressSuppressUntil = Date.now() + 900;
+                this.openBubbleMenu(press.$btn, point.x, point.y);
+                window.navigator?.vibrate?.(20);
+                press.timer = null;
+            }, BUBBLE_LONG_PRESS_MS);
+        });
+        $root.on('pointermove.ttsBubbleMenuGesture', '.voice-bubble', (e) => {
+            if (!press) return;
+            const original = e.originalEvent || e;
+            if (original.pointerId !== press.pointerId) return;
+            if (Math.hypot(original.clientX - press.x, original.clientY - press.y) > BUBBLE_LONG_PRESS_MOVE_PX) cancel();
+        });
+        $root.on('pointerup.ttsBubbleMenuGesture', '.voice-bubble', () => {
+            if (press?.triggered) press.$btn[0].__ttsLongPressSuppressUntil = Date.now() + 900;
+            cancel();
+        });
+        $root.on('pointercancel.ttsBubbleMenuGesture', '.voice-bubble', cancel);
+        $root.on('contextmenu.ttsBubbleMenuGesture', '.voice-bubble', (e) => {
+            cancel();
+            const original = e.originalEvent || e;
+            if (original.pointerType !== 'mouse') e.currentTarget.__ttsLongPressSuppressUntil = Date.now() + 900;
+            this.handleContextMenu(e, $(e.currentTarget), frameElement);
+        });
+    },
+
     bindClickEvents() {
+        this.bindBubbleMenuGestures($(document));
         $(document).on('click', '.voice-bubble', (e) => {
+            if (this.consumeBubbleLongPressClick(e.currentTarget, e)) return;
             const $btn = $(e.currentTarget);
             const charName = $btn.data('voice-name');
             const CACHE = window.TTS_State.CACHE;
@@ -260,10 +324,6 @@ export const TTS_Events = {
                     Scheduler.run();
                 }
             }
-        });
-
-        $(document).on('contextmenu', '.voice-bubble', (e) => {
-            this.handleContextMenu(e, $(e.currentTarget));
         });
 
         $(document).on('click', (e) => {

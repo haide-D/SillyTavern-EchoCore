@@ -33,7 +33,7 @@
 - 方式 3：终端运行 `git pull origin main` 重启 `start.bat`。
 
 📖 38 项更新白皮书：查看仓库 RELEASE_NOTES_V3.0.0.md
-💬 Discord 个人小屋社区：https://discord.gg/usSz6XPdK（免费模型/剧本预设分享，无独享内容，仅为交流答疑）
+💬 Discord 个人小屋社区：https://discord.gg/eVYQk6BvSC（免费模型/剧本预设分享，无独享内容，仅为交流答疑）
 ```
 
 ---
@@ -48,5 +48,5 @@
 4. 全链路异步队列：待听后台静默排队，前台丝滑不卡显存；
 5. 管理后台升级：音频批量管理，彻底支持 HTTPS 反代与 wss 协议。
 👉 更新方式：进入管理后台 (http://localhost:3000/admin) 点击「立即更新」或酒馆扩展点击检查更新！
-💬 Discord 社区：https://discord.gg/usSz6XPdK
+💬 Discord 社区：https://discord.gg/eVYQk6BvSC
 ```

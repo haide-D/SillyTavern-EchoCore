@@ -30,6 +30,10 @@
     border: var(--s-wait-border);
 
     min-width: 40px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 

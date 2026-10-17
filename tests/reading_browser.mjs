@@ -110,6 +110,26 @@ try {
         window.TTS_API = { _url: path => path, _headers: extra => extra };
         window.TTS_PromptInjector = { getModelSpeed: () => 1, refreshAndInject() {} };
 
+        document.body.insertAdjacentHTML('beforeend', '<div id="tts-bubble-menu" style="display:none;position:fixed"></div>');
+        events.init();
+        let gesturePlays = 0;
+        const originalPlayAudio = events.playAudio;
+        events.playAudio = () => { gesturePlays++; return Promise.resolve(true); };
+        const gestureBubble = document.createElement('span');
+        gestureBubble.className = 'voice-bubble';
+        gestureBubble.dataset.status = 'ready';
+        gestureBubble.dataset.voiceName = 'Alice';
+        gestureBubble.dataset.text = 'long press';
+        gestureBubble.dataset.audioUrl = 'fixture.wav';
+        document.body.append(gestureBubble);
+        gestureBubble.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 11, pointerType: 'touch', isPrimary: true, button: 0, clientX: 30, clientY: 40 }));
+        await new Promise(resolve => setTimeout(resolve, 580));
+        gestureBubble.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 11, pointerType: 'touch', isPrimary: true, button: 0, clientX: 30, clientY: 40 }));
+        gestureBubble.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        check($('#tts-bubble-menu').css('display') !== 'none' && $('#tts-bubble-menu').data('target')[0] === gestureBubble, 'touch long press opens bubble menu');
+        check(gesturePlays === 0, 'touch long press suppresses playback click');
+        gestureBubble.remove();
+
         const { TTS_Parser: realParser } = await import('/frontend/js/dom_parser.js');
         window.TTS_Utils.getStyleContent = () => '';
         window.TTS_PromptInjector.getSkippedSpeakers = () => [];
@@ -119,6 +139,26 @@ try {
         check([...realContent.querySelectorAll('.voice-bubble')].map(node => node.dataset.voiceName).join(',') === 'Alice,Bob', 'existing parser accepts fulltext dialogue protocol and excludes narration');
         check(reader.dialogueSegments(0).map(s => s.text).join(',') === '你好。,进来。', 'continuous consumes actual parser bubbles');
         realContent.replaceChildren();
+
+        const frame = document.createElement('iframe');
+        const frameLoaded = new Promise(resolve => frame.addEventListener('load', resolve, { once: true }));
+        frame.srcdoc = '<!doctype html><html><body><span class="voice-bubble" data-status="ready" data-key="iframe-key" data-text="iframe long press" data-voice-name="Alice" data-voice-emotion="default"></span></body></html>';
+        document.body.append(frame);
+        await frameLoaded;
+        window.TTS_State.CACHE.settings.iframe_mode = true;
+        window.TTS_State.CACHE.audioMemory['iframe-key'] = 'fixture.wav';
+        realParser.scan();
+        const frameBubble = frame.contentDocument.querySelector('.voice-bubble');
+        frameBubble.dispatchEvent(new frame.contentWindow.PointerEvent('pointerdown', { bubbles: true, pointerId: 12, pointerType: 'touch', isPrimary: true, button: 0, clientX: 20, clientY: 20 }));
+        await new Promise(resolve => setTimeout(resolve, 580));
+        frameBubble.dispatchEvent(new frame.contentWindow.PointerEvent('pointerup', { bubbles: true, pointerId: 12, pointerType: 'touch', isPrimary: true, button: 0, clientX: 20, clientY: 20 }));
+        frameBubble.dispatchEvent(new frame.contentWindow.MouseEvent('click', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 20));
+        check($('#tts-bubble-menu').data('target')[0] === frameBubble, 'iframe touch long press opens parent bubble menu');
+        check(gesturePlays === 0, 'iframe long press suppresses play message');
+        frame.remove();
+        window.TTS_State.CACHE.settings.iframe_mode = false;
+        events.playAudio = originalPlayAudio;
 
         const handlers = {};
         const types = Object.fromEntries(['CHAT_CHANGED', 'MESSAGE_SWIPED', 'MESSAGE_UPDATED', 'MESSAGE_EDITED', 'MESSAGE_DELETED', 'GENERATION_STOPPED', 'GENERATION_STARTED', 'CHARACTER_MESSAGE_RENDERED', 'GENERATION_ENDED'].map(key => [key, key]));
@@ -431,7 +471,8 @@ try {
     // Simulate a true browser refresh: rebuild globals and recover purely from backend file.
     const reloadFixture = await page.evaluate(() => {
         const ctx = window.SillyTavern.getContext();
-        return { chatId: ctx.chatId, raw: ctx.chat[0].mes.slice(0, -'modified'.length) };
+        return { chatId: ctx.chatId, raw: ctx.chat[0].mes.slice(0, -'modified'.length),
+            mappings: window.TTS_State.CACHE.mappings, settings: window.TTS_State.CACHE.settings };
     });
     await page.reload();
     const restoredAfterReload = await page.evaluate(async fixture => {
@@ -440,7 +481,7 @@ try {
         window.SillyTavern = { getContext: () => ctx };
         window.TTS_API = { _url: path => path, _headers: extra => extra };
         window.TTS_Events = { stopAudio() {} };
-        window.TTS_State = { CACHE: { mappings: { Alice: 'a' }, settings: {} } };
+        window.TTS_State = { CACHE: { mappings: fixture.mappings, settings: fixture.settings } };
         window.TTS_PromptInjector = { refreshAndInject() {} };
         window.TTS_Utils = { showNotification() {} };
         window.TTS_Reading = reader;
@@ -541,6 +582,14 @@ try {
         const plain = await recordingKey(snapshot, {});
         localStorage.setItem('tts_reading_settings', JSON.stringify({ enableEmotionalNarration: true, narrator: 'Alice' }));
         if (await recordingKey(snapshot, {}) === plain) throw new Error('Emotional recording reused old plain audio');
+        window.TTS_State.CACHE.mappings.Alice = 'elevenlabs:fixtureVoice';
+        window.TTS_State.CACHE.settings.elevenlabs_tts = { api_key: 'first-key', model: 'eleven_v4', api_base: 'https://api.elevenlabs.io', stability: 0.5, audio_tags: true };
+        const firstKey = await recordingKey(snapshot, {});
+        window.TTS_State.CACHE.settings.elevenlabs_tts.api_key = 'second-key';
+        const secondKey = await recordingKey(snapshot, {});
+        if (secondKey === firstKey) throw new Error('Fulltext recording reused old ElevenLabs API key');
+        window.TTS_State.CACHE.settings.elevenlabs_tts.model = 'eleven_v3';
+        if (await recordingKey(snapshot, {}) === secondKey) throw new Error('Fulltext recording reused old ElevenLabs model');
     });
     await presetPage.evaluate(async () => {
         const { FishAudioProvider } = await import('/frontend/js/providers/fish_audio_provider.js');
@@ -583,7 +632,7 @@ try {
     await elevenPage.evaluate(async () => {
         const { mountElevenLabsSettings } = await import('/frontend/js/elevenlabs_ui.js');
         window.TTS_API = { _url: path => path, _headers: extra => extra };
-        window.TTS_State = { CACHE: { settings: {}, elevenlabs_voices: [], mappings: { Alice: 'elevenlabs:fixtureVoice', Local: 'local-model' } } };
+        window.TTS_State = { CACHE: { settings: {}, elevenlabs_voices: [], mappings: { Alice: 'elevenlabs:fixtureVoice', Legacy: 'elevenlabs:oldVoice', Local: 'local-model' } } };
         window.TTS_UI = { renderModelOptions() { window.voiceRefreshes = (window.voiceRefreshes || 0) + 1; } };
         window.SillyTavern = { getContext: () => ({ extensionSettings: { st_direct_tts: { active_provider: 'elevenlabs' } } }) };
         document.body.innerHTML = '<div id="tts-provider-panel-elevenlabs"></div>';
@@ -591,11 +640,13 @@ try {
     });
     await elevenPage.getByLabel('API Key', { exact: true }).fill('fixture-only');
     await elevenPage.getByLabel('默认 Voice ID').fill('defaultVoice');
-    await elevenPage.getByLabel('V3 表现力').selectOption('0');
-    await elevenPage.getByRole('button', { name: '保存 V3 配置' }).click();
-    await elevenPage.getByRole('status').filter({ hasText: 'V3 配置已保存' }).waitFor();
+    await elevenPage.locator('#tts-eleven-model').selectOption('eleven_v4');
+    await elevenPage.locator('#tts-eleven-stability').selectOption('0');
+    await elevenPage.getByRole('button', { name: '保存 ElevenLabs 配置' }).click();
+    await elevenPage.getByRole('status').filter({ hasText: 'Eleven v4 配置已保存' }).waitFor();
+    assert.match(await elevenPage.getByRole('status').textContent(), /1 个旧角色音色需重新绑定/);
     assert.equal(elevenCalls[0].data.elevenlabs_tts.stability, 0);
-    assert.equal(elevenCalls[0].data.elevenlabs_tts.model, 'eleven_v3');
+    assert.equal(elevenCalls[0].data.elevenlabs_tts.model, 'eleven_v4');
     await elevenPage.getByRole('button', { name: '连接并同步音色' }).click();
     await elevenPage.getByRole('status').filter({ hasText: '已同步 1 个音色' }).waitFor();
     assert.equal(await elevenPage.locator('img').count(), 0, 'voice names are rendered as text');
@@ -618,10 +669,16 @@ try {
         if (originalKey === scheduler.getTaskKey('Alice', 'Hello', 'happy')) throw new Error('V3 reused memory audio with wrong emotion');
         window.TTS_State.CACHE.settings.elevenlabs_tts.stability = 1;
         if (originalKey === scheduler.getTaskKey('Alice', 'Hello', 'sad')) throw new Error('V3 reused memory audio with old stability');
+        const stabilityKey = scheduler.getTaskKey('Alice', 'Hello', 'sad');
+        window.TTS_State.CACHE.settings.elevenlabs_tts.model = 'eleven_v3';
+        if (stabilityKey === scheduler.getTaskKey('Alice', 'Hello', 'sad')) throw new Error('ElevenLabs reused memory audio across models');
+        const modelKey = scheduler.getTaskKey('Alice', 'Hello', 'sad');
+        window.TTS_State.CACHE.settings.elevenlabs_tts.api_key = 'rotated-key';
+        if (modelKey === scheduler.getTaskKey('Alice', 'Hello', 'sad')) throw new Error('ElevenLabs reused memory audio across API keys');
     });
     await elevenPage.close();
     assert.deepEqual(errors, []);
-    console.log('ElevenLabs browser UI: V3 save, creative stability, voice sync/edit, safe names, default voice and mixed provider routing passed.');
+    console.log('ElevenLabs browser UI: V4 save, key/model cache isolation, creative stability, voice sync/edit, safe names, default voice and mixed provider routing passed.');
     console.log('Preset browser UI: save, provider switching, chat isolation, download/import, invalid-file rejection, reset, persistence and emotional recording identity passed.');
     console.log(`Reading browser regressions passed (${results.length} assertions).`);
     for (const result of results) console.log(`  ✓ ${result}`);

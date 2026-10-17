@@ -1,4 +1,4 @@
-"""Eleven v3 non-streaming speech, voice library and deterministic WAV cache."""
+"""Eleven v3/v4 non-streaming speech, voice library and isolated WAV cache."""
 import hashlib
 import io
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import httpx
-from config import init_settings, get_current_dirs
+from config import ELEVENLABS_MODELS, init_settings, get_current_dirs
 
 DEFAULTS = {'api_key': '', 'api_base': 'https://api.elevenlabs.io',
             'model': 'eleven_v3', 'default_voice_id': '', 'stability': 0.5,
@@ -54,7 +54,8 @@ class ElevenLabsService:
         if response.status_code == 200:
             return
         messages = {401: 'API Key 无效', 403: 'API Key 缺少权限或音色不可用', 402: '账户额度不足',
-                    404: '音色或接口不存在', 422: '语音参数无效', 429: '请求频率或并发超限，请稍后重试'}
+                    404: 'Voice ID 不存在或不属于当前 API Key，请重新同步音色并绑定角色',
+                    422: '语音参数无效', 429: '请求频率或并发超限，请稍后重试'}
         raise RuntimeError(f'ElevenLabs：{messages.get(response.status_code, "服务请求失败")}（HTTP {response.status_code}）')
 
     @classmethod
@@ -99,18 +100,23 @@ class ElevenLabsService:
     def request_spec(cls, text, voice_id=None, emotion='default', speed=1.0):
         cfg = cls.get_config()
         voice = cls.voice_id(voice_id or cfg.get('default_voice_id'))
+        model = str(cfg.get('model') or DEFAULTS['model']).strip()
+        if model not in ELEVENLABS_MODELS:
+            raise ValueError('ElevenLabs 模型仅支持 eleven_v3 或 eleven_v4')
         stability = float(cfg.get('stability', 0.5))
         if stability not in (0.0, 0.5, 1.0):
-            raise ValueError('V3 稳定度请选择创意、自然或稳健')
+            raise ValueError('ElevenLabs 稳定度请选择创意、自然或稳健')
         clean = cls.tagged_text(text, emotion, cfg.get('audio_tags', True))
-        if not clean or len(clean) > 5000:
-            raise ValueError('Eleven V3 单段文本需为 1–5000 字符，请使用分段朗读')
-        # V3 delivery speed is directed through tags, not the v2 speed parameter.
+        limit = ELEVENLABS_MODELS[model]
+        if not clean or len(clean) > limit:
+            raise ValueError(f'{model} 单段文本需为 1–{limit} 字符，请使用分段朗读')
+        # V3/V4 delivery speed is directed through tags, not the v2 speed parameter.
         if cfg.get('audio_tags', True):
             if speed < 0.9: clean = '[slowly] ' + clean
             elif speed > 1.1: clean = '[speaking quickly] ' + clean
-        payload = {'text': clean, 'model_id': 'eleven_v3', 'voice_settings': {'stability': stability}}
-        identity = json.dumps([cls.base_url(cfg), voice, payload, 'pcm_24000'], ensure_ascii=False, sort_keys=True)
+        payload = {'text': clean, 'model_id': model, 'voice_settings': {'stability': stability}}
+        key_fingerprint = hashlib.sha256(str(cfg.get('api_key') or '').strip().encode()).hexdigest()
+        identity = json.dumps([cls.base_url(cfg), key_fingerprint, voice, payload, 'pcm_24000'], ensure_ascii=False, sort_keys=True)
         filename = 'eleven_' + hashlib.sha256(identity.encode()).hexdigest() + '.wav'
         # Shared cache tools (favorites, download and regeneration) address basenames.
         directory = Path(get_current_dirs()[1])

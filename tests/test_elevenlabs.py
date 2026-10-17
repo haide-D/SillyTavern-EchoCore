@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from services.elevenlabs_service import ElevenLabsService as Eleven
 from routers.tts import router
+import routers.admin as admin_routes
+import routers.system as system_routes
 from phone_call_utils.tts_service import TTSService
 from phone_call_utils.response_parser import EmotionSegment
 from phone_call_utils.audio_pipeline import AudioPipeline
@@ -57,6 +59,9 @@ class ElevenTests(unittest.TestCase):
 
     def test_cache_parameters_and_validation(self):
         first = Eleven.request_spec('Hello')[3]
+        self.cfg['api_key'] = 'second-fixture-key'
+        self.assertNotEqual(first, Eleven.request_spec('Hello')[3])
+        self.cfg['api_key'] = 'fixture-only'
         self.cfg['stability'] = 0
         self.assertNotEqual(first, Eleven.request_spec('Hello')[3])
         self.assertNotEqual(first, Eleven.request_spec('Hello', voice_id='voiceB')[3])
@@ -64,6 +69,33 @@ class ElevenTests(unittest.TestCase):
         with self.assertRaises(ValueError): Eleven.request_spec('Hello', voice_id='../secret')
         self.cfg['stability'] = 0.7
         with self.assertRaises(ValueError): Eleven.request_spec('Hello')
+
+    def test_v4_model_and_limits(self):
+        self.cfg['model'] = 'eleven_v4'
+        _, _, payload, _ = Eleven.request_spec('长' * 6000)
+        self.assertEqual(payload['model_id'], 'eleven_v4')
+        with self.assertRaisesRegex(ValueError, '10000'):
+            Eleven.request_spec('长' * 10001)
+        self.cfg['model'] = 'unknown'
+        with self.assertRaisesRegex(ValueError, 'eleven_v3 或 eleven_v4'):
+            Eleven.request_spec('Hello')
+
+    def test_settings_routes_validate_model(self):
+        for module, route, path in [(system_routes, system_routes.router, '/update_settings'),
+                                    (admin_routes, admin_routes.router, '/settings')]:
+            app = FastAPI(); app.include_router(route)
+            current = {'elevenlabs_tts': {'model': 'eleven_v3', 'api_key': 'old-key', 'voices': [
+                {'id': 'old-remote', 'name': 'Old', 'source': 'remote'},
+                {'id': 'manual', 'name': 'Manual', 'source': 'manual'},
+            ]}}
+            with patch.object(module, 'init_settings', return_value=current), patch.object(module, 'save_json') as save:
+                client = TestClient(app)
+                self.assertEqual(client.post(path, json={'elevenlabs_tts': {'model': 'unknown'}}).status_code, 400)
+                self.assertEqual(client.post(path, json={'elevenlabs_tts': {'model': 'eleven_v4'}}).status_code, 200)
+                self.assertEqual(save.call_args.args[1]['elevenlabs_tts']['model'], 'eleven_v4')
+                self.assertEqual(client.post(path, json={'elevenlabs_tts': {'api_key': 'new-key'}}).status_code, 200)
+                saved_voices = save.call_args.args[1]['elevenlabs_tts']['voices']
+                self.assertEqual([voice['id'] for voice in saved_voices], ['manual'])
 
     def test_error_does_not_cache_or_retry(self):
         for status in [401, 403, 402, 404, 422, 429, 503]:
@@ -100,13 +132,17 @@ class ElevenTests(unittest.TestCase):
     def test_voice_sync_preserves_manual_and_failed_sync_does_not_write(self):
         app = FastAPI(); app.include_router(router)
         client = TestClient(app)
-        settings = {'elevenlabs_tts': {'voices': [{'id': 'voiceA', 'name': 'My name', 'source': 'manual'}]}}
+        settings = {'elevenlabs_tts': {'voices': [
+            {'id': 'stale', 'name': 'Old account', 'source': 'remote'},
+            {'id': 'voiceA', 'name': 'My name', 'source': 'manual'},
+        ]}}
         with patch('routers.elevenlabs.init_settings', return_value=settings), patch('routers.elevenlabs.save_json') as save:
             remote = AsyncMock(return_value=[{'id': 'voiceA', 'name': 'Remote name'}, {'id': 'voiceB', 'name': 'B'}])
             with patch.object(Eleven, 'remote_voices', remote):
                 response = client.post('/tts/elevenlabs/sync')
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json()['voices'][0]['name'], 'My name')
+                self.assertNotIn('stale', [voice['id'] for voice in response.json()['voices']])
                 save.assert_called_once()
             save.reset_mock()
             with patch.object(Eleven, 'remote_voices', AsyncMock(side_effect=RuntimeError('fixture failure'))):

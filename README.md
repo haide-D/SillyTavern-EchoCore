@@ -5,7 +5,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-**最新版本：v3.4.0** — 接入 ElevenLabs V3 Audio Tags，全文分段边生成边播，正文内朗读与 BGM 控制，以及分层整理的供应商与提示词预设后台。[查看更新公告](./RELEASE_NOTES_V3.4.0.md)
+**最新版本：v3.4.1** — 支持 ElevenLabs v3 / v4，修复换 Key 后复用旧缓存与旧账号音色、手机长按菜单，并优化音色保存同步。[查看更新公告](./RELEASE_NOTES_V3.4.1.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 
@@ -20,11 +20,11 @@
 
 ---
 
-## ElevenLabs V3 与段落接力朗读
+## ElevenLabs v3 / v4 与段落接力朗读
 
-扩展设置中选择 **ElevenLabs · V3**，填写 API Key 与默认 Voice ID，保存后可同步账户音色或手动添加 Voice ID，再在角色绑定中选择 ElevenLabs 音色。表现力提供创意 / 自然 / 稳健三档；默认使用自然。后端管理页也可保存连接配置。升级代码后需要重启 EchoCore 后端并刷新酒馆页面。
+扩展设置中选择 **ElevenLabs** 和 v3 / v4 模型，填写 API Key 与默认 Voice ID；保存后会同步当前账户音色，再在角色绑定中选择对应音色。表现力提供创意 / 自然 / 稳健三档；默认使用自然。更换 API Key 后需要重新绑定旧账号角色音色。升级代码后需要重启 EchoCore 后端并刷新酒馆页面。
 
-使用 `eleven_v3` 的非流式接口。台词中的 Audio Tags 会原样送往模型，例如 `[Alice, whisper] “ [whispers] 别出声。[sighs] 我听见了。”`。外层标签用于识别角色，内层标签用于声音表现；标签请放在引号内，避免包含角色名或逗号。未写内层标签时，插件会把支持的外层情绪转为声音提示。可关闭高级 Audio Tags。标签实际表现取决于音色与模型，说明见 [ElevenLabs 官方指南](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices)。
+可选择 `eleven_v3` 或 `eleven_v4` 的非流式接口。台词中的 Audio Tags 会原样送往模型，例如 `[Alice, whisper] “ [whispers] 别出声。[sighs] 我听见了。”`。外层标签用于识别角色，内层标签用于声音表现；标签请放在引号内，避免包含角色名或逗号。未写内层标签时，插件会把支持的外层情绪转为声音提示。可关闭高级 Audio Tags。标签实际表现取决于音色与模型，说明见 [ElevenLabs 官方指南](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices)。
 
 全文设置默认开启 **段落接力播放**：按自然段和句子分割，首段约 100 字符以内，之后约 240 字符以内（不切断音频标签）。第一段生成完整文件即可开播，播放时准备后两段；云端最多两个请求同时生成，本地模型仍串行切换。音频仍是逐段完整文件，不使用流式传输。多角色本地模型切换、网络与服务耗时仍可能造成段间等待。
 
@@ -169,7 +169,7 @@ AI 消息下方有两个独立入口，也可从「TTS 配置 → 全文朗读 /
 
 ## 🤝 社区与支持
 * **📄 更新日志与白皮书**：查阅 [RELEASE_NOTES_V3.0.0.md](./RELEASE_NOTES_V3.0.0.md)
-* **💬 历史交流归档**：[Discord 归档社区](https://discord.gg/usSz6XPdK)
+* **💬 交流社区**：[Discord](https://discord.gg/eVYQk6BvSC)
 
 ---
 

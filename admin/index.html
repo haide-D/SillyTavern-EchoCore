@@ -16,7 +16,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>🎙️ TTS 管理</h1>
-                <p class="version">v3.4.0</p>
+                <p class="version">v3.4.1</p>
             </div>
 
             <nav class="nav">
@@ -49,7 +49,7 @@
                     <span class="icon">⚙️</span>
                     <span>系统配置</span>
                 </a>
-                <a href="https://discord.gg/usSz6XPdK" target="_blank" class="nav-item" style="color: #5865F2; margin-top: 1rem; border: 1px solid rgba(88, 101, 242, 0.3); border-radius: 8px;">
+                <a href="https://discord.gg/eVYQk6BvSC" target="_blank" class="nav-item" style="color: #5865F2; margin-top: 1rem; border: 1px solid rgba(88, 101, 242, 0.3); border-radius: 8px;">
                     <span class="icon">💬</span>
                     <span>Discord 社区</span>
                 </a>
@@ -427,7 +427,7 @@
                 <header class="page-header"><div><span class="eyebrow">VOICE SERVICES</span><h2>语音供应商</h2></div><button class="btn btn-success" id="btn-save-provider" onclick="saveSettings('provider')">保存当前供应商</button></header>
                 <nav class="settings-tabs provider-tabs" aria-label="语音供应商">
                     <button class="settings-tab active" data-tab="gpt_sovits">GPT-SoVITS <span>本地</span></button>
-                    <button class="settings-tab" data-tab="elevenlabs">ElevenLabs <span>V3</span></button>
+                    <button class="settings-tab" data-tab="elevenlabs">ElevenLabs <span>v3 / v4</span></button>
                     <button class="settings-tab" data-tab="minimax">MiniMax</button>
                     <button class="settings-tab" data-tab="fish_audio">Fish.audio</button>
                 </nav>
@@ -543,10 +543,11 @@
                     </div>
                 </div>
 <div id="settings-tab-elevenlabs" class="settings-tab-content">
-                    <h3>ElevenLabs V3 · 高级 Audio Tags</h3>
-                    <p>固定使用 eleven_v3；音色可在酒馆扩展设置同步或手动录入。</p>
+                    <h3>ElevenLabs v3 / v4 · 高级 Audio Tags</h3>
+                    <p>可按需选择 v3 或 v4；音色可在酒馆扩展设置同步或手动录入。</p>
                     <div class="form-group"><label>API Key</label><input type="password" class="input" id="setting-elevenlabs-api_key" autocomplete="off"></div>
                     <div class="form-group"><label>API 根地址</label><input class="input" id="setting-elevenlabs-api_base" value="https://api.elevenlabs.io"></div>
+                    <div class="form-group"><label>模型</label><select class="select" id="setting-elevenlabs-model"><option value="eleven_v3">Eleven v3</option><option value="eleven_v4">Eleven v4 · 推荐</option></select></div>
                     <div class="form-group"><label>默认 Voice ID</label><input class="input" id="setting-elevenlabs-default_voice_id"></div>
                     <div class="form-group"><label>表现力</label><select class="select" id="setting-elevenlabs-stability"><option value="0">创意</option><option value="0.5" selected>自然 · 推荐</option><option value="1">稳健</option></select></div>
                     <div class="form-group"><label>高级 Audio Tags</label><select class="select" id="setting-elevenlabs-audio_tags"><option value="true">启用</option><option value="false">关闭</option></select><small>支持 [whispers]、[laughs]、[sighs] 等台词内标签。</small></div>
@@ -1230,8 +1231,8 @@
                             💬 欢迎加入官方 Discord 交流社区
                         </p>
                         <p style="margin: 8px 0 0; font-size: 0.95em;">
-                            <a href="https://discord.gg/usSz6XPdK" target="_blank" style="color: #5865F2; text-decoration: underline; font-weight: bold;">
-                                👉 点击加入 Discord 频道 (https://discord.gg/usSz6XPdK)
+                            <a href="https://discord.gg/eVYQk6BvSC" target="_blank" style="color: #5865F2; text-decoration: underline; font-weight: bold;">
+                                👉 点击加入 Discord 频道 (https://discord.gg/eVYQk6BvSC)
                             </a>
                         </p>
                         <p style="margin: 5px 0 0; font-size: 0.85em; color: var(--text-secondary);">

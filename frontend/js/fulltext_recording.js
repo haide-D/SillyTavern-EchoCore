@@ -1,9 +1,17 @@
 import { getReadingSettings } from './reading_text.js';
-// 成品不保存原文或密钥，标识仅由聊天与消息快照计算。
+import { elevenLabsCredentialFingerprint } from './providers/elevenlabs_provider.js';
+// 成品标识包含声音配置的不可逆版本，不保存密钥。
 export async function recordingKey(snapshot, context) {
     const reading = getReadingSettings();
-    const variant = reading.enableEmotionalNarration
+    const readingVariant = reading.enableEmotionalNarration
         ? ['emotional-narration-v1', reading.narrator, window.TTS_State?.CACHE?.mappings?.[reading.narrator]] : 'fulltext-v1';
+    const cache = window.TTS_State?.CACHE || {};
+    const mappings = Object.entries(cache.mappings || {}).sort(([left], [right]) => left.localeCompare(right));
+    const eleven = cache.settings?.elevenlabs_tts || {};
+    const voiceVariant = ['voice-config-v2', mappings, ['elevenlabs', eleven.api_base,
+        eleven.model || 'eleven_v3', elevenLabsCredentialFingerprint(eleven.api_key),
+        eleven.default_voice_id, eleven.stability ?? 0.5, eleven.audio_tags !== false]];
+    const variant = [readingVariant, voiceVariant];
     const identity = JSON.stringify([variant, context.getCurrentChatId?.() || snapshot.chatId,
         context.characterId, context.groupId, snapshot.id, snapshot.swipe, snapshot.raw]);
     const api = window.TTS_API;

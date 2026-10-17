@@ -1,7 +1,8 @@
 import os
 import glob
-from fastapi import APIRouter
-from config import init_settings, load_json, save_json, get_current_dirs, SETTINGS_FILE
+from fastapi import APIRouter, HTTPException
+from config import (ELEVENLABS_MODELS, init_settings, load_json, save_json, get_current_dirs,
+                    prepare_elevenlabs_settings_update, SETTINGS_FILE)
 from schemas import SettingsRequest, ThemeRequest
 
 router = APIRouter()
@@ -19,6 +20,15 @@ def clear_cache():
 @router.post("/update_settings")
 def update(req: dict):
     s = init_settings()
+
+    eleven = req.get("elevenlabs_tts")
+    if isinstance(eleven, dict) and "model" in eleven:
+        model = eleven["model"]
+        if not isinstance(model, str) or model not in ELEVENLABS_MODELS:
+            raise HTTPException(status_code=400, detail="ElevenLabs 模型仅支持 eleven_v3 或 eleven_v4")
+    if isinstance(eleven, dict):
+        req = dict(req)
+        req["elevenlabs_tts"] = prepare_elevenlabs_settings_update(s, eleven)
 
     def deep_merge(base: dict, updates: dict) -> dict:
         result = base.copy()

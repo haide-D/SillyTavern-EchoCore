@@ -3,7 +3,7 @@
 🌐 本文档 Google Docs 在线编辑/阅读地址：
 https://docs.google.com/document/d/13URWlQiBVM9bJJMg5YBzp61bkwKPt0G-KJ8mi87lbmQ/edit?tab=t.0
 
-💬 官方交流与模型/剧本预设分享社区 (Discord)：https://discord.gg/usSz6XPdK
+💬 官方交流与模型/剧本预设分享社区 (Discord)：https://discord.gg/eVYQk6BvSC
 GitHub 官方仓库：https://github.com/haide-D/SillyTavern-GPT-SoVITS
 
 ====================================================================
@@ -108,7 +108,7 @@ GitHub 官方仓库：https://github.com/haide-D/SillyTavern-GPT-SoVITS
 5. 社区交流与一键导入/导出分享：
    - 📤 **导出**：在工坊列表点击预设卡片上的「导出」按钮，即可生成单文件 `.json` 剧本预设；
    - 📥 **导入**：在工坊点击「📥 导入预设 (.json)」，选择群友或 Discord 社区分享的剧本文件，一秒导入即玩！
-   - 欢迎把你的神仙剧本分享到 Discord 社区：`https://discord.gg/usSz6XPdK`！
+   - 欢迎把你的神仙剧本分享到 Discord 社区：`https://discord.gg/eVYQk6BvSC`！
 
 6. 沉浸体验与「📜 铭刻聊天」无缝接驳：
    - 小剧场播放时，带有精确的时间轴分段字幕，多角色说话时当前字幕会实时滚动高亮！
@@ -143,4 +143,4 @@ Q: 远程连接/反向代理怎么填？
 A: 在酒馆原生扩展设置中开启远程连接，直接输入你的完整反代地址（如 `https://tts.xxx.com`）即可，系统会自动识别 HTTPS 并升级使用 WSS，不追加多余端口。
 
 💬 遇到任何问题，欢迎随时加入 Discord 官方社区交流获取技术支持与最新模型/剧本预设！
-👉 Discord 邀请链接：https://discord.gg/usSz6XPdK
+👉 Discord 邀请链接：https://discord.gg/eVYQk6BvSC

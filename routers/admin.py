@@ -4,7 +4,8 @@ from typing import Optional, List
 import os
 import shutil
 
-from config import init_settings, save_json, load_json, SETTINGS_FILE
+from config import (ELEVENLABS_MODELS, init_settings, save_json, load_json,
+                    prepare_elevenlabs_settings_update, SETTINGS_FILE)
 from services.prompt_presets import validate_prompt_presets
 
 from utils_admin.service_manager import ServiceManager
@@ -439,6 +440,11 @@ async def get_settings():
 @router.post("/settings")
 async def update_settings(settings: dict):
     """更新系统配置"""
+    eleven = settings.get('elevenlabs_tts')
+    if isinstance(eleven, dict) and 'model' in eleven:
+        model = eleven['model']
+        if not isinstance(model, str) or model not in ELEVENLABS_MODELS:
+            raise HTTPException(status_code=400, detail='ElevenLabs 模型仅支持 eleven_v3 或 eleven_v4')
     presets = settings.get('prompt_injector', {})
     if isinstance(presets, dict) and 'provider_presets' in presets:
         try:
@@ -449,6 +455,9 @@ async def update_settings(settings: dict):
         presets = None
     try:
         current = init_settings()
+        if isinstance(eleven, dict):
+            settings = dict(settings)
+            settings['elevenlabs_tts'] = prepare_elevenlabs_settings_update(current, eleven)
         
         # 深度合并配置,而不是浅更新
         def deep_merge(base: dict, updates: dict) -> dict:
