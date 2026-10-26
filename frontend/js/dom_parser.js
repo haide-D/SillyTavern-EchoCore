@@ -89,12 +89,12 @@ export const TTS_Parser = {
                 window.TTS_PromptInjector.skipSpeaker(speaker);
             }
             if (window.TTS_Utils && window.TTS_Utils.showNotification) {
-                window.TTS_Utils.showNotification(`已将角色 "${speaker}" 加入跳过列表 (List 2)`, 'info');
+                window.TTS_Utils.showNotification(`已跳过角色 "${speaker}"（可在语音管理面板随时恢复）`, 'info');
             }
 
-            // 移除该标签或转换为纯文本
-            $(`.tts-new-speaker-badge[data-speaker="${escapeHtmlAttr(speaker)}"]`).fadeOut(200, function() {
-                $(this).remove();
+            const safeSpeaker = escapeHtmlAttr(speaker);
+            $(`.tts-new-speaker-badge[data-speaker="${safeSpeaker}"]`).fadeOut(200, function() {
+                $(this).replaceWith(`<span class="tts-skipped-speaker-marker" data-speaker="${safeSpeaker}" style="display:none;"></span>`);
             });
         });
     },
@@ -384,6 +384,21 @@ export const TTS_Parser = {
             if (!html || typeof html !== 'string') return html;
 
             let modifiedHtml = html;
+            const checkSkipped = (spk) => Boolean(
+                window.TTS_PromptInjector && (
+                    typeof window.TTS_PromptInjector.isSkippedSpeaker === 'function'
+                        ? window.TTS_PromptInjector.isSkippedSpeaker(spk)
+                        : window.TTS_PromptInjector.getSkippedSpeakers?.().includes(spk)
+                )
+            );
+
+            // 若存在已被取消跳过的隐藏标记，还原为 [Speaker, New] 以便重新渲染徽章或气泡
+            if (modifiedHtml.includes('tts-skipped-speaker-marker')) {
+                modifiedHtml = modifiedHtml.replace(
+                    /<span class="tts-skipped-speaker-marker" data-speaker="([^"]+)"[^>]*><\/span>/g,
+                    (full, spk) => checkSkipped(spk) ? full : `[${spk}, New]`
+                );
+            }
 
             // 0. 串联执行已注册的外部扩展解析器 (如双语格式、多角色特殊格式)
             if (TTS_Parser.customParsers && TTS_Parser.customParsers.size > 0) {
@@ -393,7 +408,7 @@ export const TTS_Parser = {
                             buildBubbleHtml,
                             CACHE,
                             escapeHtmlAttr,
-                            isSkippedSpeaker: (spk) => window.TTS_PromptInjector && window.TTS_PromptInjector.getSkippedSpeakers().includes(spk)
+                            isSkippedSpeaker: checkSkipped
                         });
                         if (typeof parsed === 'string') {
                             modifiedHtml = parsed;
@@ -418,8 +433,8 @@ export const TTS_Parser = {
                     const safeSpeaker = escapeHtmlAttr(cleanSpeaker);
 
                     // 检查是否已经在 List 2 (跳过列表) 中
-                    if (window.TTS_PromptInjector && window.TTS_PromptInjector.getSkippedSpeakers().includes(cleanSpeaker)) {
-                        return textPart;
+                    if (checkSkipped(cleanSpeaker)) {
+                        return `<span class="tts-skipped-speaker-marker" data-speaker="${safeSpeaker}" style="display:none;"></span>${textPart}`;
                     }
 
                     // [人物, New] 只表示本轮提示词没有列出该人物，并不代表本地没有音色绑定。
@@ -499,7 +514,7 @@ export const TTS_Parser = {
                 }
 
                 // 检查是否在跳过列表中
-                if (window.TTS_PromptInjector && window.TTS_PromptInjector.getSkippedSpeakers().includes(cleanName)) {
+                if (checkSkipped(cleanName)) {
                     continue;
                 }
 
@@ -585,7 +600,7 @@ export const TTS_Parser = {
         $('.mes_text, .message-body, .markdown-content, #chat .mes_text, .mes .text').each(function () {
             const $this = $(this);
             const html = $this.html();
-            if (!html || (!html.includes('[') && !html.includes('【'))) return;
+            if (!html || (!html.includes('[') && !html.includes('【') && !html.includes('tts-skipped-speaker-marker'))) return;
 
             const newHtml = parseTextToBubbles(html);
             if (newHtml !== html) {
@@ -634,7 +649,7 @@ export const TTS_Parser = {
                     targets.each(function () {
                         const $this = $(this);
                         const html = $this.html();
-                        if (!html || (!html.includes('[') && !html.includes('【'))) return;
+                        if (!html || (!html.includes('[') && !html.includes('【') && !html.includes('tts-skipped-speaker-marker'))) return;
                         const newHtml = parseTextToBubbles(html);
                         if (newHtml !== html) {
                             $this.html(newHtml);

@@ -177,8 +177,45 @@ export function syncUIFromBackendSettings(backendSettings) {
     }
 }
 
+function renderExtSkippedSpeakers() {
+    const $wrap = $('#tts-ext-skipped-speakers-wrap').empty();
+    if (!$wrap.length) return;
+    const skipped = window.TTS_PromptInjector?.getSkippedSpeakers?.() || [];
+    if (!skipped.length) return;
+
+    const $box = $(`
+        <div style="padding:8px 10px; border-radius:6px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:12px; font-weight:bold; color:#fbbf24;">⏭️ 已跳过语音的角色 (${skipped.length})</span>
+                <button type="button" class="st-tts-btn st-tts-btn-xs" id="tts-ext-clear-skipped-btn" style="cursor:pointer;">全部恢复</button>
+            </div>
+            <div class="tts-ext-skipped-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+    `);
+    const $list = $box.find('.tts-ext-skipped-list');
+    skipped.forEach(spk => {
+        const $chip = $(`
+            <span style="display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.08); font-size:12px;">
+                <span class="spk-name"></span>
+                <button type="button" class="st-tts-btn st-tts-btn-xs tts-ext-unskip-one" style="padding:0 4px; font-size:11px; cursor:pointer;">恢复</button>
+            </span>
+        `);
+        $chip.find('.spk-name').text(spk);
+        $chip.find('.tts-ext-unskip-one').on('click', () => {
+            window.TTS_PromptInjector?.unskipSpeaker?.(spk);
+            renderExtSkippedSpeakers();
+        });
+        $list.append($chip);
+    });
+    $box.find('#tts-ext-clear-skipped-btn').on('click', () => {
+        window.TTS_PromptInjector?.clearSkippedSpeakers?.();
+        renderExtSkippedSpeakers();
+    });
+    $wrap.append($box);
+}
+
 // 挂载到全局供 index.js 与调试调用
-window.TTS_SettingsUI = { syncUIFromBackendSettings };
+window.TTS_SettingsUI = { syncUIFromBackendSettings, renderExtSkippedSpeakers };
 
 /**
  * 初始化并挂载酒馆原生扩展设置 UI
@@ -1268,6 +1305,7 @@ export async function initSettingsUI() {
         });
         */
 
+        renderExtSkippedSpeakers();
         console.log('[ST-Direct-TTS] ✅ 酒馆原生扩展设置面板挂载并初始化完成');
 
     } catch (error) {

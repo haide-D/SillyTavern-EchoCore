@@ -5,7 +5,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-**最新版本：v3.4.1** — 支持 ElevenLabs v3 / v4，修复换 Key 后复用旧缓存与旧账号音色、手机长按菜单，并优化音色保存同步。[查看更新公告](./RELEASE_NOTES_V3.4.1.md)
+**最新版本：v3.4.2** — 新增已跳过角色的单独恢复与全部恢复，绑定音色后自动解除跳过，并刷新聊天语音标记。[查看更新公告](./RELEASE_NOTES_V3.4.2.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 

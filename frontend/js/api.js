@@ -451,6 +451,7 @@ export const TTS_API = {
             body: JSON.stringify({ char_name: charName, model_folder: modelFolder })
         });
         if (!res.ok) throw new Error("Bind failed");
+        window.TTS_PromptInjector?.unskipSpeaker?.(charName);
     },
 
     /**

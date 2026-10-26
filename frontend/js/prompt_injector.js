@@ -269,24 +269,54 @@ export const PromptInjector = {
     /**
      * 添加说话人到跳过列表 (进入 List 2)
      */
+    isSkippedSpeaker(speakerName) {
+        if (!speakerName) return false;
+        const target = String(speakerName).trim().toLocaleLowerCase();
+        if (!target) return false;
+        return Array.from(this.skippedSpeakers).some(
+            speaker => String(speaker).trim().toLocaleLowerCase() === target
+        );
+    },
+
     skipSpeaker(speakerName) {
         if (!speakerName) return;
         const clean = speakerName.trim();
+        if (!clean || this.isSkippedSpeaker(clean)) return;
         this.skippedSpeakers.add(clean);
         localStorage.setItem('tts_skipped_speakers', JSON.stringify(Array.from(this.skippedSpeakers)));
         this.refreshAndInject();
+        window.TTS_UI?.renderDashboardList?.();
+        window.TTS_SettingsUI?.renderExtSkippedSpeakers?.();
     },
 
-    /**
-     * 从跳过列表中移除说话人
-     */
     unskipSpeaker(speakerName) {
-        if (!speakerName) return;
-        const clean = speakerName.trim();
-        if (this.skippedSpeakers.delete(clean)) {
+        if (!speakerName) return false;
+        const target = String(speakerName).trim().toLocaleLowerCase();
+        let removed = false;
+        for (const item of Array.from(this.skippedSpeakers)) {
+            if (String(item).trim().toLocaleLowerCase() === target) {
+                this.skippedSpeakers.delete(item);
+                removed = true;
+            }
+        }
+        if (removed) {
             localStorage.setItem('tts_skipped_speakers', JSON.stringify(Array.from(this.skippedSpeakers)));
             this.refreshAndInject();
+            window.TTS_Parser?.scan?.();
+            window.TTS_UI?.renderDashboardList?.();
+        window.TTS_SettingsUI?.renderExtSkippedSpeakers?.();
         }
+        return removed;
+    },
+
+    clearSkippedSpeakers() {
+        if (this.skippedSpeakers.size === 0) return;
+        this.skippedSpeakers.clear();
+        localStorage.removeItem('tts_skipped_speakers');
+        this.refreshAndInject();
+        window.TTS_Parser?.scan?.();
+        window.TTS_UI?.renderDashboardList?.();
+        window.TTS_SettingsUI?.renderExtSkippedSpeakers?.();
     },
 
     getSkippedSpeakers() {

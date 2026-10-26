@@ -274,6 +274,10 @@ export const TTS_UI = window.TTS_UI;
                 await CTX.Callbacks.refreshData();
                 scope.renderDashboardList();
                 scope.renderModelOptions();
+                if (window.TTS_Parser?.scan) window.TTS_Parser.scan();
+                if (window.TTS_Scheduler?.scanAndSchedule) {
+                    setTimeout(() => window.TTS_Scheduler.scanAndSchedule(), 100);
+                }
                 $('#tts-new-char').val('');
                 $('#tts-new-char-avatar').val('');
                 $('#tts-custom-voice-name').val('');
@@ -568,9 +572,49 @@ export const TTS_UI = window.TTS_UI;
         const keys = Object.keys(mappings);
         const customAvatars = getCustomSpeakerAvatars();
 
-        $('#tts-mapping-count').text(`已绑定 (${keys.length})`);
+        const skippedSpeakers = window.TTS_PromptInjector?.getSkippedSpeakers?.() || [];
+
+        $('#tts-mapping-count').text(
+            skippedSpeakers.length > 0
+                ? `已绑定 (${keys.length}) · 已跳过 (${skippedSpeakers.length})`
+                : `已绑定 (${keys.length})`
+        );
         $('#tts-btn-batch-unbind').hide();
         $('#tts-btn-select-all').text('全选');
+
+        if (skippedSpeakers.length > 0) {
+            const $skippedBox = $(`
+                <div class="tts-skipped-speakers-box" style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:12px; font-weight:600; color:#fbbf24;">⏭️ 已跳过语音的角色 (${skippedSpeakers.length})</span>
+                        <button type="button" id="tts-btn-clear-skipped" class="btn-secondary" style="padding:2px 8px; font-size:11px; cursor:pointer;" title="将所有跳过角色恢复正常">全部恢复</button>
+                    </div>
+                    <div class="tts-skipped-chips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
+            `);
+            const $chips = $skippedBox.find('.tts-skipped-chips');
+            skippedSpeakers.forEach(spk => {
+                const $chip = $(`
+                    <span class="tts-skipped-chip" style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); font-size:12px; color:#e5e7eb;">
+                        <span class="tts-skipped-name"></span>
+                        <button type="button" class="tts-btn-unskip-one" style="background:transparent; border:none; color:#60a5fa; font-size:11px; cursor:pointer; padding:0;" title="取消跳过，恢复语音识别">恢复</button>
+                    </span>
+                `);
+                $chip.find('.tts-skipped-name').text(spk);
+                $chip.find('.tts-btn-unskip-one').on('click', (e) => {
+                    e.stopPropagation();
+                    window.TTS_PromptInjector?.unskipSpeaker?.(spk);
+                    window.TTS_Utils?.showNotification?.(`已恢复角色 "${spk}" 的语音识别`, 'info');
+                });
+                $chips.append($chip);
+            });
+            $skippedBox.find('#tts-btn-clear-skipped').on('click', (e) => {
+                e.stopPropagation();
+                window.TTS_PromptInjector?.clearSkippedSpeakers?.();
+                window.TTS_Utils?.showNotification?.('已清空所有跳过角色', 'info');
+            });
+            c.append($skippedBox);
+        }
 
         if (keys.length === 0) {
             c.append(`
