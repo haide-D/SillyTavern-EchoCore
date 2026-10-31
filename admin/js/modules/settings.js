@@ -133,6 +133,9 @@ export async function loadSettings() {
         if (!response.ok) throw new Error('配置读取失败');
         const settings = await response.json();
 
+        const remoteDirEl = document.getElementById('setting-sovits-model-dir');
+        if (remoteDirEl) remoteDirEl.value = settings.sovits_model_dir || '';
+
         // 基础配置
         const baseDirEl = document.getElementById('setting-base-dir');
         const cacheDirEl = document.getElementById('setting-cache-dir');
@@ -358,6 +361,7 @@ export async function saveSettings(scope = 'system') {
 
     const settings = {
         base_dir: baseDirEl ? baseDirEl.value.trim() : '',
+        sovits_model_dir: document.getElementById('setting-sovits-model-dir')?.value.trim() || '',
         cache_dir: cacheDirEl ? cacheDirEl.value.trim() : '',
         sovits_host: sovitsHostEl ? sovitsHostEl.value.trim() : 'http://127.0.0.1:9880',
         manager_port: managerPortEl ? (parseInt(managerPortEl.value) || 3000) : 3000,

@@ -1,6 +1,7 @@
 import re
 import httpx
 from services.local_http import model_trust_env
+from services.sovits_paths import map_sovits_audio_params
 from typing import Dict, Optional
 from phone_call_utils.response_parser import EmotionSegment
 
@@ -180,12 +181,12 @@ class TTSService:
         
         try:
             async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
-                response = await client.get(url, params=params)
+                response = await client.get(url, params=map_sovits_audio_params(params))
             
             if response.status_code != 200:
                 print(f"[TTSService] ❌ HTTP错误: {response.status_code}")
                 print(f"[TTSService] 错误详情: {response.text[:500]}")
-                raise Exception(f"SoVITS Error: {response.status_code}")
+                raise Exception(f"SoVITS Error: {response.status_code} - {response.text[:1000]}")
             
             content = response.content
             # 校验返回内容是否为异常 JSON 错误字符串

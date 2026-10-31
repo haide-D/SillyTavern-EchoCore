@@ -130,6 +130,7 @@ def init_settings():
         "enabled": True,
         "auto_generate": True,
         "base_dir": DEFAULT_BASE_DIR,
+        "sovits_model_dir": "",
         "cache_dir": DEFAULT_CACHE_DIR,
         "default_lang": "Chinese",
         "iframe_mode": False,

@@ -16,7 +16,7 @@
         <aside class="sidebar">
             <div class="logo">
                 <h1>🎙️ TTS 管理</h1>
-                <p class="version">v3.4.2</p>
+                <p class="version">v3.4.3</p>
             </div>
 
             <nav class="nav">
@@ -645,7 +645,14 @@
                             <label>模型目录路径</label>
                             <input type="text" id="setting-base-dir" class="input"
                                 placeholder="例: G:\Models\MyCharacters">
-                            <small>存放 GPT-SoVITS 模型的根目录</small>
+                            <small>EchoCore 所在环境可访问的模型根目录，用于扫描和管理文件</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>GPT-SoVITS 端模型目录（可选）</label>
+                            <input type="text" id="setting-sovits-model-dir" class="input"
+                                placeholder="例: Z:\MyCharacters 或 /models">
+                            <small>填写 GPT-SoVITS 所在环境可访问的对应根目录，两端文件结构需一致。模型权重和参考音频会自动转换路径；留空沿用模型目录。修改后请刷新聊天页面。</small>
                         </div>
 
                         <div class="form-group">

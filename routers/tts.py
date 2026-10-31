@@ -2,6 +2,7 @@ import os
 import hashlib
 import httpx
 from services.local_http import model_trust_env
+from services.sovits_paths import map_sovits_audio_params
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from typing import Optional, Union, List
@@ -576,12 +577,12 @@ async def tts_proxy(
 
             try:
                 async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
-                    r = await client.get(url, params=params)
+                    r = await client.get(url, params=map_sovits_audio_params(params))
             except (httpx.ConnectError, httpx.RequestError):
                 raise HTTPException(status_code=503, detail="无法连接到 SoVITS 服务，请检查 9880 端口")
 
             if r.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"SoVITS Error: {r.status_code}")
+                raise HTTPException(status_code=500, detail=f"SoVITS Error: {r.status_code} - {r.text[:1000]}")
 
             # 保存到新缓存路径
             temp_path = new_cache_path + ".tmp"
@@ -705,12 +706,12 @@ async def tts_proxy_v2(req: TTSRequest, check_only: Optional[str] = None):
 
         try:
             async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
-                r = await client.get(url, params=params)
+                r = await client.get(url, params=map_sovits_audio_params(params))
         except httpx.RequestError:
             raise HTTPException(status_code=503, detail="无法连接到 SoVITS 服务,请检查 9880 端口")
 
         if r.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"SoVITS Error: {r.status_code}")
+            raise HTTPException(status_code=500, detail=f"SoVITS Error: {r.status_code} - {r.text[:1000]}")
 
         # 保存到新缓存路径
         temp_path = new_cache_path + ".tmp"

@@ -16,6 +16,7 @@ import asyncio
 import logging
 import httpx
 from services.local_http import model_trust_env
+from services.sovits_paths import map_sovits_path
 from typing import Optional, Dict
 from contextlib import asynccontextmanager
 
@@ -216,7 +217,9 @@ class ModelWeightService:
             {"success": bool, "message": str, "skipped": bool}
         """
         # 检查是否需要切换
-        if skip_if_same and self._current_loaded["gpt_path"] == weights_path:
+        remote_path = map_sovits_path(weights_path)
+        target = (get_sovits_host(), remote_path)
+        if skip_if_same and self._current_loaded["gpt_path"] == weights_path and self._current_loaded.get("gpt_target") == target:
             print(f"[ModelWeightService] ⏭️ GPT 权重相同，跳过切换")
             return {"success": True, "message": "权重相同，已跳过", "skipped": True}
         
@@ -230,14 +233,15 @@ class ModelWeightService:
             print(f"[ModelWeightService] 🔄 异步切换 GPT 权重: {weights_path}")
             
             async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
-                resp = await client.get(url, params={"weights_path": weights_path})
+                resp = await client.get(url, params={"weights_path": remote_path})
             
             if resp.status_code != 200:
                 print(f"[ModelWeightService] ❌ GPT 权重切换失败: {resp.status_code} - {resp.text}")
-                return {"success": False, "message": f"服务返回错误: {resp.status_code}", "skipped": False}
+                return {"success": False, "message": f"服务返回错误: {resp.status_code} - {resp.text[:1000]}", "skipped": False}
             
             # 更新状态
             self._current_loaded["gpt_path"] = weights_path
+            self._current_loaded["gpt_target"] = target
             print(f"[ModelWeightService] ✅ GPT 权重已切换")
             return {"success": True, "message": resp.text, "skipped": False}
             
@@ -263,7 +267,9 @@ class ModelWeightService:
             {"success": bool, "message": str, "skipped": bool}
         """
         # 检查是否需要切换
-        if skip_if_same and self._current_loaded["sovits_path"] == weights_path:
+        remote_path = map_sovits_path(weights_path)
+        target = (get_sovits_host(), remote_path)
+        if skip_if_same and self._current_loaded["sovits_path"] == weights_path and self._current_loaded.get("sovits_target") == target:
             print(f"[ModelWeightService] ⏭️ SoVITS 权重相同，跳过切换")
             return {"success": True, "message": "权重相同，已跳过", "skipped": True}
         
@@ -277,14 +283,15 @@ class ModelWeightService:
             print(f"[ModelWeightService] 🔄 异步切换 SoVITS 权重: {weights_path}")
             
             async with httpx.AsyncClient(timeout=120.0, trust_env=model_trust_env(url)) as client:
-                resp = await client.get(url, params={"weights_path": weights_path})
+                resp = await client.get(url, params={"weights_path": remote_path})
             
             if resp.status_code != 200:
                 print(f"[ModelWeightService] ❌ SoVITS 权重切换失败: {resp.status_code} - {resp.text}")
-                return {"success": False, "message": f"服务返回错误: {resp.status_code}", "skipped": False}
+                return {"success": False, "message": f"服务返回错误: {resp.status_code} - {resp.text[:1000]}", "skipped": False}
             
             # 更新状态
             self._current_loaded["sovits_path"] = weights_path
+            self._current_loaded["sovits_target"] = target
             print(f"[ModelWeightService] ✅ SoVITS 权重已切换")
             return {"success": True, "message": resp.text, "skipped": False}
             
