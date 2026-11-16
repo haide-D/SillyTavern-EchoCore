@@ -5,7 +5,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-**最新版本：v3.4.3** — 新增 GPT-SoVITS 跨端模型目录映射，支持 NAS / Docker 与 Windows 分开部署。[查看更新公告](./RELEASE_NOTES_V3.4.3.md)
+**最新版本：v3.4.4** — 主动电话支持逐条删除来电历史，包括失效或无录音的记录。[查看更新公告](./RELEASE_NOTES_V3.4.4.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 

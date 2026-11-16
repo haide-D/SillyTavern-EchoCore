@@ -506,6 +506,14 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def delete_phone_call_history_record(self, record_id: int):
+        conn = self._get_connection()
+        try:
+            conn.execute("DELETE FROM auto_phone_calls WHERE id = ?", (record_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
     def get_all_auto_phone_calls(self, limit: int = 50) -> List[Dict[str, Any]]:
         """
         获取所有自动电话历史记录 (全量)

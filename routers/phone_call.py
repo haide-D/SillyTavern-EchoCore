@@ -405,6 +405,13 @@ async def get_phone_call_general_history(
     }
 
 
+@router.delete("/phone_call/history/{record_id}")
+async def delete_phone_call_history_record(record_id: int):
+    check_phone_call_enabled()
+    db.delete_phone_call_history_record(record_id)
+    return {"status": "success"}
+
+
 @router.get("/phone_call/auto/history/{char_name}")
 async def get_auto_call_history(char_name: str, limit: int = 50):
     """获取角色的自动生成历史记录"""

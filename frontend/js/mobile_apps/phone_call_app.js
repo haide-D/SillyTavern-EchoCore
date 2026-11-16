@@ -10,7 +10,7 @@
 import { ChatInjector } from '../chat_injector.js';
 import { WorldInfoExtractor } from '../world_info_extractor.js';
 import { NotificationHandler } from '../notification_handler.js';
-import { AudioPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
+import { AudioPlayer, getGlobalPlayer, setGlobalPlayer, cleanupGlobalPlayer } from './shared/audio_player.js';
 import { getApiHost, getChatBranch, formatTime, renderAvatarHtml, getCharacterAvatar, getAuthHeaders } from './shared/utils.js';
 import { STATUS_SVGS, getCallStatusTexts, isHarryPotterTheme } from '../themes/theme_status_helper.js';
 import { showHistoryPlaybackUI } from './incoming_call_app.js';
@@ -848,6 +848,7 @@ function renderDialConsole($container) {
  * 创建单条通话卡片 (支持内联精致播放、逐句高亮、沉浸重温、重新生成与注入聊天)
  */
 function createCallCard(call, isLatest = false) {
+    const recordId = isLatest ? call.call_id : call.id;
     const caller = call.char_name || call.selected_speaker || "神秘角色";
     const target = call.target_user || "你";
     const timeStr = call.created_at ? formatTime(call.created_at) : "刚刚";
@@ -909,9 +910,46 @@ function createCallCard(call, isLatest = false) {
                         ${SVG_FULLSCREEN} 沉浸重温
                     </button>
                 ` : ''}
+                <button type="button" class="pc-action-btn ws-btn-delete" title="删除这条通话记录">删除记录</button>
             </div>
         </div>
-    `);
+    `).data('recordId', recordId);
+
+    $card.find('.ws-btn-delete').on('click', async function () {
+        if (!window.confirm(`删除「${caller} → ${target}」的这条通话记录？`)) return;
+        const $btn = $(this).prop('disabled', true);
+        try {
+            // 未写入历史库的手动呼叫只存在于本次会话中。
+            if (!(isLatest && String(recordId).startsWith('manual_'))) {
+                const res = await fetch(`${getApiHost()}/api/phone_call/history/${encodeURIComponent(recordId)}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders(),
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            }
+
+            if (_playingCardElement?.data('recordId') === recordId) {
+                if (getGlobalPlayer() === _currentAudioPlayer) cleanupGlobalPlayer();
+                _playingCardElement = null;
+                _currentAudioPlayer = null;
+            }
+            if (_lastGeneratedCall?.call_id === recordId) _lastGeneratedCall = null;
+            _currentCallsCache = _currentCallsCache.filter(c => c.id !== recordId);
+            _allCallsCache = _allCallsCache.filter(c => c.id !== recordId);
+
+            const $root = _currentAppContainer.find('.pc-app-container');
+            const $list = $root.find('.pc-history-scroll');
+            $list.find('.pc-card').filter(function () {
+                return $(this).data('recordId') === recordId;
+            }).remove();
+            if ($list.length && !$list.children().length) {
+                renderCallsToContainer($list, [], _activeTab === 'current', $root);
+            }
+        } catch (error) {
+            $btn.prop('disabled', false);
+            window.alert(`删除记录失败：${error.message}`);
+        }
+    });
 
     // 卡片 UI 状态重置
     const resetCardUI = () => {
