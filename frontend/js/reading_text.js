@@ -1,6 +1,7 @@
 // 全文朗读协议与纯文本分段；不修改聊天原文。
 export const READING_DEFAULTS = Object.freeze({
     autoDialogue: false,
+    showReadingErrors: true,
     fulltextTemplate: false,
     enableEmotionalNarration: false,
     startMarker: '<tts-body>',
@@ -17,6 +18,10 @@ export function getReadingSettings() {
     try {
         return { ...READING_DEFAULTS, ...JSON.parse(localStorage.getItem('tts_reading_settings') || '{}') };
     } catch { return { ...READING_DEFAULTS }; }
+}
+
+export function hasReadingContent(text) {
+    return /[^\s\p{P}\p{Cf}]/u.test(text ?? '');
 }
 
 export function validateReadingSettings(settings) {
@@ -145,6 +150,7 @@ export function parseFulltext(text, narrator, mappings, settings = {}) {
         const chunks = settings.paragraphPlayback === false ? splitReadingText(value)
             : splitReadingParagraphs(value, segments.length === 0, settings);
         for (const chunk of chunks) {
+            if (!hasReadingContent(chunk)) continue;
             segments.push({ charName, sourceName: narration ? '旁白' : sourceName, emotion: emotion === 'New' ? 'default' : emotion, text: chunk, fallback: !narration && !mappings[sourceName] });
         }
     };

@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import { splitReadingParagraphs, parseFulltext, getReadingSettings } from '../frontend/js/reading_text.js';
 globalThis.localStorage = { getItem: () => JSON.stringify({ localStrategy: 'batch' }) };
 assert.equal(getReadingSettings().paragraphPlayback, true);
+assert.equal(getReadingSettings().showReadingErrors, true);
+const mixed = '…… [Alice, default] “...” [Alice, default] “等一下……” — [Alice, default] “0”';
+for (const paragraphPlayback of [true, false]) {
+    const lines = parseFulltext(mixed, 'Narrator', { Alice: 'voice' }, { paragraphPlayback });
+    assert.deepEqual(lines.map(s => [s.charName, s.text]), [['Alice', '等一下……'], ['Alice', '0']]);
+    assert.throws(() => parseFulltext('…… [Alice, default] “？！”', 'Narrator', { Alice: 'voice' }, { paragraphPlayback }), /没有可朗读内容/);
+}
 const long = '这是一个有完整含义的句子。'.repeat(60);
 const chunks = splitReadingParagraphs(long, true);
 assert.ok(chunks[0].length <= 100);

@@ -1,3 +1,5 @@
+import { hasReadingContent } from './reading_text.js';
+
 const BARS_HTML = `<span class='sovits-voice-waves'><span class='sovits-voice-bar'></span><span class='sovits-voice-bar'></span><span class='sovits-voice-bar'></span></span>`;
 
 // HTML 属性转义函数，防止特殊字符破坏 HTML 结构
@@ -346,6 +348,7 @@ export const TTS_Parser = {
 
         // 辅助函数：构建语音条 HTML
         const buildBubbleHtml = (cleanName, cleanEmotion, cleanText) => {
+            if (!hasReadingContent(cleanText)) return '';
             const isBound = Boolean(CACHE.mappings && CACHE.mappings[cleanName]);
             const key = Scheduler.getTaskKey(cleanName, cleanText, cleanEmotion);
             let status = 'waiting';
@@ -581,7 +584,7 @@ export const TTS_Parser = {
 
                     const prefix = spaceChars || '';
                     const bubbleHtml = buildBubbleHtml(cleanName, cleanEmotion, cleanText);
-                    return `${prefix}${bubbleHtml}`;
+                    return prefix + (bubbleHtml || escapeHtmlAttr(cleanText));
                 });
             }
 

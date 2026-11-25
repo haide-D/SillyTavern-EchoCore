@@ -11,7 +11,7 @@ export class GPTSoVITSProvider extends BaseTTSProvider {
         // 验证基本配置
     }
 
-    validateModel(modelName, config) {
+    validateModel(modelName, config, reportError = message => window.TTS_Utils.showNotification(message, 'error')) {
         let missing = [];
         if (!config.gpt_path) missing.push("GPT权重");
         if (!config.sovits_path) missing.push("SoVITS权重");
@@ -22,7 +22,7 @@ export class GPTSoVITSProvider extends BaseTTSProvider {
         }
 
         if (missing.length > 0) {
-            window.TTS_Utils.showNotification(`模型 "${modelName}" 缺失: ${missing.join(', ')}`, 'error');
+            reportError(`模型 "${modelName}" 缺失: ${missing.join(', ')}`);
             return false;
         }
         return true;

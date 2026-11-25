@@ -5,7 +5,7 @@
 
 [**English**](./README_EN.md) | [**简体中文**](./README.md)
 
-**最新版本：v3.4.4** — 主动电话支持逐条删除来电历史，包括失效或无录音的记录。[查看更新公告](./RELEASE_NOTES_V3.4.4.md)
+**最新版本：v3.4.5** — 可在朗读设置中关闭语音生成失败提示，朗读时会自动跳过纯标点片段。[查看更新公告](./RELEASE_NOTES_V3.4.5.md)
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10+-yellow) ![SillyTavern](https://img.shields.io/badge/SillyTavern-Extension-purple) ![Status](https://img.shields.io/badge/status-Feature_Complete_%7C_Maintenance-brightgreen)
 

@@ -1,5 +1,6 @@
 // static/js/scheduler.js
 import { ProviderManager } from './providers/provider_manager.js';
+import { getReadingSettings, hasReadingContent } from './reading_text.js';
 
 export const TTS_Scheduler = {
     queue: [],
@@ -57,14 +58,14 @@ export const TTS_Scheduler = {
         this.waiters.delete(key);
     },
 
-    updateStatus($btn, status) {
+    updateStatus($btn, status, error) {
         $btn.attr('data-status', status).removeClass('playing loading error');
 
         if (status === 'queued' || status === 'generating') {
             $btn.addClass('loading');
         }
         else if (status === 'error') {
-            this.settleWaiters($btn.attr('data-key'), new Error('语音生成失败，请检查角色音色与后端配置后重新朗读。'));
+            this.settleWaiters($btn.attr('data-key'), error || new Error('语音生成失败，请检查角色音色与后端配置后重新朗读。'));
             $btn.addClass('error');
             $btn.css('opacity', '');
         }
@@ -109,7 +110,12 @@ export const TTS_Scheduler = {
 
         const CACHE = window.TTS_State.CACHE;
         const charName = $btn.data('voice-name');
-        const text = $btn.data('text');
+        const text = $btn.attr('data-text') ?? $btn.data('text');
+        if (!hasReadingContent(text)) {
+            this.updateStatus($btn, 'skipped');
+            this.settleWaiters($btn.attr('data-key'), new Error('片段没有可朗读内容。'));
+            return;
+        }
         const key = $btn.data('generation-key') || this.getTaskKey(charName, text, $btn.data('voice-emotion'));
         $btn.attr('data-key', key);
 
@@ -157,9 +163,14 @@ export const TTS_Scheduler = {
             else this.cloudActive++;
             this.isRunning = true;
             this.executeTask(task, local).catch(error => {
-                console.error('[TTS] 调度失败:', error);
-                this.updateStatus(task.$btn, 'error');
+                console.error('[TTS] 语音生成失败:', error);
+                this.updateStatus(task.$btn, 'error', error);
                 CACHE.pendingTasks.delete(task.key);
+                if (getReadingSettings().showReadingErrors) {
+                    const provider = ProviderManager.getProviderForCharacter(task.charName);
+                    const message = provider.getErrorMessage?.(error) || error.message;
+                    window.TTS_Utils.showNotification(`❌ ${message}`, 'error');
+                }
             }).finally(() => {
                 if (local) this.localActive = false;
                 else this.cloudActive--;
@@ -180,7 +191,10 @@ export const TTS_Scheduler = {
         if (!modelName) throw new Error('角色尚未绑定音色');
         const provider = ProviderManager.getProviderForCharacter(task.charName);
         const config = local ? CACHE.models[modelName] : {};
-        if (local && (!config || !provider.validateModel(modelName, config))) throw new Error('本地模型配置不完整');
+        if (local) {
+            const invalidModel = message => { throw new Error(message); };
+            if (!config || !provider.validateModel(modelName, config, invalidModel)) throw new Error('本地模型配置不完整');
+        }
         if (typeof provider.selectRefAudio === 'function') task.selectedRef = provider.selectRefAudio(task, config);
         this.updateStatus(task.$btn, 'generating');
         const cached = task.forceRegenerate ? null : await this.checkCache(task, config);
@@ -218,33 +232,17 @@ export const TTS_Scheduler = {
 
     async processSingleTask(task, modelConfig) {
         const { key, $btn } = task;
-        const CACHE = window.TTS_State.CACHE;
-
-        try {
-            const provider = ProviderManager.getProviderForCharacter(task.charName);
-            const { blob, audioUrl, filename } = await provider.generateAudio(task, modelConfig);
-            
-            if (filename) {
-                $btn.attr('data-server-filename', filename);
-                console.log(`[TTS] 文件名已记录: ${filename}`);
-            }
-
-            if (!audioUrl) throw new Error('供应商未返回音频');
-            if (audioUrl) {
-                $btn.attr('data-audio-url', audioUrl);
-                $btn.attr('data-key', key);
-                this.finishTask(key, audioUrl);
-            }
-            this.updateStatus($btn, 'ready');
-
-        } catch (e) {
-            console.error("生成失败:", e);
-            const provider = ProviderManager.getProviderForCharacter(task.charName);
-            const errorMsg = provider.getErrorMessage ? provider.getErrorMessage(e) : e.message;
-            window.TTS_Utils.showNotification(`❌ ${errorMsg}`, 'error');
-            this.updateStatus($btn, 'error');
-            CACHE.pendingTasks.delete(key);
+        const provider = ProviderManager.getProviderForCharacter(task.charName);
+        const { audioUrl, filename } = await provider.generateAudio(task, modelConfig);
+        if (!audioUrl) throw new Error('供应商未返回音频');
+        if (filename) {
+            $btn.attr('data-server-filename', filename);
+            console.log(`[TTS] 文件名已记录: ${filename}`);
         }
+        $btn.attr('data-audio-url', audioUrl);
+        $btn.attr('data-key', key);
+        this.finishTask(key, audioUrl);
+        this.updateStatus($btn, 'ready');
     },
 
     selectRefAudio(task, modelConfig) {

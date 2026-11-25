@@ -134,10 +134,11 @@ try {
         window.TTS_Utils.getStyleContent = () => '';
         window.TTS_PromptInjector.getSkippedSpeakers = () => [];
         const realContent = document.querySelector('.mes_text');
-        realContent.textContent = cleaned;
+        realContent.textContent = cleaned + ' [Alice, default] “……” [TTSVoice:Alice:default:...]';
         realParser.scan();
         check([...realContent.querySelectorAll('.voice-bubble')].map(node => node.dataset.voiceName).join(',') === 'Alice,Bob', 'existing parser accepts fulltext dialogue protocol and excludes narration');
         check(reader.dialogueSegments(0).map(s => s.text).join(',') === '你好。,进来。', 'continuous consumes actual parser bubbles');
+        check(realContent.textContent.includes('“……” ...'), 'silent lines keep their punctuation in the message');
         realContent.replaceChildren();
 
         const frame = document.createElement('iframe');
@@ -172,8 +173,11 @@ try {
         await tick();
         reader.openSettings();
         const settingsDialog = document.querySelector('#tts-reading-dialog');
-        check(settingsDialog.querySelectorAll('input[type=checkbox]').length === 4, 'independent template, autoplay, paragraph and narration settings');
-        settingsDialog.close();
+        const errorToggle = [...settingsDialog.querySelectorAll('label')].find(label => label.textContent.includes('显示朗读失败提示')).querySelector('input');
+        check(errorToggle.checked, 'reading failure notifications enabled by default');
+        errorToggle.checked = false;
+        settingsDialog.querySelector('.tts-r-footer button').click();
+        check(text.getReadingSettings().showReadingErrors === false, 'muted reading failures persisted');
         await tick();
         check(PromptInjector.buildPromptDirective({}, []).startsWith(DEFAULT_PROMPT_TEMPLATE.split('\n')[0]), 'default prompt unchanged');
         localStorage.setItem('tts_reading_settings', JSON.stringify({ ...settings, fulltextTemplate: true }));
@@ -248,9 +252,15 @@ try {
         await tick();
 
         const beforeFailed = generated;
+        const notesBeforeFailure = notes.length;
         provider.generateAudio = async () => { generated++; throw new Error('fixture failure'); };
         await reader.start(reader.snapshot(0), [{ ...delayed[0], text: 'fails' }], 'failure');
         check(generated === beforeFailed + 1 && reader.session === null && !scheduler.waiters.size, 'failure stops without automatic retry');
+        check(notes.length === notesBeforeFailure + 1 && notes.at(-1).includes('fixture failure'), 'one notification for a failed reading request');
+        localStorage.setItem('tts_reading_settings', JSON.stringify({ ...settings, showReadingErrors: false }));
+        await reader.start(reader.snapshot(0), [{ ...delayed[0], text: 'fails quietly' }], 'failure');
+        check(notes.length === notesBeforeFailure + 1 && reader.session === null && !scheduler.waiters.size, 'muted reading failure stops silently');
+        localStorage.setItem('tts_reading_settings', JSON.stringify(settings));
 
         const routes = [];
         let running = 0;

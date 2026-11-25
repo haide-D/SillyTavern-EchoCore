@@ -1,6 +1,6 @@
 import { readingIcon, readingWave, readingButton, readingDialog, installReadingStyles } from './reading_ui.js';
 import { FulltextRecording, recordingKey } from './fulltext_recording.js';
-import { getReadingSettings, validateReadingSettings, extractBody, cleanBody, parseFulltext } from './reading_text.js';
+import { getReadingSettings, validateReadingSettings, extractBody, cleanBody, parseFulltext, hasReadingContent } from './reading_text.js';
 import { mountReadingControls, updateReadingControls, highlightReading, clearReadingHighlight } from './reading_controls.js';
 import { BGM } from './bgm_player.js';
 import { closeMusic } from './bgm_ui.js';
@@ -102,10 +102,8 @@ export const TTS_Reading = {
                 queueMicrotask(saveCompleteAudio);
                 return { audio };
             }, error => {
-                if (!session.abort.signal.aborted) {
-                    this.notify(error.message);
-                    if (this.session === session) this.stop();
-                }
+                // 合成失败由调度器统一提示，当前会话只负责停止播放。
+                if (this.session === session) this.stop();
                 return { error };
             }));
         };
@@ -180,12 +178,16 @@ export const TTS_Reading = {
             text: node.getAttribute('data-text'),
             emotion: node.getAttribute('data-voice-emotion') || 'default',
             key: node.getAttribute('data-key'),
-        })).filter(segment => segment.text?.trim());
+        })).filter(segment => hasReadingContent(segment.text));
     },
 
-    readDialogue(id) {
-        try { return this.start(this.snapshot(id), this.dialogueSegments(id), '连续读'); }
-        catch (error) { this.notify(error.message); }
+    readDialogue(id, { automatic = false } = {}) {
+        try {
+            const snapshot = this.snapshot(id);
+            const segments = this.dialogueSegments(id);
+            if (automatic && !segments.length) return;
+            return this.start(snapshot, segments, '连续读');
+        } catch (error) { this.notify(error.message); }
     },
 
     scheduleAutoRead(generation) {
@@ -198,7 +200,7 @@ export const TTS_Reading = {
                 const snapshot = this.snapshot(id);
                 if (this.seen.get(id) === snapshot.raw) return;
                 this.seen.set(id, snapshot.raw);
-                this.readDialogue(id);
+                this.readDialogue(id, { automatic: true });
             } catch (error) { this.notify(error.message); }
         }, 0);
     },
@@ -292,6 +294,7 @@ export const TTS_Reading = {
         };
         const $modes = section('play', '朗读方式');
         const auto = toggle($modes, 'play', '自动连播对白', '新回复完成后，自动播放已有对白气泡。', settings.autoDialogue);
+        const errors = toggle($modes, 'voice', '显示朗读失败提示', '语音生成失败时，在页面顶部显示原因。', settings.showReadingErrors);
         const template = toggle($modes, 'book', '全文朗读模板', '让后续回复包含可提取的人物对白与旁白。', settings.fulltextTemplate);
         const paragraphs = toggle($modes, 'bolt', '段落接力播放', '首段就绪立即播放，同时准备后两段；每段都是完整音频。', settings.paragraphPlayback);
         const emotional = toggle($modes, 'voice', '启用有感情的旁白', '全文模板为旁白添加情绪；未标注时使用默认语气。', settings.enableEmotionalNarration);
@@ -323,7 +326,7 @@ export const TTS_Reading = {
         $('<small>').text('设置保存在当前浏览器').appendTo($footer);
         readingButton('check', '保存设置').addClass('tts-r-primary').on('click', () => {
             try {
-                const next = { ...settings, paragraphPlayback: paragraphs.prop('checked'), enableEmotionalNarration: emotional.prop('checked'), autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
+                const next = { ...settings, showReadingErrors: errors.prop('checked'), paragraphPlayback: paragraphs.prop('checked'), enableEmotionalNarration: emotional.prop('checked'), autoDialogue: auto.prop('checked'), fulltextTemplate: template.prop('checked'), narrator: narrator.val() || '', localStrategy: $options.find('input:checked').val(),
                     startMarker: start.val().trim(), endMarker: end.val().trim(), excludeTags: exclude.val().trim() };
                 validateReadingSettings(next);
                 localStorage.setItem('tts_reading_settings', JSON.stringify(next));
